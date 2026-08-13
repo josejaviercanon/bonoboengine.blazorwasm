@@ -9,19 +9,50 @@
     <!-- Link your Tailwind CSS layout bundle -->
     <link rel="stylesheet" href="_content/Game.UI/dist/app.css" />
     <link rel="stylesheet" href="@Assets["Game.Web.styles.css"]" />
-    <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet />
 </head>
 
 <body class="bg-slate-950 m-0 p-0 overflow-hidden">
     <Routes />
-    <ReconnectModal /> 
-    
-    <script src="@Assets["_framework/blazor.web.js"]"></script>
-    
+
     <!-- Use the direct physical static web asset path to guarantee global scope registration -->
     <script src="_content/Game.UI/dist/game-bundle.iife.js"></script>
+
+    <!--
+        Static-SSR bootstrap: no server circuit, no SignalR, no reconnect modal.
+        GameView renders the engine message into #pixi-viewport[data-message] server-side;
+        this script starts PixiJS once the page has loaded and pushes the message to the canvas.
+    -->
+    <script>
+        window.addEventListener('load', function () {
+            console.log('[pixi-debug] window load fired');
+            var viewport = document.getElementById('pixi-viewport');
+            if (!viewport) {
+                console.warn('[pixi-debug] #pixi-viewport NOT found in DOM');
+                return;
+            }
+            var message = viewport.getAttribute('data-message') || '';
+            console.log('[pixi-debug] #pixi-viewport found, data-message =', JSON.stringify(message));
+            if (typeof initGame !== 'function') {
+                console.error('[pixi-debug] initGame is not defined - game-bundle may have failed to load');
+                return;
+            }
+            console.log('[pixi-debug] calling initGame("pixi-viewport")');
+            initGame('pixi-viewport')
+                .then(function () {
+                    console.log('[pixi-debug] initGame resolved, calling renderText(message)');
+                    if (typeof renderText !== 'function') {
+                        console.error('[pixi-debug] renderText is not defined');
+                        return;
+                    }
+                    renderText(message);
+                })
+                .catch(function (err) {
+                    console.error('[pixi-debug] initGame failed:', err);
+                });
+        });
+    </script>
 </body>
 
 </html>

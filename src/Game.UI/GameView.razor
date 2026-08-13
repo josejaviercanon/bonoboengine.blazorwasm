@@ -1,26 +1,39 @@
 @page "/"
-@inject IJSRuntime JS
+@using Game.Engine
+@implements IDisposable
 
 <!-- Force explicit viewport dimensions directly via inline styling overrides -->
 <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #020617; overflow: hidden; z-index: 1;">
-    
+
     <!-- Top HUD Notification Layer -->
     <div style="position: absolute; top: 0; left: 0; right: 0; background-color: rgba(15, 23, 42, 0.9); padding: 1rem; color: #fff; z-index: 10; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b;">
         <span style="color: #34d399; font-weight: bold;">Engine Status: Online</span>
         <span style="font-size: 0.75rem; color: #94a3b8;">Authoritative C# Architecture</span>
     </div>
 
-    <!-- The target PixiJS element wrapper -->
-    <div id="pixi-viewport" style="width: 100%; height: 100%; display: block; z-index: 2;"></div>
+    <!-- The target PixiJS element wrapper. data-message carries the engine-emitted payload
+         from static SSR to the client bootstrap script (no server circuit required). -->
+    <div id="pixi-viewport" data-message="@Message" style="width: 100%; height: 100%; display: block; z-index: 2;"></div>
 
 </div>
 
 @code {
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private readonly GameSimulation _simulation = new();
+    private string Message { get; set; } = "";
+
+    protected override void OnInitialized()
     {
-        if (firstRender)
-        {
-            await JS.InvokeVoidAsync("initGame", "pixi-viewport");
-        }
+        _simulation.OnRenderMessage += HandleRenderMessage;
+        _simulation.PublishHello();
+    }
+
+    private void HandleRenderMessage(RenderMessageEvent ev)
+    {
+        Message = ev.Message;
+    }
+
+    public void Dispose()
+    {
+        _simulation.OnRenderMessage -= HandleRenderMessage;
     }
 }
