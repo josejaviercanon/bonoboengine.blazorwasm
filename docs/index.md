@@ -140,7 +140,7 @@ Architectural stack uses specialized, lightweight libraries designed for maximum
 ## Specialized MCP Servers & Knowledge Bases
  When working with an MCP-capable AI agent search for in documentation docs folder:
  - .\docs\game-development and .\docs\2d-games: A highly specialized tool that exposes structured game design patterns, structural gamedev guides, and documentation contexts specifically mapping out MonoGame + Arch ECS cross-over ecosystems. It ensures the agent does not stray from professional game loop conventions.
- - Created MCP server "microsoft-documentation": The Microsoft Learn Model Context Protocol (MCP) Server enables clients like GitHub Copilot and other AI agents to bring trusted and up-to-date information directly from Microsoft's official documentation. It's a remote MCP server that uses streamable http. It allows agents to search through documentation, fetch a complete article, and search through code samples [Url](https://learn.microsoft.com/en-us/training/support/mcp).
+ - Created MCP server "net-microsoft-documentation": The Microsoft Learn Model Context Protocol (MCP) Server enables clients like GitHub Copilot and other AI agents to bring trusted and up-to-date information directly from Microsoft's official documentation. It's a remote MCP server that uses streamable http. It allows agents to search through documentation, fetch a complete article, and search through code samples [Url](https://learn.microsoft.com/en-us/training/support/mcp).
  
 ---
 
