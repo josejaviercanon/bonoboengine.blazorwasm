@@ -1,3 +1,4 @@
+using Game.Examples;
 using Game.Web.Components;
 using Game.UI;
 
@@ -22,6 +23,7 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
-    .AddAdditionalAssemblies(typeof(GameView).Assembly);
+    .AddAdditionalAssemblies(typeof(GameView).Assembly)
+    .AddAdditionalAssemblies(typeof(ExamplesHome).Assembly);
 
 app.Run();

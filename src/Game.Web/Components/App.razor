@@ -21,8 +21,9 @@
 
     <!--
         Static-SSR bootstrap: no server circuit, no SignalR, no reconnect modal.
-        GameView renders the engine message into #pixi-viewport[data-message] server-side;
-        this script starts PixiJS once the page has loaded and pushes the message to the canvas.
+        GameView / ExampleHost render a message into #pixi-viewport[data-message] server-side;
+        this script starts PixiJS once the page has loaded and renders the payload
+        (plain text for "/", or an example scene for "/examples/{id}").
     -->
     <script>
         window.addEventListener('load', function () {
@@ -41,12 +42,12 @@
             console.log('[pixi-debug] calling initGame("pixi-viewport")');
             initGame('pixi-viewport')
                 .then(function () {
-                    console.log('[pixi-debug] initGame resolved, calling renderText(message)');
-                    if (typeof renderText !== 'function') {
-                        console.error('[pixi-debug] renderText is not defined');
+                    console.log('[pixi-debug] initGame resolved, calling renderScene(message)');
+                    if (typeof renderScene !== 'function') {
+                        console.error('[pixi-debug] renderScene is not defined');
                         return;
                     }
-                    renderText(message);
+                    renderScene(message);
                 })
                 .catch(function (err) {
                     console.error('[pixi-debug] initGame failed:', err);

@@ -1,8 +1,15 @@
 import { Application, Text, TextStyle } from 'pixi.js';
+import { sceneRegistry } from './scenes';
 
 // Debug helper: every interop entry/exit point logs under one prefix so the
 // whole pipeline is traceable from the browser console (F12).
 const dbg = (...args: unknown[]) => console.log('[pixi-debug]', ...args);
+
+interface ScenePayload {
+    exampleId?: string;
+    title?: string;
+    sourceUrl?: string;
+}
 
 let app: Application | null = null;
 let container: HTMLElement | null = null;
@@ -85,7 +92,50 @@ function centerMessage(): void {
     dbg('message centered at', messageText.x, ',', messageText.y);
 }
 
-dbg('game-bundle loaded, exposing window.initGame / window.renderText');
+/**
+ * Entry point for the examples pipeline. The SSR payload is a JSON string with
+ * an `exampleId`; dispatch to the matching scene builder. Plain strings fall
+ * back to the legacy centered-text rendering (page "/").
+ */
+export async function renderScene(message: string): Promise<void> {
+    dbg('renderScene called, message =', JSON.stringify(message));
+
+    if (!app || !container) {
+        console.error('[pixi-debug] renderScene skipped: PixiJS app or container is not initialized');
+        return;
+    }
+
+    let payload: ScenePayload | null = null;
+    try {
+        const parsed: unknown = JSON.parse(message);
+        if (parsed && typeof parsed === 'object') {
+            payload = parsed as ScenePayload;
+        }
+    } catch {
+        payload = null;
+    }
+
+    if (!payload?.exampleId) {
+        renderText(message);
+        return;
+    }
+
+    const scene = sceneRegistry[payload.exampleId];
+    if (!scene) {
+        console.error(`[pixi-debug] no scene registered for exampleId '${payload.exampleId}'`);
+        return;
+    }
+
+    dbg('running scene for exampleId =', payload.exampleId);
+    try {
+        await scene(app, {});
+    } catch (err) {
+        console.error(`[pixi-debug] scene '${payload.exampleId}' failed:`, err);
+    }
+}
+
+dbg('game-bundle loaded, exposing window.initGame / window.renderText / window.renderScene');
 
 (window as any).initGame = initGame;
 (window as any).renderText = renderText;
+(window as any).renderScene = renderScene;

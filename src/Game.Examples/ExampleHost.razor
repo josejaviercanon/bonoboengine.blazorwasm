@@ -1,0 +1,54 @@
+@page "/examples/{*ExampleId}"
+@using System.Text.Json
+@using Game.Examples
+
+@code {
+    [Parameter] public string ExampleId { get; set; } = string.Empty;
+}
+
+@{
+    var example = ExamplesCatalog.Find(ExampleId);
+    var payload = example is null
+        ? string.Empty
+        : JsonSerializer.Serialize(new ExamplePayload(example.Id, example.Title, example.SourceUrl),
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+}
+
+<div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #020617; overflow: hidden; z-index: 1;">
+
+    <div style="position: absolute; top: 0; left: 0; right: 0; background-color: rgba(15, 23, 42, 0.9); padding: 0.75rem 1rem; color: #fff; z-index: 10; display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-bottom: 1px solid #1e293b;">
+        <div style="display: flex; align-items: center; gap: 1rem; min-width: 0;">
+            <select id="example-select"
+                    onchange="window.location.href = '/examples/' + this.value"
+                    style="background-color: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 0.375rem; padding: 0.375rem 0.5rem; font-size: 0.875rem;">
+                @foreach (var group in ExamplesCatalog.Groups)
+                {
+                    <optgroup label="@group">
+                        @foreach (var item in ExamplesCatalog.All.Where(e => e.Group == group))
+                        {
+                            <option value="@item.Id" selected="@(item.Id == ExampleId)">@item.Title</option>
+                        }
+                    </optgroup>
+                }
+            </select>
+            @if (example is not null)
+            {
+                <span style="color: #34d399; font-weight: bold; font-size: 0.9rem; white-space: nowrap;">@example.Title</span>
+                <a href="@example.SourceUrl" target="_blank" rel="noopener" style="color: #94a3b8; font-size: 0.75rem; white-space: nowrap;">Source</a>
+            }
+        </div>
+        <span style="font-size: 0.75rem; color: #94a3b8;">PixiJS Examples</span>
+    </div>
+
+    @if (example is null)
+    {
+        <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #f87171; font-size: 1.25rem;">
+            Unknown example: @ExampleId
+        </div>
+    }
+    else
+    {
+        <div id="pixi-viewport" data-message="@payload" style="position: absolute; top: 52px; left: 0; right: 0; bottom: 0; display: block; z-index: 2;"></div>
+    }
+
+</div>

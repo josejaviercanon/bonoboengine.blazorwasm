@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
+    <ProjectReference Include="..\Game.Examples\Game.Examples.csproj" />
     <ProjectReference Include="..\Game.UI\Game.UI.csproj" />
   </ItemGroup>
 
