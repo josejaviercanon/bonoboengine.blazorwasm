@@ -1,32 +1,37 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+# Project context (shown to AI when creating artifacts)
+context: |
+  Tech stack: C# 14 / .NET 10 (net10.0), Blazor Web App (Interactive Server), .NET MAUI Blazor Hybrid, Razor Class Library, PixiJS ^8.19.0, TypeScript ^7.0.2, Vite ^8.2.1 (IIFE lib bundle), Tailwind CSS v4 (@tailwindcss/cli), Arch ECS (planned), System.Text.Json source generators (planned)
+  Solution: bonoboWebGame.slnx (XML solution format, not .sln)
+  Repo layout:
+    src/Game.Engine — pure C# class library, authoritative simulation (no UI/platform deps)
+    src/Game.UI     — shared Razor Class Library; refs Game.Engine; owns Razor components + PixiJS frontend
+    src/Game.Web    — Blazor Web App host (Interactive Server)
+    src/Game.Maui   — .NET MAUI Blazor Hybrid host (Android default; iOS/MacCatalyst/Windows conditional)
+  Architecture: authoritative C# simulation separated from a thin PixiJS presentation layer.
+    Performance gold rule: push-based delta events via IJSRuntime — never poll C# from JS, never serialize the whole state tree per frame.
+    Commands enter the engine only via ProcessCommand; state leaves only via events (e.g. EntityMovedEvent).
+  Agent rules: follow AGENTS.md (build frontend before dotnet; never run concurrent dotnet commands; never hand-edit wwwroot/dist).
+  Sources of truth: docs/index.md (architecture), docs/ai-agents/codebase-truth.md (verified facts), .csproj/.slnx/package.json over README prose.
+  Conventions: conventional commits; memory-bank/ for project state; docs/adr/ for architecture decision records.
 
 # Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  proposal:
+    - Keep proposals under 500 words
+    - Always include a "Non-goals" section
+    - Reference the affected project(s) under src/ by name
+  tasks:
+    - Break tasks into chunks of max 2 hours
+    - Respect AGENTS.md command rules (frontend build first, no concurrent dotnet)
 
 # Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+operations:
+  apply:
+    guidance:
+      - Verify the build: npm run build in src/Game.UI first, then dotnet build bonoboWebGame.slnx
+      - Never commit bin/, obj/, node_modules/, or wwwroot/dist output
+  archive:
+    guidance:
+      - Summarize the archive outcome before finishing

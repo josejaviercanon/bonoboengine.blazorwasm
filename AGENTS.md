@@ -42,4 +42,4 @@ MAUI builds require .NET MAUI workloads. Platform-specific target frameworks may
 - No test projects currently exist; `dotnet test` may report no tests while still validating the solution.
 - `bin/`, `obj/`, `node_modules/`, and other build output are ignored. Do not commit them.
 - Trust `.csproj`, `.slnx`, `package.json`, and executable build output over setup prose in `README.md`.
-- `docs/index.md` describe architecture.
+- `docs/index.md` describe architecture; `docs/ai-agents/codebase-truth.md` holds verified API facts; record significant decisions in `docs/adr/`.

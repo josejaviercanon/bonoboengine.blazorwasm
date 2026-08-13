@@ -16,8 +16,11 @@
   `GameView.razor` full-viewport page at `/` with HUD bar; hello-world text + resize handler.
 - ✅ MSBuild workaround for .NET 10 Vite-bundle precompression (MSB4018) in `Game.UI.csproj`.
 - ✅ `Game.Maui` project scaffold (Android default TFM; icons/splash/fonts/raw assets).
-- ✅ Documentation: `README.md` blueprint, `docs/index.md` source of truth, `docs/2d-games`
-  + `docs/game-development` knowledge base, `AGENTS.md` agent rules.
+- ✅ Documentation: `README.md` blueprint (synced with `docs/index.md`), `docs/index.md` source
+  of truth, `docs/2d-games` + `docs/game-development` knowledge base (cross-linked),
+  `AGENTS.md` agent rules.
+- ✅ Agentic-dev docs: `docs/ai-agents/codebase-truth.md` (verified facts),
+  `docs/adr/` infrastructure, `openspec/config.yaml` populated.
 - ✅ Memory bank initialized (this directory).
 
 ## In Progress / Template-State
@@ -49,7 +52,8 @@
 ## Milestones
 
 1. ✅ Scaffold + docs + memory bank baseline (2026-08-13)
-2. ⬜ Engine MVP: commands/events + one rendered sprite driven by a C# tick
-3. ⬜ ECS-based world with push-delta rendering
-4. ⬜ Save/load + MAUI parity
-5. ⬜ Authoritative server host
+2. ✅ Documentation overhaul for agentic development: codebase-truth, ADR infra, openspec config, doc repair (2026-08-13)
+3. ⬜ Engine MVP: commands/events + one rendered sprite driven by a C# tick
+4. ⬜ ECS-based world with push-delta rendering
+5. ⬜ Save/load + MAUI parity
+6. ⬜ Authoritative server host

@@ -2,8 +2,7 @@
 
 ## Current Focus (2026-08-13)
 
-Repository initialization: baseline commit of the scaffolded monorepo + creation of this
-memory bank. The project is at **scaffold stage** — solution structure, hosts, and the
+Documentation overhaul for agentic development, plus the scaffold baseline. The project is at **scaffold stage** — solution structure, hosts, and the
 PixiJS hello-world pipeline exist; the engine itself is not yet implemented.
 
 ## Recent Changes
@@ -13,6 +12,11 @@ PixiJS hello-world pipeline exist; the engine itself is not yet implemented.
   2d-games + game-development knowledge base), and the four `src/` projects.
 - Verified: `Game.UI` PixiJS hello-world renders via `initGame` from `GameView.razor`
   (per repo docs; build outputs present).
+- Doc overhaul (agentic-dev readiness):
+  - Created `docs/ai-agents/codebase-truth.md` (verified facts from csproj/package.json/source).
+  - Repaired broken markdown in `docs/index.md` (source of truth) and synced `README.md` to match.
+  - Deleted empty `docs/game/`; added cross-links between `docs/2d-games` and `docs/game-development` (new `index.md`).
+  - Populated `openspec/config.yaml` with repo context; created `docs/adr/` infrastructure (README + template).
 
 ## Next Steps
 
@@ -37,3 +41,4 @@ PixiJS hello-world pipeline exist; the engine itself is not yet implemented.
 - Follow `AGENTS.md`: build frontend first, no concurrent dotnet commands, never hand-edit
   `wwwroot/dist`, never commit build output.
 - Keep `Game.Engine` free of UI/platform dependencies.
+- Record architecturally significant decisions in `docs/adr/` (ADR-001+).

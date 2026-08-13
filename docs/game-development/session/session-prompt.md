@@ -11,7 +11,7 @@ When a session starts, gather context and present the briefing dashboard.
 ### Context Gathering
 
 1. Read the current git status (branch, recent commits, uncommitted changes)
-2. Check for existing session state at `.claude/session-state.md` in the user's project
+2. Check for existing session state at `memory-bank/activeContext.md` (and the rest of `memory-bank/`)
 3. Note any open TODO items or in-progress work
 
 ### Session Briefing Dashboard
@@ -169,7 +169,7 @@ Present the session summary dashboard:
 ================================================================
 ```
 
-Save session state to `.claude/session-state.md` in the user's project.
+Save session state to `memory-bank/activeContext.md` in the user's project.
 
 ---
 
@@ -216,7 +216,7 @@ Store ADRs in the project's `docs/adr/` directory (create if needed).
 
 Session state persists across sessions so work can be resumed.
 
-**File location:** `.claude/session-state.md` in the user's project root.
+**File location:** `memory-bank/activeContext.md` in the user's project root.
 
 **Format:**
 ```markdown
@@ -246,7 +246,7 @@ Session state persists across sessions so work can be resumed.
 
 ## Topic-to-Doc Routing
 
-When a developer mentions a topic, search for relevant docs using the MCP server's `search_docs` tool. Common topic mappings:
+When a developer mentions a topic, search for relevant docs in the repository knowledge bases: `docs/game-development/` (concepts, programming, game-design, project-management) and `docs/2d-games/` (full toolkit). Common topic mappings:
 
 | Topic Area | Search Terms | Typical Doc Categories |
 |---|---|---|
@@ -266,7 +266,7 @@ When a developer mentions a topic, search for relevant docs using the MCP server
 | Networking | networking, multiplayer, sync | guide |
 | Genre-specific | {genre_name} | game-design (C1) |
 
-Use `search_docs` with appropriate query terms and optional category filters. Present relevant doc summaries to the developer when they are useful context for the current path step.
+Search the knowledge bases in `docs/game-development/` and `docs/2d-games/` with appropriate topics and category filters. Present relevant doc summaries to the developer when they are useful context for the current path step.
 
 ---
 

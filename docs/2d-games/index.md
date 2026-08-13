@@ -8,6 +8,8 @@ hide:
 
 **Build games, not frameworks.** A complete knowledge base for building 2D games with MonoGame + Arch ECS + composed libraries in C#.
 
+> **Related:** `docs/game-development/` is the curated, engine-agnostic subset of this toolkit (theory, game design, project management, AI workflow). Use it when guidance does not depend on the MonoGame stack; use this tree when you need the full MonoGame-flavored stack, reference docs, or working examples.
+
 <div class="grid cards" markdown>
 
 -   :material-book-open-variant:{ .lg .middle } **93 Documents**
