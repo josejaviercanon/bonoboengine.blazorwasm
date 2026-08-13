@@ -1,0 +1,25 @@
+/* Pixel art image rendering */
+img[src*="pixel"], img[src*="kenney"], img[src*="cap-"],
+img[src*="/img/"] {
+  image-rendering: pixelated;
+}
+
+/* Doc hero images — full-width banner after first heading */
+.md-content img[src*="/img/"] {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin: 0.5rem 0 1.5rem;
+  opacity: 0.85;
+}
+
+/* Slightly wider content area */
+.md-grid {
+  max-width: 1400px;
+}
+
+/* Code block styling */
+.highlight code {
+  font-size: 0.8rem;
+}

@@ -315,6 +315,9 @@ FakesAssemblies/
 .ntvs_analysis.dat
 node_modules/
 
+# Generated frontend build output (Vite + Tailwind CLI) — rebuilt via `npm run build` in src/Game.UI
+src/Game.UI/wwwroot/dist/
+
 # Visual Studio 6 build log
 *.plg
 

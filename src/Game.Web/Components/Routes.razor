@@ -1,0 +1,16 @@
+﻿@using System.Reflection
+@using Game.UI
+
+<!-- Tell the router to search both the local web project AND your shared library for pages -->
+<Router AppAssembly="@typeof(Program).Assembly" 
+        AdditionalAssemblies="new[] { typeof(GameView).Assembly }">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(Layout.MainLayout)">
+            <p role="alert">Sorry, there's nothing at this address.</p>
+        </LayoutView>
+    </NotFound>
+</Router>

@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+@theme {
+  /* Define custom game variables here using native CSS */
+  --color-hud-bg: rgba(15, 23, 42, 0.85);
+  --color-mana: #3b82f6;
+  --font-game: 'Orbitron', sans-serif;
+}

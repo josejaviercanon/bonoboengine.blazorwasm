@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Game.Engine\Game.Engine.csproj" />
+  </ItemGroup>
+
+  <!-- FIXES MSB4018: Prevents .NET 10 from processing our Vite bundle twice during precompression -->
+  <PropertyGroup>
+    <DiscoverPrecompressedAssetsDependsOn>
+      ExcludeViteBundleFromCompression;
+      $(DiscoverPrecompressedAssetsDependsOn)
+    </DiscoverPrecompressedAssetsDependsOn>
+  </PropertyGroup>
+
+  <Target Name="ExcludeViteBundleFromCompression">
+    <ItemGroup>
+      <!-- Removes the bundle file dynamically from the broken compression compiler task -->
+      <StaticWebAsset ContentRoot="" Remove="@(StaticWebAsset)" Condition="'%(FileName)%(Extension)' == 'game-bundle.iife.js'" />
+    </ItemGroup>
+  </Target>
+
+</Project>

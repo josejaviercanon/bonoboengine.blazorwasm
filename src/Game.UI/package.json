@@ -1,0 +1,33 @@
+{
+  "name": "bonoboengine.blazorwasm",
+  "version": "1.0.0",
+  "description": ".NET MAUI Blazor Hybrid. This template configures a monorepo workspace containing your pure C# Engine, the shared Razor Class Library (RCL), the .NET MAUI Hybrid client, the Blazor Web App, and a TypeScript-driven PixiJS build managed by Vite and Tailwind CLI.",
+  "type": "module",
+  "scripts": {
+    "build:js": "vite build",
+    "build:css": "npx @tailwindcss/cli -i ./Frontend/app.css -o ./wwwroot/dist/app.css --minify",
+    "build": "npm run build:js && npm run build:css",
+    "watch:js": "vite build --watch",
+    "watch:css": "npx @tailwindcss/cli -i ./Frontend/app.css -o ./wwwroot/dist/app.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/josejaviercanon/bonoboengine.blazorwasm.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/josejaviercanon/bonoboengine.blazorwasm/issues"
+  },
+  "homepage": "https://github.com/josejaviercanon/bonoboengine.blazorwasm#readme",
+  "dependencies": {
+    "pixi.js": "^8.19.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "autoprefixer": "^10.5.4",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1"
+  }
+}

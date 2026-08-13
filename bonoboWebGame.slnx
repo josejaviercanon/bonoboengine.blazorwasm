@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Game.Engine/Game.Engine.csproj" />
+    <Project Path="src/Game.Maui/Game.Maui.csproj" />
+    <Project Path="src/Game.UI/Game.UI.csproj" />
+    <Project Path="src/Game.Web/Game.Web.csproj" />
+  </Folder>
+</Solution>
