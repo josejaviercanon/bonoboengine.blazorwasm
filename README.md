@@ -2,6 +2,10 @@
 
 .NET MAUI Blazor Hybrid monorepo: a pure C# game engine (`Game.Engine`), a shared Razor Class Library (`Game.UI`), a Blazor Web App host (`Game.Web`), a .NET MAUI Hybrid client (`Game.Maui`), and a TypeScript-driven PixiJS build managed by Vite and Tailwind CLI.
 
+Start with this project mainly because current monogame at 2026 dont have export to web option.
+
+![Running in Google Chrome](docs/images-screenshoots/Chrome_PixiJS_Blazor_Wasm_Integration.jpg)
+
 > **This README mirrors `docs/index.md`, the source of truth for the stack and architecture.** When code and prose disagree, trust `docs/index.md`, `docs/ai-agents/codebase-truth.md`, `AGENTS.md`, and the `.csproj` / `.slnx` / `package.json` files over anything else in this document.
 
 ---
@@ -247,3 +251,5 @@ dotnet test          # no test projects yet; validates the solution only
 ```
 
 > Build frontend assets before .NET commands. Do not run multiple `dotnet` commands concurrently — static-web-asset compression can race. See `AGENTS.md` for the full command reference.
+
+---
