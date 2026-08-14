@@ -1,37 +1,7 @@
 {
-  "compilerOptions": {
-    /* Target Environments */
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "lib": ["DOM", "DOM.Iterable", "ES2022"],
-
-    /* Strict Type-Checking Options */
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "skipLibCheck": true, // Speeds up compilation by skipping PixiJS internal .d.ts checking
-
-    /* Interop Options */
-    "isolatedModules": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
-
-    /* Build Options */
-    "noEmit": true, // Let Vite handle the actual bundle generation, TS only handles type checking
-    "sourceMap": true
-  },
-  "include": [
-    "Frontend/**/*.ts",
-    "vite.config.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "wwwroot"
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
   ]
 }

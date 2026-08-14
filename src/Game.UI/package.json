@@ -7,6 +7,7 @@
     "build:js": "vite build",
     "build:css": "npx @tailwindcss/cli -i ./Frontend/app.css -o ./wwwroot/dist/app.css --minify",
     "build": "npm run build:js && npm run build:css",
+    "typecheck": "tsc -b",
     "watch:js": "vite build --watch",
     "watch:css": "npx @tailwindcss/cli -i ./Frontend/app.css -o ./wwwroot/dist/app.css --watch"
   },
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.3",
+    "@types/node": "^24.0.0",
     "autoprefixer": "^10.5.4",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.3.3",

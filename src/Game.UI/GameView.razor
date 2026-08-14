@@ -8,7 +8,11 @@
     <!-- Top HUD Notification Layer -->
     <div style="position: absolute; top: 0; left: 0; right: 0; background-color: rgba(15, 23, 42, 0.9); padding: 1rem; color: #fff; z-index: 10; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b;">
         <span style="color: #34d399; font-weight: bold;">Engine Status: Online</span>
-        <span style="font-size: 0.75rem; color: #94a3b8;">Authoritative C# Architecture</span>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 0.75rem; color: #94a3b8;">Authoritative C# Architecture</span>
+            <button type="button" onclick="togglePixiStats()" style="background-color: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 0.375rem; padding: 0.375rem 0.5rem; font-size: 0.75rem; cursor: pointer;">PixiJS Stats</button>
+            <button type="button" onclick="toggleCSharpStats()" style="background-color: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 0.375rem; padding: 0.375rem 0.5rem; font-size: 0.75rem; cursor: pointer;">C# Stats</button>
+        </div>
     </div>
 
     <!-- The target PixiJS element wrapper. data-message carries the engine-emitted payload

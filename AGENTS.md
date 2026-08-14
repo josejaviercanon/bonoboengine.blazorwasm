@@ -3,7 +3,7 @@
 ## Repository Shape
 
 - `bonoboWebGame.slnx` is the solution; projects target .NET 10.
-- `src/Game.Engine` is a plain C# class library. Keep engine logic independent of UI and platform code.
+- `src/Game.Engine` is a plain C# class library. Keep engine logic independent of UI and platform code. It hosts the Arch ECS (`Game.Engine.ECS`: components, `[Query]` systems, `EcsSimulation`) via vendored `src/Arch` + `src/Arch.Generators` (analyzer only).
 - `src/Game.UI` is the shared Razor Class Library. It references `Game.Engine` and owns shared Razor components plus PixiJS assets.
 - `src/Game.Web` is the Blazor Web App host. It uses **static SSR only** (no Interactive Server, no SignalR circuit, no reconnect modal) and discovers shared RCL routes via `AddAdditionalAssemblies` in `Program.cs` plus the `Router` `AdditionalAssemblies` in `Components/Routes.razor`. PixiJS is bootstrapped client-side from an inline `load`-event script in `Components/App.razor`, which reads the engine payload from `#pixi-viewport[data-message]`.
 - `src/Game.Maui` is the .NET MAUI Blazor Hybrid host. It targets Android by default, plus iOS, Mac Catalyst, and Windows when supported by the OS/workloads.
@@ -30,7 +30,7 @@ Run from `src/Game.UI`:
 ```powershell
 npm ci
 npm run build
-npx tsc --noEmit # currently fails: vite.config.ts lacks Node type definitions
+npm run typecheck # scoped tsconfig.app.json (Frontend) + tsconfig.node.json (vite.config.ts)
 ```
 
 Run web host from repository root:

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Game.Engine.ECS;
 
 namespace Game.Examples;
 
@@ -31,6 +32,7 @@ public static class ExamplesCatalog
         new("textures/render-texture", "Render Texture", "Textures", "https://pixijs.com/8.x/examples/textures/render-texture"),
         new("assets/asset-bundle", "Asset Bundle", "Assets", "https://pixijs.com/8.x/examples/assets/bundle"),
         new("advanced/star-warp", "Star Warp", "Advanced", "https://pixijs.com/8.x/examples/advanced/star-warp"),
+        new("ecs/sprites", "ECS Sprites", "ECS", "https://github.com/genaray/Arch"),
     };
 
     public static ExampleInfo? Find(string id) =>
@@ -39,5 +41,7 @@ public static class ExamplesCatalog
     public static IEnumerable<string> Groups => All.Select(e => e.Group).Distinct();
 }
 
-/// <summary>Serialized into <c>#pixi-viewport[data-message]</c> for the client bootstrap script.</summary>
-public sealed record ExamplePayload(string ExampleId, string Title, string SourceUrl);
+/// <summary>Serialized into <c>#pixi-viewport[data-message]</c> for the client bootstrap script.
+/// <c>Sprites</c>/<c>StreamUrl</c> are ECS-specific and null for plain PixiJS examples.</summary>
+public sealed record ExamplePayload(string ExampleId, string Title, string SourceUrl,
+    IReadOnlyList<SpriteState>? Sprites = null, string? StreamUrl = null);

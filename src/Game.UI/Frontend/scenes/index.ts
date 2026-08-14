@@ -8,6 +8,7 @@ import { blurFilterScene } from './blurFilter';
 import { containerPivotScene } from './containerPivot';
 import { containerScene } from './container';
 import { draggingScene } from './dragging';
+import { ecsSpritesScene } from './ecsSprites';
 import { fromFontScene } from './fromFont';
 import { graphicsMaskScene } from './graphicsMask';
 import { meshRopeScene } from './meshRope';
@@ -42,4 +43,5 @@ export const sceneRegistry: Record<string, SceneBuilder> = {
     'textures/render-texture': renderTextureScene,
     'assets/asset-bundle': assetBundleScene,
     'advanced/star-warp': starWarpScene,
+    'ecs/sprites': ecsSpritesScene,
 };

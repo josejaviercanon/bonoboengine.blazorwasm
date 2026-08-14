@@ -1,5 +1,7 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Arch/Arch.csproj" />
+    <Project Path="src/Arch.Generators/Arch.Generators.csproj" />
     <Project Path="src/Game.Engine/Game.Engine.csproj" />
     <Project Path="src/Game.Examples/Game.Examples.csproj" />
     <Project Path="src/Game.Maui/Game.Maui.csproj" />

@@ -1,5 +1,6 @@
 import { Application, Text, TextStyle } from 'pixi.js';
 import { sceneRegistry } from './scenes';
+import { attachCSharpStatsOverlay, attachStatsOverlay, toggleCSharpStats, togglePixiStats } from './stats/overlays';
 
 // Debug helper: every interop entry/exit point logs under one prefix so the
 // whole pipeline is traceable from the browser console (F12).
@@ -51,6 +52,9 @@ export async function initGame(containerId: string): Promise<void> {
 
     container.appendChild(app.canvas);
     dbg('canvas appended to container');
+
+    attachStatsOverlay(app.ticker);
+    attachCSharpStatsOverlay();
 
     // Re-center the message whenever the window/viewport resizes
     window.addEventListener('resize', centerMessage);
@@ -128,7 +132,7 @@ export async function renderScene(message: string): Promise<void> {
 
     dbg('running scene for exampleId =', payload.exampleId);
     try {
-        await scene(app, {});
+        await scene(app, payload as unknown as Record<string, unknown>);
     } catch (err) {
         console.error(`[pixi-debug] scene '${payload.exampleId}' failed:`, err);
     }
@@ -139,3 +143,5 @@ dbg('game-bundle loaded, exposing window.initGame / window.renderText / window.r
 (window as any).initGame = initGame;
 (window as any).renderText = renderText;
 (window as any).renderScene = renderScene;
+(window as any).togglePixiStats = togglePixiStats;
+(window as any).toggleCSharpStats = toggleCSharpStats;

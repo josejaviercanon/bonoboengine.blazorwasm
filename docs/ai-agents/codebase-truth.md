@@ -10,21 +10,23 @@ Every fact below was verified against `.csproj`, `package.json`, `vite.config.ts
 
 | Project | SDK | Target(s) | References | Notable flags |
 | --- | --- | --- | --- | --- |
-| `src/Game.Engine` | `Microsoft.NET.Sdk` | `net10.0` | — | nullable + implicit usings; `GameSimulation.cs` + `RenderMessageEvent(string)` — `PublishHello()` raises `OnRenderMessage` with "Hello world to PixiJs Gaming!" |
+| `src/Game.Engine` | `Microsoft.NET.Sdk` | `net10.0` | `Arch`, `Arch.Generators` (as analyzer) | nullable + implicit usings; `GameSimulation.cs` + `RenderMessageEvent(string)` — `PublishHello()` raises `OnRenderMessage` with "Hello world to PixiJs Gaming!"; `ECS/` namespace `Game.Engine.ECS` — `[Component]` structs (`Position`, `Velocity`, `SpriteColor`, `RenderId`), `[Query]`-generated systems (`MovementSystem`, `ColorSystem`), `EcsSimulation` singleton service (60 Hz tick, batched `EcsRenderSignal` emitted at 1 s throttle, `Snapshot()` for SSR) |
+| `src/Arch` | `Microsoft.NET.Sdk` | `net10.0` | vendored Arch ECS 2.1.0; `Collections.Pooled`, `MessagePack`, `Utf8Json`, `ZeroAllocJobScheduler` | no nullability; heavy template T4 sources; vendored warnings expected |
+| `src/Arch.Generators` | `Microsoft.NET.Sdk` (netstandard2.0) | analyzer assembly | Roslyn 5.6.0 only | links `Arch.EventBus` / `Arch.Systems.SourceGenerator` / `Arch.AOT.SourceGenerator` sources; must NOT be referenced as a normal library (Roslyn can't resolve Arch.dll deps) |
 | `src/Game.UI` | `Microsoft.NET.Sdk.Razor` | `net10.0` | `Game.Engine` | `<SupportedPlatform Include="browser" />`; `Microsoft.AspNetCore.Components.Web` 10.0.10; MSB4018 workaround target |
 | `src/Game.Web` | `Microsoft.NET.Sdk.Web` | `net10.0` | `Game.UI` | `BlazorDisableThrowNavigationException=true` |
 | `src/Game.Maui` | `Microsoft.NET.Sdk.Razor` + `UseMaui` | `net10.0-android`; adds `net10.0-ios`, `net10.0-maccatalyst` when not Linux; adds `net10.0-windows10.0.19041.0` on Windows | `Game.UI` | `OutputType=Exe`, `MauiXamlInflator=SourceGen`, `WindowsPackageType=None` (unpackaged), `<SingleProject>true` |
 
 ## Game.UI frontend pipeline
 
-- Entry: `src/Game.UI/Frontend/game.ts` — exports `initGame(containerId)` and `renderText(message)`; also binds `(window as any).initGame` / `.renderText`.
-  - Logs every pipeline step under the `[pixi-debug]` prefix (bundle load, container lookup/size, `app.init`, canvas append, text set, centering). `initGame` waits 50 ms for layout, then forces `100vw`/`100vh` if container measures 0×0; creates `Application` (`resizeTo`, `backgroundAlpha: 0`, `antialias`, `hello`). `renderText` creates/updates a centered PixiJS `Text` from an engine-driven payload and re-centers on window resize.
+- Entry: `src/Game.UI/Frontend/game.ts` — exports `initGame(containerId)`, `renderText(message)`, `renderScene(message)`; also binds `(window as any).initGame` / `.renderText` / `.renderScene`.
+  - Logs every pipeline step under the `[pixi-debug]` prefix (bundle load, container lookup/size, `app.init`, canvas append, text set, centering). `initGame` waits 50 ms for layout, then forces `100vw`/`100vh` if container measures 0×0; creates `Application` (`resizeTo`, `backgroundAlpha: 0`, `antialias`, `hello`). `renderText` creates/updates a centered PixiJS `Text` from an engine-driven payload and re-centers on window resize. `renderScene` dispatches the full parsed payload (not `{}`) to the registered scene builder — ECS scenes read `sprites`/`streamUrl` from it.
+- Scenes live in `src/Game.UI/Frontend/scenes/`; `index.ts` `sceneRegistry` keys MUST match `ExamplesCatalog` ids. ECS scenario: `ecsSprites.ts` — sprites from SSR initial state, then moves each `sprite-move` SSE event (1/s server throttle). No scene-destroy hook exists; the EventSource closes on error/`beforeunload` only.
 - CSS entry: `src/Game.UI/Frontend/app.css` — `@import "tailwindcss";` + `@theme` block (`--color-hud-bg`, `--color-mana`, `--font-game`).
 - `vite.config.ts`: lib mode, IIFE format, entry `Frontend/game.ts`, name `GameViewport`, `fileName: 'game-bundle'`, `outDir: wwwroot/dist`, `emptyOutDir: true`, `sourcemap: true`.
-- `tsconfig.json`: `strict`, `target ES2022`, `noEmit: true`, includes `Frontend/**/*.ts` **and** `vite.config.ts`.
-  - **Known failure:** `npx tsc --noEmit` fails because `vite.config.ts` imports `path` without Node type definitions (`@types/node` missing).
-- `package.json` deps: `pixi.js ^8.19.0`. Dev deps: `vite ^8.2.1`, `typescript ^7.0.2`, `tailwindcss ^4.3.3`, `@tailwindcss/cli ^4.3.3`, `postcss ^8.5.26`, `autoprefixer ^10.5.4`.
-- Scripts: `build:js` = `vite build`; `build:css` = `npx @tailwindcss/cli -i ./Frontend/app.css -o ./wwwroot/dist/app.css --minify`; `build` = js then css; `watch:js` / `watch:css` are separate long-running watchers.
+- TypeScript uses the scoped composite model: root `tsconfig.json` references `tsconfig.app.json` (Frontend/**/*.ts, DOM libs) + `tsconfig.node.json` (vite.config.ts, `types: ["node"]`). Dev deps include `@types/node`. `npm run typecheck` = `tsc -b` and **passes**.
+- `package.json` deps: `pixi.js ^8.19.0`. Dev deps: `vite ^8.2.1`, `typescript ^7.0.2`, `tailwindcss ^4.3.3`, `@tailwindcss/cli ^4.3.3`, `postcss ^8.5.26`, `autoprefixer ^10.5.4`, `@types/node ^24`.
+- Scripts: `build:js` = `vite build`; `build:css` = `npx @tailwindcss/cli -i ./Frontend/app.css -o ./wwwroot/dist/app.css --minify`; `build` = js then css; `typecheck` = `tsc -b`; `watch:js` / `watch:css` are separate long-running watchers.
 
 ## MSB4018 workaround (`Game.UI.csproj`)
 
@@ -32,7 +34,7 @@ Every fact below was verified against `.csproj`, `package.json`, `vite.config.ts
 
 ## Hosts
 
-- `Game.Web/Program.cs`: **static SSR only** — no Interactive Server, no SignalR circuit, no reconnect modal. `AddRazorComponents()`; `UseStatusCodePagesWithReExecute("/not-found")`; `UseHttpsRedirection`; `UseAntiforgery()` (**required** — Razor Components endpoints carry antiforgery metadata even for static SSR); `MapStaticAssets()`; `MapRazorComponents<App>().AddAdditionalAssemblies(typeof(GameView).Assembly)`.
+- `Game.Web/Program.cs`: **static SSR only** — no Interactive Server, no SignalR circuit, no reconnect modal. `AddRazorComponents()`; `AddSingleton<EcsSimulation>()` (60 Hz Arch ECS sim, batched render signals); `UseStatusCodePagesWithReExecute("/not-found")`; `UseHttpsRedirection`; `UseAntiforgery()` (**required** — Razor Components endpoints carry antiforgery metadata even for static SSR); `MapStaticAssets()`; `MapRazorComponents<App>().AddAdditionalAssemblies(typeof(GameView).Assembly)`. **`GET /api/ecs/stream`** — SSE (`text/event-stream`), subscribes `EcsSimulation.OnRenderSignal`, pushes `event: sprite-move` with batched `SpriteState[]` JSON, unsubscribes on client abort. Endpoint lives on the raw ASP.NET Core pipeline, not Blazor.
   - **Required:** RCL routes under static SSR only resolve with `AddAdditionalAssemblies` on `MapRazorComponents`; the `Router` `AdditionalAssemblies` parameter alone is not enough for direct HTTP requests.
 - `Game.Web/Components/App.razor`: renders `<Routes />` + `game-bundle.iife.js`, then an inline `load`-event script that reads `#pixi-viewport[data-message]`, calls `initGame("pixi-viewport")`, then `renderText(message)` — all with `[pixi-debug]` console logs. **No `ReconnectModal`, no `<ImportMap />`, no `blazor.web.js`** — the served HTML contains zero `_framework` references. (Interactive Server leftovers `Counter.razor`/`Weather.razor` deleted; `Home.razor` deleted earlier — it shadowed GameView's `/` route.)
 - `Game.Web/Components/Routes.razor`: `<Router AppAssembly="typeof(Program).Assembly" AdditionalAssemblies="new[] { typeof(GameView).Assembly }">` — discovers shared RCL routes.
