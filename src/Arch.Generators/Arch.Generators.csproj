@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Packages the Arch ECS source generators ([Query] -> *Query methods + Update overrides,
+    [Event] -> EventBus.Send/Hook(), AOT component registry) as a small, self-contained
+    Roslyn analyzer assembly.
+
+    The generator sources stay in the vendored Arch/ tree and are only linked in here.
+    Arch.dll itself must NOT be used as an analyzer: Roslyn's analyzer load context cannot
+    resolve Arch.dll's runtime dependencies (MessagePack, Utf8Json, ...) while discovering
+    generators, which crashes csc. This assembly references Roslyn only, so it always loads.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsRoslynComponent>true</IsRoslynComponent>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Arch\Arch.EventBus\**\*.cs" />
+    <Compile Include="..\Arch\Arch.Systems.SourceGenerator\**\*.cs" />
+    <Compile Include="..\Arch\Arch.AOT.SourceGenerator\**\*.cs" />
+    <Compile Include="..\Arch\Pollyfilling\**\*.cs" />
+  </ItemGroup>
+
+</Project>
