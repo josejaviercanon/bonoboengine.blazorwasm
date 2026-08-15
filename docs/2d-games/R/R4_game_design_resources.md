@@ -3,7 +3,7 @@
 
 ---
 
-GDC talks, books by tier, pattern wikis, YouTube channels, and MonoGame community resources — everything a 2D developer needs for ongoing education.
+GDC talks, books by tier, pattern wikis, YouTube channels, and 2D game dev community resources — everything a 2D developer needs for ongoing education.
 
 ---
 
@@ -164,15 +164,15 @@ The gold standard for design analysis — boss design, difficulty, camera system
 
 ---
 
-## MonoGame-Specific Resources
+## C# / .NET 2D Game Resources
 
 | Resource | What It Is |
 |----------|-----------|
-| **Building 2D Games with MonoGame** (docs.monogame.net) | Official comprehensive tutorial series building a complete game from scratch |
-| **MonoGame.Extended** (github.com/craftworkgames/MonoGame.Extended) | Cameras, sprite animation, tiled map support, collision detection, particle systems |
-| **Nez** (github.com/prime31/Nez) | Feature-rich 2D framework with ECS architecture and Farseer physics |
+| [.NET game development](https://learn.microsoft.com/dotnet/games) | Official .NET game-dev guidance and ecosystem pointers |
+| [Arch ECS](https://github.com/genaray/Arch) | The archetype ECS this engine vendors under `src/Arch/` |
+| [PixiJS v8](https://pixijs.com) | The 2D WebGL/WebGPU renderer this engine uses for presentation |
 
-### Notable MonoGame Games
+### Notable 2D Games Built in C#
 
 - **Celeste** — precision platformer
 - **Stardew Valley** — complex 2D simulation

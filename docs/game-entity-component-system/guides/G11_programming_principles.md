@@ -3,7 +3,7 @@
 
 ---
 
-Foundational principles applied to game development with MonoGame + Arch ECS.
+Foundational principles applied to game development with Arch ECS.
 
 ---
 

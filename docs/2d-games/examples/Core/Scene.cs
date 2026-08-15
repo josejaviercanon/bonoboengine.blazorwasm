@@ -14,7 +14,7 @@ namespace U2DToolkit.Examples.Core;
 /// <summary>
 /// Base class for all scenes in the game. Each scene encapsulates its own
 /// Arch ECS <see cref="World"/>, registered systems, loaded content, and
-/// runtime state. Mirrors MonoGame's own lifecycle:
+/// runtime state. Mirrors the engine's own lifecycle:
 /// Initialize → LoadContent → Update/Draw loop → UnloadContent.
 /// <para>
 /// Scenes are the primary organizational unit — a main menu is a scene,

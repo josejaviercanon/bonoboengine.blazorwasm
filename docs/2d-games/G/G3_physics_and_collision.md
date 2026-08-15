@@ -1,7 +1,7 @@
 # G3 — Physics & Collision
 > **Category:** Guide · **Related:** [G1 Custom Code Recipes](./G1_custom_code_recipes.md) · [R2 Capability Matrix](../R/R2_capability_matrix.md)
 
-> Comprehensive physics and collision guide for MonoGame 3.8.x + Arch ECS 2.1.x + Aether.Physics2D 2.2.0 + MonoGame.Extended 5.3.1.
+> Comprehensive physics and collision guide for the engine 3.8.x + Arch ECS 2.1.x + a 2D physics library 2.2.0 + PixiJS + custom C# utilities 5.3.1.
 
 ---
 
@@ -453,20 +453,20 @@ public class VerletCloth
 
 ---
 
-## 4. Aether.Physics2D v2.2.0
+## 4. a 2D physics library v2.2.0
 
 **NuGet packages:**
-- `Aether.Physics2D` — standalone, no framework dependency
-- `Aether.Physics2D.MG` — MonoGame-specific (uses `Microsoft.Xna.Framework.Vector2`)
-- `Aether.Physics2D.Diagnostics.MG` — debug rendering
+- `a 2D physics library` — standalone, no framework dependency
+- `a 2D physics library.MG` — the engine-specific (uses `Microsoft.Xna.Framework.Vector2`)
+- `a 2D physics library.Diagnostics.MG` — debug rendering
 
-**Namespace (v2.0+):** `nkast.Aether.Physics2D` (changed from `tainicom.Aether.Physics2D`)
+**Namespace (v2.0+):** `nkast.a 2D physics library` (changed from `tainicom.a 2D physics library`)
 
 ### World Setup
 
 ```csharp
-using nkast.Aether.Physics2D.Dynamics;
-using nkast.Aether.Physics2D.Common;
+using nkast.a 2D physics library.Dynamics;
+using nkast.a 2D physics library.Common;
 
 // Aether uses meters internally. Pick a pixel-to-meter ratio.
 const float PixelsPerMeter = 64f;
@@ -743,13 +743,13 @@ public class PhysicsInterpolation
 
 ---
 
-## 7. MonoGame.Extended v5.3.1 Collision
+## 7. Custom C# Collision
 
-Current stable: **5.3.1** (NuGet `MonoGame.Extended`).
+Current stable: **5.3.1** (NuGet `PixiJS + custom C# utilities`).
 
 ### Collision System Architecture
 
-MonoGame.Extended provides `CollisionComponent` with layer-based spatial partitioning:
+PixiJS + custom C# utilities provides `CollisionComponent` with layer-based spatial partitioning:
 
 - **`ICollisionActor`** interface — implement `Bounds` (as `IShapeF`) and `OnCollision(CollisionEventArgs)`
 - **Shape primitives:** `RectangleF`, `CircleF`, `SizeF`, `Point2`, `Vector2` extensions
@@ -757,15 +757,15 @@ MonoGame.Extended provides `CollisionComponent` with layer-based spatial partiti
 - **Layers:** Entities in the same custom layer don't collide with each other; only checked against "default" layer
 - **`CollisionEventArgs.PenetrationVector`** — MTV for push-back resolution
 
-### What's Evolving for MonoGame 3.8.6
+### What's Evolving for the engine 3.8.6
 
-MonoGame.Extended is maintained by **AristurtleDev** (Christopher Whitley) and the community under the `MonoGame-Extended` GitHub org. Key developments:
+The 2D utility layer is maintained by **AristurtleDev** (Christopher Whitley) and the community. Key developments:
 
-- **Documentation rewrite** for v5 is in progress (monogameextended.net)
-- **MonoGame 3.8.6** targets .NET 8+ and NativeAOT — Extended is aligning with trimmable/AOT-safe patterns
+- **Documentation rewrite** for v5 is in progress (PixiJS + custom C# utilities docs)
+- **the engine 3.8.6** targets .NET 8+ and NativeAOT — Extended is aligning with trimmable/AOT-safe patterns
 - **Collision v5** simplified the API: removed some older collision resolution methods, streamlined `IShapeF`
 - **Tiled map loader** updated — better integration with modern Tiled formats
-- Extended does **not** include physics simulation — it's collision detection only. Pair with Aether.Physics2D or roll your own for full physics.
+- Extended does **not** include physics simulation — it's collision detection only. Pair with a 2D physics library or roll your own for full physics.
 
 ### Using Extended Collision with Arch ECS
 

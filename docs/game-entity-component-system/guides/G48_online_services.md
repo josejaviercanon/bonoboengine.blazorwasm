@@ -20,7 +20,7 @@ Three tiers of platform support matter for indie 2D games:
 
 For itch.io and DRM-free builds, you either roll your own backend or provide graceful local-only fallbacks. The abstraction layer in Section 10 makes this manageable.
 
-**Stack:** All examples use MonoGame.Framework.DesktopGL + .NET 8 + Steamworks.NET.
+**Stack:** All examples use the game framework + .NET 8 + Steamworks.NET.
 
 ---
 

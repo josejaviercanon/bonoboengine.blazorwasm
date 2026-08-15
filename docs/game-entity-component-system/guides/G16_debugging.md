@@ -3,7 +3,7 @@
 
 > **Category:** Guide · **Related:** [G15 Game Loop](./G15_game_loop.md) · [G17 Testing](./G17_testing.md) · [R1 Library Stack](../reference/R1_library_stack.md) · [G13 C# Performance](./G13_csharp_performance.md) · [G14 Data Structures](./G14_data_structures.md) · [G12 Design Patterns](./G12_design_patterns.md)
 
-Systematic debugging methodology, visual symptom diagnosis, MonoGame + Arch ECS debugging, ImGui tooling, structured logging, assertions, and common C# pitfalls.
+Systematic debugging methodology, visual symptom diagnosis, Arch ECS debugging, ImGui tooling, structured logging, assertions, and common C# pitfalls.
 
 ---
 
@@ -68,11 +68,11 @@ The first step in debugging is precise observation — characterizing exactly wh
 Each artifact has a characteristic signature:
 
 - **Z-fighting** (flickering where two surfaces overlap) — depth buffer precision issues, typically caused by a near/far clip plane ratio that wastes precision (z-buffer precision is logarithmic, with most resolution near the near plane)
-- **Texture stretching/tearing** — UV coordinate errors, wrong sampler state settings, or incorrect source rectangles in sprite atlas lookups. In MonoGame, the default `SamplerState` is `LinearClamp`, which causes bleeding between atlas entries in pixel art — switch to `PointClamp`
+- **Texture stretching/tearing** — UV coordinate errors, wrong sampler state settings, or incorrect source rectangles in sprite atlas lookups. In the engine, the default `SamplerState` is `LinearClamp`, which causes bleeding between atlas entries in pixel art — switch to `PointClamp`
 - **Black or pink/magenta textures** — failed texture loading. Check MGCB build output, verify content paths match case-sensitively (critical on Linux/macOS), confirm `.xnb` files were built for the correct platform
 - **Screen tearing** (visible horizontal splits between frames) — VSync is disabled or frame timing is mismatched → [G15](./G15_game_loop.md)
 
-### Sprite Flickering in MonoGame
+### Sprite Flickering in the engine
 
 `SpriteSortMode.BackToFront` with identical `layerDepth` values does not guarantee stable draw order. Fix: use unique layer depth values or switch to `SpriteSortMode.Deferred` (draws in submission order).
 
@@ -95,7 +95,7 @@ GraphicsDevice.RasterizerState = prevRaster;
 GraphicsDevice.SamplerStates[0] = prevSampler;
 ```
 
-Dark halos around sprites indicate a `BlendState` mismatch — MonoGame's content pipeline premultiplies alpha by default, but textures loaded via `Texture2D.FromStream()` are not premultiplied, requiring `BlendState.NonPremultiplied`.
+Dark halos around sprites indicate a `BlendState` mismatch — the engine's content pipeline premultiplies alpha by default, but textures loaded via `Texture2D.FromStream()` are not premultiplied, requiring `BlendState.NonPremultiplied`.
 
 ### Physics Glitches
 
@@ -190,7 +190,7 @@ Enable nullable reference types in your .csproj (`<Nullable>enable</Nullable>`).
 
 ---
 
-## Game-Specific Debugging (MonoGame + Arch ECS)
+## Game-Specific Debugging (Arch ECS)
 
 ### Debug Infrastructure Priority
 
@@ -202,7 +202,7 @@ The priority order for a solo game developer's debug tooling, from highest immed
 4. **Time controls** (pause, slow-motion, frame-step) — makes intermittent bugs reproducible
 5. **Conditional logging with ring buffer** — catches logic bugs without flooding output
 
-The core debug draw pattern is a static `DebugDraw` class that collects draw commands during `Update()` and renders them during `Draw()`, supporting lines, rectangles, circles, and text labels with optional duration parameters. Color-code collision bounds (green for no collision, red for currently colliding), draw velocity vectors as arrows showing direction and magnitude, and overlay state labels above entities showing their current state name. Remember to save and restore `GraphicsDevice` state before and after debug `SpriteBatch` calls (see the state save/restore pattern in [Reading Visual Symptoms](#sprite-flickering-in-monogame)).
+The core debug draw pattern is a static `DebugDraw` class that collects draw commands during `Update()` and renders them during `Draw()`, supporting lines, rectangles, circles, and text labels with optional duration parameters. Color-code collision bounds (green for no collision, red for currently colliding), draw velocity vectors as arrows showing direction and magnitude, and overlay state labels above entities showing their current state name. Remember to save and restore `GraphicsDevice` state before and after debug `SpriteBatch` calls (see the state save/restore pattern in [Reading Visual Symptoms](#sprite-flickering)).
 
 ### ECS Debugging with Arch
 
@@ -232,14 +232,14 @@ Safe component access in debug builds should validate both entity liveness and c
 
 **System ordering bugs** are the second most common ECS issue — if System B reads data that System A should have written, but B runs before A, you get stale data with no error. Wrap each system update with `Stopwatch` timing and display the execution order in an ImGui panel. Arch.Extended provides system group infrastructure with lifecycle hooks for this kind of instrumentation. **Component data corruption** from multiple systems modifying shared state can be caught by snapshotting component values before and after each system runs during debug sessions.
 
-### MonoGame-Specific Pitfalls
+### The engine-Specific Pitfalls
 
-The **Update/Draw separation** is a common source of bugs. `Update()` runs at fixed timestep (default 60 Hz when `IsFixedTimeStep` is true), while `Draw()` runs as fast as possible or at VSync rate. Putting game logic in `Draw()` causes variable-rate behavior. When `IsFixedTimeStep` is true and Update takes too long, MonoGame calls Update multiple times per frame to catch up, potentially causing a "death spiral" — the `gameTime.IsRunningSlowly` flag indicates this catch-up mode → [G15](./G15_game_loop.md).
+The **Update/Draw separation** is a common source of bugs. `Update()` runs at fixed timestep (default 60 Hz when `IsFixedTimeStep` is true), while `Draw()` runs as fast as possible or at VSync rate. Putting game logic in `Draw()` causes variable-rate behavior. When `IsFixedTimeStep` is true and Update takes too long, the engine calls Update multiple times per frame to catch up, potentially causing a "death spiral" — the `gameTime.IsRunningSlowly` flag indicates this catch-up mode → [G15](./G15_game_loop.md).
 
 **Memory management** in C#/.NET games requires attention to allocation sources that generate GC pressure. The primary culprits in game loops:
 
 - String concatenation — use `StringBuilder` or cached strings
-- LINQ queries — generate garbage through iterator allocations; MonoGame docs explicitly warn against LINQ → [G13](./G13_csharp_performance.md)
+- LINQ queries — generate garbage through iterator allocations; the engine docs explicitly warn against LINQ → [G13](./G13_csharp_performance.md)
 - Lambda closures capturing variables — create allocations each frame; cache delegates
 - Collections resized each frame — pre-allocate with known capacity
 - Boxing value types through `object` parameters
@@ -381,7 +381,7 @@ The three categories serve distinct purposes:
 - **Postconditions** — validate outputs at function exit
 - **Invariants** — validate state consistency at critical points
 
-Chromium's approach distinguishes `CHECK()` (kills the process if false in all builds), `DCHECK()` (debug-only for expensive checks), and `NOTREACHED()` (marks code paths that should never execute). For C#/MonoGame, the equivalent pattern uses `Debug.Assert()` for development-only checks and explicit guard clauses with descriptive exceptions for critical invariants that should survive release builds:
+Chromium's approach distinguishes `CHECK()` (kills the process if false in all builds), `DCHECK()` (debug-only for expensive checks), and `NOTREACHED()` (marks code paths that should never execute). For C#, the equivalent pattern uses `Debug.Assert()` for development-only checks and explicit guard clauses with descriptive exceptions for critical invariants that should survive release builds:
 
 ```csharp
 // Debug-only (compiles out of Release)

@@ -5,13 +5,13 @@
 
 ---
 
-Production-ready HLSL shader code and C# integration patterns for elemental effects (fire, water, wind, earth, lightning, ice), post-processing, and performance guidance — all tuned for pixel-art 2D games using MonoGame's `SpriteBatch` workflow.
+Production-ready HLSL shader code and C# integration patterns for elemental effects (fire, water, wind, earth, lightning, ice), post-processing, and performance guidance — all tuned for pixel-art 2D games using the engine's `SpriteBatch` workflow.
 
 ---
 
-## MonoGame Shader Pipeline
+## The engine Shader Pipeline
 
-Every `.fx` file in MonoGame is written in HLSL and compiled through the Content Pipeline into the **MGFX binary format**. The pipeline uses `EffectImporter` and `EffectProcessor`, and on OpenGL platforms, MojoShader automatically translates your HLSL to GLSL at build time. You never write GLSL directly.
+Every `.fx` file in the engine is written in HLSL and compiled through the Content Pipeline into the **MGFX binary format**. The pipeline uses `EffectImporter` and `EffectProcessor`, and on OpenGL platforms, MojoShader automatically translates your HLSL to GLSL at build time. You never write GLSL directly.
 
 A minimal 2D shader has four parts: platform defines, parameters, a pixel shader function, and a technique block. Here is the **canonical template** every shader in this guide builds from:
 
@@ -52,7 +52,7 @@ technique SpriteDrawing
 };
 ```
 
-When you only define a pixel shader (no vertex shader in the technique), **MonoGame's built-in `SpriteEffect` vertex shader handles all vertex transformation automatically**. This is the recommended approach for 2D — write pixel shaders only unless you specifically need vertex displacement. SpriteBatch automatically binds the sprite's texture to sampler register `s0` and passes the tint color from `SpriteBatch.Draw()` as `input.Color`.
+When you only define a pixel shader (no vertex shader in the technique), **the engine's built-in `SpriteEffect` vertex shader handles all vertex transformation automatically**. This is the recommended approach for 2D — write pixel shaders only unless you specifically need vertex displacement. SpriteBatch automatically binds the sprite's texture to sampler register `s0` and passes the tint color from `SpriteBatch.Draw()` as `input.Color`.
 
 ### C# Integration
 
@@ -741,14 +741,14 @@ For Arch ECS architecture: screen-wide effects (bloom, color grading, screen sha
 | Repository | What It Provides |
 |-----------|-----------------|
 | **Nez** (`prime31/Nez`) | Largest collection of production `.fx` files: bloom, heat distortion, palette cycling, dissolve, pixel glitch, vignette, scanlines, deferred lighting. Extract from `DefaultContentSource/effects/`. OpenGL only. |
-| **manbeardgames/monogame-hlsl-examples** | Best starting tutorial — four commented example projects covering basic shaders, parameter passing, multi-texture blending, 2D lighting |
-| **Kosmonaut3d/BloomFilter-for-Monogame-and-XNA** | High-quality bloom based on UE4 techniques. One C# file + one `.fx`. Supports DirectX and OpenGL. |
-| **Penumbra** (`discosultan/penumbra`) | 2D lighting with soft shadows — point/spotlights, hull-based shadow casting. NuGet: `MonoGame.Penumbra.DesktopGL` |
-| **MonoGame official shader tutorial** | `docs.monogame.net` grayscale example. Community forum "Pixel Shader Examples" thread is a curated master list. |
+| **engine shader example projects** | Best starting tutorial — four commented example projects covering basic shaders, parameter passing, multi-texture blending, 2D lighting |
+| **Kosmonaut3d/a bloom filter implementation** | High-quality bloom based on UE4 techniques. One C# file + one `.fx`. Supports DirectX and OpenGL. |
+| **Penumbra** (`discosultan/penumbra`) | 2D lighting with soft shadows — point/spotlights, hull-based shadow casting. NuGet: `a 2D lighting library` |
+| **the engine official shader tutorial** | `the engine documentation site` grayscale example. Community forum "Pixel Shader Examples" thread is a curated master list. |
 
-### Shadertoy-to-MonoGame HLSL Mapping
+### Shadertoy-to-the engine HLSL Mapping
 
-| Shadertoy (GLSL) | MonoGame (HLSL) |
+| Shadertoy (GLSL) | the engine (HLSL) |
 |------------------|-----------------|
 | `vec2/3/4` | `float2/3/4` |
 | `mix()` | `lerp()` |

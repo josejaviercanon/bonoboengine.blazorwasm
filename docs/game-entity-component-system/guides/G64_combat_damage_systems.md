@@ -2,7 +2,7 @@
 
 > **Category:** Guide · **Related:** [G3 Physics & Collision](./G3_physics_and_collision.md) · [G52 Character Controller](./G52_character_controller.md) · [G31 Animation State Machines](./G31_animation_state_machines.md) · [G30 Game Feel Tooling](./G30_game_feel_tooling.md) · [G10 Custom Game Systems §7 Status Effects](./G10_custom_game_systems.md)
 
-> A complete implementation guide for combat, health, damage, hitbox/hurtbox, and knockback systems using MonoGame + Arch ECS. Covers both action (real-time) and turn-based patterns. Everything is composable — pick the pieces your genre needs.
+> A complete implementation guide for combat, health, damage, hitbox/hurtbox, and knockback systems using Arch ECS. Covers both action (real-time) and turn-based patterns. Everything is composable — pick the pieces your genre needs.
 
 ---
 

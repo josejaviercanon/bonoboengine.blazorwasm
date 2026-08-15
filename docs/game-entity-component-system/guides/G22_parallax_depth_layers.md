@@ -155,7 +155,7 @@ public void DrawTilingBackground(SpriteBatch spriteBatch, Texture2D texture,
 }
 ```
 
-**Requirement:** The texture must be power-of-2 dimensions (256x256, 512x256, etc.) for `SamplerState.Wrap` to work in MonoGame's Reach profile. `HiDef` profile supports non-power-of-2 wrapped textures.
+**Requirement:** The texture must be power-of-2 dimensions (256x256, 512x256, etc.) for `SamplerState.Wrap` to work in the engine's Reach profile. `HiDef` profile supports non-power-of-2 wrapped textures.
 
 ### Manual Tiling (Multiple Draws)
 
@@ -184,7 +184,7 @@ In top-down games (Zelda, Stardew Valley, isometric), entities within the same r
 
 ### SpriteBatch Y-Sort
 
-MonoGame's `SpriteSortMode.FrontToBack` combined with `layerDepth` enables Y-sorting without manual sorting:
+the engine's `SpriteSortMode.FrontToBack` combined with `layerDepth` enables Y-sorting without manual sorting:
 
 ```csharp
 spriteBatch.Begin(

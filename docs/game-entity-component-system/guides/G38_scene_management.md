@@ -24,7 +24,7 @@
 
 ## 1. Scene Architecture
 
-A **Scene** is the primary organizational unit in a MonoGame game. Each scene encapsulates
+A **Scene** is the primary organizational unit in a the engine game. Each scene encapsulates
 its own Arch ECS `World`, registered systems, loaded content, and runtime state. Think of
 scenes as self-contained slices of your game: a main menu is a scene, gameplay is a scene,
 the pause overlay is a scene.
@@ -48,7 +48,7 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 
 /// <summary>
-/// Base class for all scenes. Mirrors MonoGame's own lifecycle
+/// Base class for all scenes. Mirrors the engine's own lifecycle
 /// (Initialize → LoadContent → Update/Draw loop → UnloadContent).
 /// </summary>
 public abstract class Scene
@@ -142,7 +142,7 @@ public sealed class GameServices
 }
 ```
 
-The `Scene` class deliberately mirrors MonoGame's `Game` lifecycle so the mental model
+The `Scene` class deliberately mirrors the engine's `Game` lifecycle so the mental model
 stays consistent. Each scene is a mini-game inside the larger application.
 
 ---

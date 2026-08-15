@@ -1,13 +1,13 @@
 # G2 — Rendering & Graphics
 > **Category:** Guide · **Related:** [G1 Custom Code Recipes](./G1_custom_code_recipes.md) · [R2 Capability Matrix](../R/R2_capability_matrix.md) · [G8 Content Pipeline](./G8_content_pipeline.md) · [G27 Shaders & Visual Effects](./G27_shaders_and_effects.md)
 
-> Deep dive into the MonoGame 2D rendering pipeline, SpriteBatch internals, optimization strategies, and integration with Arch ECS.
+> Deep dive into the the engine 2D rendering pipeline, SpriteBatch internals, optimization strategies, and integration with Arch ECS.
 
 ---
 
 ## 1. SpriteBatch Deep Dive
 
-`SpriteBatch` is the core 2D rendering API in MonoGame. Every sprite, tile, and UI element passes through it.
+`SpriteBatch` is the core 2D rendering API in the engine. Every sprite, tile, and UI element passes through it.
 
 ### 1.1 Begin/End Sort Modes
 
@@ -48,12 +48,12 @@ _spriteBatch.Begin(
 
 | BlendState | Formula | Use Case |
 |---|---|---|
-| `AlphaBlend` | Premultiplied alpha: `src + dest × (1 - srcAlpha)` | Standard sprites (MonoGame default pipeline uses premultiplied) |
+| `AlphaBlend` | Premultiplied alpha: `src + dest × (1 - srcAlpha)` | Standard sprites (the engine default pipeline uses premultiplied) |
 | `NonPremultiplied` | Straight alpha: `src × srcAlpha + dest × (1 - srcAlpha)` | Sprites NOT preprocessed with premultiplied alpha |
 | `Additive` | `src + dest` | Particles, glows, fire, lightning |
 | `Opaque` | `src` (overwrites dest) | Backgrounds, full-screen clears with a texture |
 
-> **Key gotcha:** MonoGame's content pipeline premultiplies alpha by default. If your sprites come from the pipeline, use `AlphaBlend`. If you load PNGs at runtime with `Texture2D.FromStream()`, they're straight alpha — use `NonPremultiplied` or premultiply manually.
+> **Key gotcha:** the engine's content pipeline premultiplies alpha by default. If your sprites come from the pipeline, use `AlphaBlend`. If you load PNGs at runtime with `Texture2D.FromStream()`, they're straight alpha — use `NonPremultiplied` or premultiply manually.
 
 ```csharp
 // Additive particles on top of the scene
@@ -360,9 +360,9 @@ With `SpriteSortMode.BackToFront`, higher Depth values draw last (on top).
 
 ## 5. Animation System
 
-### 5.1 MonoGame.Aseprite Deep Dive
+### 5.1 the Aseprite spritesheet importer Deep Dive
 
-[MonoGame.Aseprite](https://github.com/AristurtleDev/monogame-aseprite) (v6.3.x) loads `.aseprite` / `.ase` files directly — no export step. It provides:
+the Aseprite spritesheet importer (v6.3.x) loads `.aseprite` / `.ase` files directly — no export step. It provides:
 
 | Type | Purpose |
 |---|---|
@@ -662,7 +662,7 @@ _spriteBatch.End();
 
 ### 8.2 Premultiplied Alpha — Getting It Right
 
-MonoGame's content pipeline premultiplies alpha: `RGB = RGB × A` at import time. This means:
+the engine's content pipeline premultiplies alpha: `RGB = RGB × A` at import time. This means:
 
 | Scenario | Correct BlendState |
 |---|---|
@@ -854,10 +854,10 @@ public static void DrawGrid(SpriteBatch sb, Camera2D camera, int cellSize, Color
 
 ### 10.4 ImGui Integration
 
-[ImGui.NET](https://github.com/ImGuiNET/ImGui.NET) with a MonoGame renderer provides an immediate-mode debug UI:
+[ImGui.NET](https://github.com/ImGuiNET/ImGui.NET) with a the engine renderer provides an immediate-mode debug UI:
 
 ```csharp
-// Using MonoGame.ImGuiNet or similar binding
+// Using the debug UI integration or similar binding
 _imGuiRenderer.BeforeLayout(gameTime);
 
 ImGui.Begin("Render Stats");
@@ -875,9 +875,9 @@ _imGuiRenderer.AfterLayout();
 
 ---
 
-## 11. MonoGame.Extended Rendering Features
+## 11. PixiJS Rendering Features
 
-[MonoGame.Extended](https://github.com/craftworkgames/MonoGame.Extended) adds higher-level 2D rendering on top of MonoGame:
+[PixiJS + custom C# utilities](https://github.com/craftworkgames/PixiJS + custom C# utilities) adds higher-level 2D rendering on top of the engine:
 
 ### 11.1 Feature Overview
 
@@ -899,7 +899,7 @@ _imGuiRenderer.AfterLayout();
 | Quick prototyping | ✅ Yes | Faster iteration, less boilerplate |
 | Tiled map rendering | ✅ Yes | Mature `TiledMapRenderer` handles layers, objects |
 | Basic particles | ✅ Yes | `ParticleEffect` covers common VFX |
-| Pixel-art with Aseprite | ❌ Prefer MonoGame.Aseprite | Direct `.ase` loading, better for Aseprite workflows |
+| Pixel-art with Aseprite | ❌ Prefer the Aseprite spritesheet importer | Direct `.ase` loading, better for Aseprite workflows |
 | ECS-integrated animation | ❌ Custom | Extended's animation isn't ECS-aware |
 | Advanced post-processing | ❌ Custom | Extended doesn't provide shader chains |
 | Production camera | ⚠️ Start with Extended | May outgrow it (add shake, bounds, smoothing) |

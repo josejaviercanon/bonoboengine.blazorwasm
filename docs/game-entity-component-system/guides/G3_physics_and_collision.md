@@ -1,10 +1,10 @@
 # G3 — Physics & Collision
 
-> **Category:** Guide · **Engine:** MonoGame · **Tier:** Free (§1–§5), Pro (§6–§13)
+> **Category:** Guide · **Engine:** the engine · **Tier:** Free (§1–§5), Pro (§6–§13)
 >
 > **Related:** [G1 Custom Code Recipes](./G1_custom_code_recipes.md) · [G52 Character Controller](./G52_character_controller.md) · [G37 Tilemap Systems](./G37_tilemap_systems.md) · [G64 Combat & Damage](./G64_combat_damage_systems.md) · [G67 Object Pooling](./G67_object_pooling.md) · [G13 C# Performance](./G13_csharp_performance.md) · [G33 Profiling & Optimization](./G33_profiling_optimization.md) · [R2 Capability Matrix](../reference/R2_capability_matrix.md) · [Physics Theory](../../core/concepts/physics-theory.md)
 
-> Comprehensive physics and collision guide for MonoGame 3.8.x + Arch ECS 2.1.x + Aether.Physics2D 2.2.0 + MonoGame.Extended 5.3.1. Covers collision primitives, spatial partitioning, character controllers, Verlet soft-body, fixed-point determinism, and production patterns.
+> Comprehensive physics and collision guide for the engine 3.8.x + Arch ECS 2.1.x + a 2D physics library 2.2.0 + PixiJS + custom C# utilities 5.3.1. Covers collision primitives, spatial partitioning, character controllers, Verlet soft-body, fixed-point determinism, and production patterns.
 
 ---
 
@@ -411,7 +411,7 @@ public class Quadtree<T>
 | Tile grid lookup | Entity vs tilemap | Any | N/A |
 | Spatial hash | 50–5,000 similar-sized | High | Low |
 | Quadtree | 50–5,000 varied-sized | Medium | High |
-| Aether.Physics2D | Need joints/forces | Any | Any |
+| a 2D physics library | Need joints/forces | Any | Any |
 
 ---
 
@@ -1625,22 +1625,22 @@ public static void VerletTileCollision(VerletPoint[] points, TileMap map)
 
 ---
 
-## 11. Aether.Physics2D v2.2.0
+## 11. a 2D physics library v2.2.0
 
 Use Aether when you need **real physics simulation** — joints, springs, motors, ragdolls, breakable objects, or any scenario where objects should react physically to forces.
 
 **NuGet packages:**
-- `Aether.Physics2D` — standalone, no framework dependency
-- `Aether.Physics2D.MG` — MonoGame-specific (uses `Microsoft.Xna.Framework.Vector2`)
-- `Aether.Physics2D.Diagnostics.MG` — debug rendering (draw bodies, joints, contacts)
+- `a 2D physics library` — standalone, no framework dependency
+- `a 2D physics library.MG` — the engine-specific (uses `Microsoft.Xna.Framework.Vector2`)
+- `a 2D physics library.Diagnostics.MG` — debug rendering (draw bodies, joints, contacts)
 
-**Namespace (v2.0+):** `nkast.Aether.Physics2D` (changed from `tainicom.Aether.Physics2D`)
+**Namespace (v2.0+):** `nkast.a 2D physics library` (changed from `tainicom.a 2D physics library`)
 
 ### World Setup
 
 ```csharp
-using nkast.Aether.Physics2D.Dynamics;
-using nkast.Aether.Physics2D.Common;
+using nkast.a 2D physics library.Dynamics;
+using nkast.a 2D physics library.Common;
 
 // Aether uses meters internally. Pick a pixel-to-meter ratio.
 const float PixelsPerMeter = 64f;
@@ -1788,15 +1788,15 @@ bulletFixture.CollidesWith = PhysicsCategory.Terrain | PhysicsCategory.Enemy;
 5. **Sleep management:** Bodies auto-sleep when stationary. Set `body.SleepingAllowed = false` for always-active bodies (player, enemies).
 6. **Broadphase:** Default is DynamicTree. Fine for most games.
 7. **Body count limits:** Aether handles 500–1,000 dynamic bodies well. Beyond that, performance degrades — consider object pooling (see [G67](./G67_object_pooling.md)) or converting distant bodies to kinematic/static.
-8. **Debug rendering:** Add `Aether.Physics2D.Diagnostics.MG` package, create a `DebugView`, and call `debugView.RenderDebugData(projectionMatrix)` in Draw. Invaluable for visualizing collision shapes, joints, and contacts during development.
+8. **Debug rendering:** Add `a 2D physics library.Diagnostics.MG` package, create a `DebugView`, and call `debugView.RenderDebugData(projectionMatrix)` in Draw. Invaluable for visualizing collision shapes, joints, and contacts during development.
 
 ---
 
-## 12. MonoGame.Extended v5.3.1 Collision
+## 12. PixiJS + custom C# utilities v5.3.1 Collision
 
-MonoGame.Extended provides collision detection (NOT physics simulation). Use it when you want spatial queries and overlap detection without the overhead of a full physics engine.
+PixiJS + custom C# utilities provides collision detection (NOT physics simulation). Use it when you want spatial queries and overlap detection without the overhead of a full physics engine.
 
-Current stable: **5.3.1** (NuGet `MonoGame.Extended`).
+Current stable: **5.3.1** (NuGet `PixiJS + custom C# utilities`).
 
 ### Collision System Architecture
 
@@ -1811,7 +1811,7 @@ Current stable: **5.3.1** (NuGet `MonoGame.Extended`).
 ```csharp
 /// <summary>
 /// Bridge pattern: wrap Arch entity in ICollisionActor.
-/// MonoGame.Extended needs objects, but our data lives in ECS components.
+/// PixiJS + custom C# utilities needs objects, but our data lives in ECS components.
 /// </summary>
 public class ArchCollisionActor : ICollisionActor
 {
@@ -2107,7 +2107,7 @@ _bodiesToCreate.Clear();
 | Verlet cloth (20×20) | 0.1–0.4 | Per iteration |
 | Ground detection (3-ray) | 0.01 | Per entity |
 
-### Aether.Physics2D Quick Reference
+### a 2D physics library Quick Reference
 
 | Property | Typical Value | Notes |
 |---|---|---|

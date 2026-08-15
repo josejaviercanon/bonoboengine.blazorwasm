@@ -152,7 +152,7 @@ For most game trails (sword swings, projectiles), the emitter moves fast enough 
 
 ## 4 — Trail Rendering with DrawUserPrimitives
 
-MonoGame's `GraphicsDevice.DrawUserPrimitives` renders from a CPU-side vertex array — perfect for trails that change every frame.
+the engine's `GraphicsDevice.DrawUserPrimitives` renders from a CPU-side vertex array — perfect for trails that change every frame.
 
 ```csharp
 public sealed class TrailRenderer
@@ -251,7 +251,7 @@ float u = t + scrollOffset;
 
 ## 7 — Line Rendering
 
-MonoGame has no built-in thick line primitive. To render lines with width, build a **quad per segment** — the same perpendicular-offset technique as trails but with exactly two points.
+the engine has no built-in thick line primitive. To render lines with width, build a **quad per segment** — the same perpendicular-offset technique as trails but with exactly two points.
 
 ```csharp
 public static class LineRenderer

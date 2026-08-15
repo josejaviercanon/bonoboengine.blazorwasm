@@ -1,7 +1,7 @@
 # E6 — Game Design Fundamentals
 
 
-> **Category:** Explanation · **Related:** [C1 Genre Reference](C1_genre_reference.md) · [C2 Game Feel & Genre Craft](C2_game_feel_and_genre_craft.md) · [E4 Project Management](../project-management/E4_project_management.md) · [G10 Custom Game Systems](../../monogame-arch/guides/G10_custom_game_systems.md) · [G11 Programming Principles](../../monogame-arch/guides/G11_programming_principles.md)
+> **Category:** Explanation · **Related:** [C1 Genre Reference](C1_genre_reference.md) · [C2 Game Feel & Genre Craft](C2_game_feel_and_genre_craft.md) · [E4 Project Management](../project-management/E4_project_management.md) · [G10 Custom Game Systems](../../game-entity-component-system/guides/G10_custom_game_systems.md) · [G11 Programming Principles](../../game-entity-component-system/guides/G11_programming_principles.md)
 
 ---
 

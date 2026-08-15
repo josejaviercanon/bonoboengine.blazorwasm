@@ -3,11 +3,11 @@
 
 > **Category:** Guide · **Related:** [G11 Programming Principles](./G11_programming_principles.md) · [G16 Debugging](./G16_debugging.md) · [G3 Physics & Collision](./G3_physics_and_collision.md) · [G13 C# Performance](./G13_csharp_performance.md) · [P12 Performance Budget](./P12_performance_budget.md)
 
-> Comprehensive testing guide for MonoGame + Arch ECS projects covering unit tests, ECS system tests, integration patterns, fixtures, and performance benchmarking.
+> Comprehensive testing guide for Arch ECS projects covering unit tests, ECS system tests, integration patterns, fixtures, and performance benchmarking.
 
 ---
 
-## 1. xUnit Project Setup for MonoGame
+## 1. xUnit Project Setup for the engine
 
 ### Project Structure
 
@@ -60,7 +60,7 @@ dotnet watch test                     # Re-run on file changes
 
 ### Key Principle: Separate Logic from Framework
 
-MonoGame's `Game` class, `GraphicsDevice`, and content pipeline are hard to instantiate in tests. Design around this:
+the engine's `Game` class, `GraphicsDevice`, and content pipeline are hard to instantiate in tests. Design around this:
 
 ```csharp
 // BAD: logic embedded in Game subclass — untestable
@@ -709,9 +709,9 @@ public class InventoryTests
 
 ## 6. Test Fixtures & Helpers
 
-### MonoGame Type Helpers
+### The engine Type Helpers
 
-MonoGame types like `Vector2`, `GameTime`, and `Rectangle` appear everywhere. Build helpers to reduce boilerplate:
+the engine types like `Vector2`, `GameTime`, and `Rectangle` appear everywhere. Build helpers to reduce boilerplate:
 
 ```csharp
 public static class TestHelpers

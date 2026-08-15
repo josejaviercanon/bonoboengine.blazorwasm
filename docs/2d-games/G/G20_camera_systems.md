@@ -3,12 +3,12 @@
 
 ---
 
-## MonoGame.Extended OrthographicCamera
+## PixiJS Camera (viewport)
 
-MonoGame.Extended v5.3.1 provides `OrthographicCamera` — the foundation for all camera work. It wraps a view matrix that transforms world coordinates to screen coordinates.
+PixiJS provides the camera/viewport — the foundation for all camera work. It wraps a view matrix that transforms world coordinates to screen coordinates.
 
 ```csharp
-using MonoGame.Extended;
+using EngineToolkit;
 
 // Create during scene initialization
 var camera = new OrthographicCamera(GraphicsDevice);

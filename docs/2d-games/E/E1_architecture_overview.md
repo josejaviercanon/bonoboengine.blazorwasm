@@ -3,11 +3,11 @@
 
 ---
 
-## Core Philosophy: Library Composition, Not a Monolith
+## Core Philosophy: Composition, Not a Monolith
 
-The single most important architectural decision: **do not depend on a monolith framework**. When a monolith's sole maintainer leaves, everything dies at once (this is exactly what happened with Nez — see [E2](./E2_nez_dropped.md)).
+The single most important architectural decision: **do not depend on a monolith game framework**. When a monolith's sole maintainer leaves, everything dies at once (see [E2](./E2_nez_dropped.md) for the lesson that shaped this choice).
 
-The correct architecture is a **composed stack of focused, actively maintained libraries**, each replaceable independently. If one library dies, you swap that one piece — not your entire game's foundation.
+The correct architecture is a **composed stack of focused, independently swappable pieces**: a pure C# simulation (Arch ECS, vendored as source you own) plus a web-aligned presentation layer (PixiJS + Blazor + Tailwind). If one piece dies, you swap that one piece — not your entire game's foundation.
 
 ---
 
@@ -23,16 +23,13 @@ A player is just an entity with a `PlayerTag` component. A `PlayerMovementSystem
 - One query language for spatial lookups, collision, AI decisions
 - Simpler serialization (Arch.Persistence handles the whole world)
 
-### Arch NuGet Packages
+### Arch Packages (vendored as source, not NuGet)
+
+Arch lives under `src/Arch/` (vendored source, `net10.0`, T4 templates) and is linked into `Game.Engine` via `ProjectReference`. Source generation is wired through `src/Arch.Generators/` (a `netstandard2.0` Roslyn analyzer pack referenced as `OutputItemType="Analyzer"`). Do **not** `dotnet add package Arch` — pull upstream into `src/Arch/` to update.
 
 ```
-Arch                          -- Core ECS (v2.1.0)
-Arch.System                   -- Base system classes
-Arch.System.SourceGenerator   -- Auto-generate system boilerplate
-Arch.Relationships            -- Entity-to-entity relationships
-Arch.EventBus                 -- Typed event bus
-Arch.Persistence              -- Serialization/deserialization of worlds
-Arch.AOT.SourceGenerator      -- AOT-compatible source gen (mobile)
+src/Arch            -- Core ECS, systems, event bus, persistence, relationships (vendored)
+src/Arch.Generators -- Arch.System.SourceGenerator + Arch.AOT.SourceGenerator (analyzer)
 ```
 
 ### When Arch ECS Shines Most
@@ -53,42 +50,43 @@ Arch.AOT.SourceGenerator      -- AOT-compatible source gen (mobile)
 
 ```mermaid
 graph TB
-    subgraph Game["Your Game"]
-        GL["Game Logic & Systems"]
+    subgraph Game["Game.Engine (pure C# simulation)"]
+        GL["Game Logic & Arch Systems"]
     end
 
     subgraph Custom["Custom Glue Code (~1K lines)"]
-        SM["Scene Manager"]
-        RL["Render Layers"]
+        SM["Scene/Tick Manager"]
         SH["SpatialHash"]
         TW["Tweens & Transitions"]
         OP["Object Pool"]
     end
 
-    subgraph Libraries["Composed Library Stack"]
-        ARCH["Arch ECS v2.1.0<br/><small>Entity management</small>"]
-        MGE["MonoGame.Extended<br/><small>Camera, Tiled, math</small>"]
-        GUM["Gum.MonoGame<br/><small>UI framework</small>"]
-        APOS["Apos.Input<br/><small>Input handling</small>"]
-        BRAIN["BrainAI<br/><small>FSM, BT, GOAP</small>"]
-        OTHER["FontStashSharp · Aseprite<br/>Aether · ImGui · Coroutine"]
+    subgraph Presentation["Game.UI (Presentation — pure mirror)"]
+        BLZ["Blazor + Tailwind<br/><small>HUD, menus</small>"]
+        PXJ["PixiJS v8<br/><small>2D canvas, sprites, filters</small>"]
+        VITE["Vite + TS<br/><small>asset bundle to wwwroot/dist</small>"]
     end
 
     subgraph Foundation["Foundation"]
-        MG["MonoGame.Framework.DesktopGL"]
+        ARCH["Arch ECS (vendored source)"]
+        STJ["System.Text.Json source gen"]
         NET[".NET 10"]
     end
 
     GL --> Custom
-    GL --> Libraries
-    Custom --> Libraries
-    Libraries --> MG
-    MG --> NET
+    GL -->|"delta events"| BLZ
+    BLZ -->|"IJSRuntime push"| PXJ
+    VITE --> PXJ
+    Custom --> ARCH
+    GL --> ARCH
+    GL --> STJ
+    ARCH --> NET
+    STJ --> NET
 
     style Game fill:#7c4dff,color:#fff,stroke:none
-    style Custom fill:#ffab40,color:#000,stroke:none
+    style Presentation fill:#ffab40,color:#000,stroke:none
     style ARCH fill:#448aff,color:#fff,stroke:none
-    style MG fill:#69f0ae,color:#000,stroke:none
+    style PXJ fill:#69f0ae,color:#000,stroke:none
 ```
 
 ---
@@ -97,18 +95,19 @@ graph TB
 
 Each library handles one concern and is independently swappable:
 
-| Concern | Library | Fallback if it dies |
-|---------|---------|-------------------|
-| Entity management | Arch ECS | Other C# ECS libs (DefaultECS, LeoECS) |
-| Camera, math, Tiled maps | MonoGame.Extended | Custom code (~200 lines each) |
-| UI | Gum.MonoGame | Myra (still viable) |
-| Input | Apos.Input | MonoGame.Input directly |
-| Fonts | FontStashSharp | SpriteFonts (ugly but functional) |
-| Sprites | MonoGame.Aseprite | Manual spritesheet parsing |
-| Physics | Aether.Physics2D | Farseer (older) or custom |
-| AI | BrainAI | Custom FSM/BT (~300 lines each) |
-| Debug | ImGui.NET | Console.WriteLine (always works) |
-| Coroutines | Ellpeck/Coroutine | Custom IEnumerator wrapper (~60 lines) |
+| Concern | Provider | Fallback if it dies |
+|---------|----------|-------------------|
+| Entity management | Arch ECS (vendored source) | Other C# ECS libs (DefaultECS, LeoECS) |
+| 2D rendering | PixiJS v8 | Canvas2D fallback (slower) |
+| UI | Blazor + Tailwind CSS v4 | Raw HTML/CSS |
+| Input | Blazor/DOM events → commands | Direct DOM listeners |
+| Fonts | PixiJS Text + web fonts | CSS fonts |
+| Sprites | Aseprite → PixiJS spritesheet (Vite) | Manual spritesheet parsing |
+| Physics | Custom C# (no lib in stack) | Vendor a C# physics lib later |
+| AI | BrainAI (optional, vendor as source) | Custom FSM/BT (~300 lines each) |
+| Debug | Browser DevTools / Blazor | Console logging |
+| Coroutines | Ellpeck/Coroutine (optional) | Custom IEnumerator wrapper (~60 lines) |
+| Serialization | System.Text.Json (built-in .NET) | Newtonsoft.Json (compatibility) |
 
 **Full package list and install commands:** see [R1 Library Stack](../R/R1_library_stack.md).
 
@@ -137,26 +136,26 @@ Every line is code you own, understand, and can debug. Implementation details an
 
 ## What You Gain
 
-1. **No frozen dependency risk** — every library is actively maintained or self-owned code
+1. **No frozen dependency risk** — Arch is vendored source you own; presentation libs (PixiJS/Tailwind) are independently swappable
 2. **One entity model** — Arch ECS for everything, no bridge code
-3. **NuGet everything** — no git submodule management, `dotnet restore` gets you running
-4. **Modern .NET compatibility** — nothing blocks .NET 10 or MonoGame 3.8.5+
-5. **Better UI** — Gum is a massive upgrade (visual editor, forms controls, official MonoGame backing)
-6. **Smaller attack surface** — ~1,000 lines of custom code vs. ~50,000+ lines of framework source
+3. **Web-aligned stack** — `npm` for the frontend, `dotnet` for the simulation; `dotnet restore` + `npm ci` get you running
+4. **Modern .NET compatibility** — nothing blocks .NET 10
+5. **Better UI** — Blazor + Tailwind give accessible, responsive HTML/CSS HUD and menus
+6. **Smaller attack surface** — ~1,000 lines of custom glue vs. ~50,000+ lines of a monolith framework
 7. **Faster builds** — no compiling a massive framework submodule
 
 ---
 
 ## Cross-Platform Validation
 
-This architecture has been validated on:
+This architecture targets the web and mobile/desktop via shared hosts:
 
-| Platform | Runtime | Status |
-|----------|---------|--------|
-| Desktop (DesktopGL) | Windows, macOS, Linux | Primary dev target |
-| iOS | net10.0-ios, iOS 15.0+ | Full feature parity |
-| Android | TBD | Not yet implemented |
+| Platform | Host | Status |
+|----------|------|--------|
+| Web | `src/Game.Web` — Blazor Web App (static SSR) | Primary dev target |
+| Android | `src/Game.Maui` — MAUI Blazor Hybrid | Default MAUI TFM |
+| iOS / MacCatalyst / Windows | `src/Game.Maui` (conditional TFMs) | Requires MAUI workloads |
 
-The Core project (95%+ of code) requires **zero platform-specific changes**. Platform projects are thin launchers — Desktop is 3 lines, iOS is ~25 lines (AppDelegate + deferred game creation). Content, ECS systems, rendering, and all game logic are shared.
+The simulation (`Game.Engine`, the vast majority of code) requires **zero platform-specific changes**. Hosts are thin bootstrappers that load the same shared `Game.UI` Razor Class Library. ECS systems, simulation, and all game logic are shared across every host.
 
-See [R3 Project Structure](../R/R3_project_structure.md) for iOS project setup and the AppDelegate pattern.
+See [R3 Project Structure](../R/R3_project_structure.md) for the actual repo layout.

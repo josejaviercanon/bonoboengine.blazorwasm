@@ -1,5 +1,5 @@
 # E9 — Solo Dev Playbook: AI Tools and Project Management
-> **Category:** Explanation · **Related:** [E4 Solo Project Management](./E4_project_management.md) · [E5 AI-Assisted Dev Workflow](../ai-workflow/E5_ai_workflow.md) · [E8 MonoGameStudio Post-Mortem](../../monogame-arch/architecture/E8_monogamestudio_postmortem.md)
+> **Category:** Explanation · **Related:** [E4 Solo Project Management](./E4_project_management.md) · [E5 AI-Assisted Dev Workflow](../ai-workflow/E5_ai_workflow.md) · [E8 the engine studio Post-Mortem](../../game-entity-component-system/architecture/E8_studio_postmortem.md)
 
 ---
 
@@ -11,7 +11,7 @@
 
 ECS architecture is **one of the most AI-friendly patterns in game development**. Components are pure data structs. Systems are pure logic functions. Each unit is self-contained, testable in isolation, and follows predictable query-iterate-transform patterns — exactly what LLMs handle best.
 
-**Highest-value AI tasks for MonoGame/Arch ECS:**
+**Highest-value AI tasks for the engine/Arch ECS:**
 - **Component struct generation** — describe a game mechanic, get C# record structs
 - **System scaffolding** — boilerplate for querying specific component archetypes
 - **Unit test generation** — ECS systems' pure-function nature makes them highly testable
@@ -21,7 +21,7 @@ The critical boundary: **AI handles the "how," humans must own the "why."** AI e
 
 **The numbers:** A CodeRabbit analysis (December 2025) found AI-co-authored pull requests contained **1.7x more issues** than human-only code, including 3x more readability problems and 2.74x more security vulnerabilities. Treat AI as a talented but over-eager junior developer who needs guardrails. Write lightweight specifications before prompting, invest in test coverage, and trace through every line of generated code.
 
-**MonoGame-specific caveat:** Smaller community than Unity/Unreal means less training data. Expect more errors with MonoGame-specific APIs. **Paste Arch ECS's README and key interface definitions into your LLM context** — this single step dramatically improves output quality for niche frameworks. See → [E5 CONTEXT.md](../ai-workflow/E5_ai_workflow.md#contextmd)
+**the engine-specific caveat:** Smaller community than Unity/Unreal means less training data. Expect more errors with the engine-specific APIs. **Paste Arch ECS's README and key interface definitions into your LLM context** — this single step dramatically improves output quality for niche frameworks. See → [E5 CONTEXT.md](../ai-workflow/E5_ai_workflow.md#contextmd)
 
 ---
 
@@ -112,7 +112,7 @@ Studying Stardew Valley, Hollow Knight, Celeste, Undertale, Vampire Survivors, B
 
 **Almost none succeeded on their first game.** Barone had "mostly unfinished" prior projects. LocalThunk had been making games for ten years. Gervraud (Brotato) shipped three games first. Cawthon made ~70 games before Five Nights at Freddy's.
 
-**Stardew Valley was built on C#/XNA → MonoGame** — the exact tech stack described in this toolkit.
+**Stardew Valley was built on C#/XNA → the engine** — the exact tech stack described in this toolkit.
 
 ---
 

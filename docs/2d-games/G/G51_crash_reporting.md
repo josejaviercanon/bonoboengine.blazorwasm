@@ -644,7 +644,7 @@ Each platform has its own crash reporting ecosystem. Layer yours on top.
 
 **Linux** — Core dumps are controlled by `ulimit -c` and `/proc/sys/kernel/core_pattern`. Most distros disable them by default. Your text-based crash logs are the primary source of information here.
 
-**iOS (via MonoGame)** — TestFlight provides crash reports with symbolication. Upload dSYM files to see readable stack traces. Xcode Organizer shows crash logs from TestFlight and App Store users. Sentry also supports iOS symbolication.
+**iOS (via the engine)** — TestFlight provides crash reports with symbolication. Upload dSYM files to see readable stack traces. Xcode Organizer shows crash logs from TestFlight and App Store users. Sentry also supports iOS symbolication.
 
 ```csharp
 // Platform-aware crash log directory (already handled in CrashLogWriter above)

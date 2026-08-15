@@ -1,98 +1,94 @@
 # R1 — Library Stack & Install Commands
-
-
 > **Category:** Reference · **Related:** [E1 Architecture Overview](../architecture/E1_architecture_overview.md) · [R2 Capability Matrix](./R2_capability_matrix.md) · [R3 Project Structure](./R3_project_structure.md)
 
 ---
 
-## Tier 0: Core Architecture (always install)
+## Tier 0: Core Architecture (always included)
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| MonoGame.Framework.DesktopGL | Latest | Base framework (from template) |
-| Arch | 2.1.0 | High-performance archetype ECS |
-| Arch.System | 1.1.0 | Base system classes |
-| Arch.System.SourceGenerator | Latest | Auto-gen system boilerplate |
+The simulation core is a pure .NET 10 class library with **zero** UI/platform dependencies. Arch ECS is vendored as **source** under `src/Arch/` (core, systems, event bus, persistence, relationships, AOT source generator) — it is **not** a NuGet package — and linked into `Game.Engine` via `ProjectReference`. Source generation is wired through `src/Arch.Generators/` (a `netstandard2.0` Roslyn analyzer pack) referenced from `Game.Engine` as an analyzer.
 
-```bash
-dotnet add package Arch --version 2.1.0
-dotnet add package Arch.System --version 1.1.0
-dotnet add package Arch.System.SourceGenerator
+| Concern | Provider | Location |
+|---------|----------|----------|
+| Simulation runtime | .NET 10 (`net10.0`) | `src/Game.Engine/Game.Engine.csproj` |
+| ECS (core + systems) | Arch — vendored source | `src/Arch/Arch.csproj` → `ProjectReference` |
+| System / AOT source gen | Arch source generators | `src/Arch.Generators/` (analyzer, `OutputItemType="Analyzer"`) |
+| Serialization | System.Text.Json (built-in .NET) + source generators | no package |
+
+```xml
+<!-- src/Game.Engine/Game.Engine.csproj (relevant refs) -->
+<ItemGroup>
+  <ProjectReference Include="..\Arch\Arch.csproj" />
+</ItemGroup>
+<ItemGroup>
+  <Analyzer Include="..\Arch.Generators\Arch.Generators.csproj" />
+</ItemGroup>
 ```
 
-> **Mobile AOT:** For iOS/Android, also add `Arch.AOT.SourceGenerator` for AOT-compatible system codegen:
-> `dotnet add package Arch.AOT.SourceGenerator`
-
-> **`Arch.Extended` doesn't exist** as a package. Use individual packages: `Arch.System`, `Arch.EventBus`, `Arch.Persistence`, `Arch.Relationships`, etc.
-
-> **Core project setup:** `MonoGame.Framework.DesktopGL` in the Core project should use `PrivateAssets=all` — it's a compile-only reference. The Desktop launcher project provides the actual runtime. This allows iOS to substitute `MonoGame.Framework.iOS` without conflicts.
+> **No NuGet for Arch.** Do not `dotnet add package Arch` — this repo vendors the source. Update Arch by pulling upstream into `src/Arch/`.
+> **AOT:** Arch's AOT source generator ships through `Arch.Generators`; no separate `Arch.AOT.SourceGenerator` package is required.
+> **No native game-framework runtime.** There is no native game-framework reference anywhere. The core has no `Game` class, no `GraphicsDevice`, no `Content.Load<T>`.
 
 ---
 
-## Tier 1: Essential Infrastructure (install for any game)
+## Tier 1: Presentation Layer (Blazor + PixiJS + Tailwind)
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| MonoGame.Extended | 5.3.1 | Camera, Tiled maps, collision shapes, math |
-| MonoGame.Extended.Content.Pipeline | 5.3.1 | Tiled/atlas/Aseprite content importers |
-| Gum.MonoGame | Latest | UI framework (MonoGame's official recommendation) → [G5](../guides/G5_ui_framework.md) |
-| Apos.Input | 2.5.0 | Input handling with JustPressed tracking → [G7](../guides/G7_input_handling.md) |
-| FontStashSharp.MonoGame | 1.3.7 | Runtime .ttf/.otf rendering at any size |
-| Aether.Physics2D | 2.2.0 | Box2D-style rigid body physics → [G3](../guides/G3_physics_and_collision.md) |
-| MonoGame.Aseprite | 6.3.1 | Direct .ase/.aseprite sprite import → [G8](../guides/G8_content_pipeline.md) |
+The presentation layer is a shared Razor Class Library (`src/Game.UI`) that references `Game.Engine` and owns the PixiJS frontend plus the Blazor component shell. It is a pure mirror of C# state — never authoritative.
+
+| Concern | Provider | Version | Notes |
+|---------|----------|---------|-------|
+| 2D rendering | PixiJS | ^8.19.0 | WebGL/WebGPU; bundled by Vite → `wwwroot/dist` |
+| JS build | Vite + TypeScript | ^8.2.1 / ^7.0.2 | IIFE lib bundle (`Frontend/game.ts`) |
+| UI components | Blazor (`Microsoft.AspNetCore.Components.Web`) | 10.0.10 | HUD, menus, inventories |
+| CSS / theme | Tailwind CSS v4 (`@tailwindcss/cli`) | ^4.3.3 | responsive HUD/menus |
+| Fonts / text | PixiJS Text + web fonts | — | no runtime font library |
 
 ```bash
-dotnet add package MonoGame.Extended --version 5.3.1
-dotnet add package MonoGame.Extended.Content.Pipeline --version 5.3.1
-dotnet add package Gum.MonoGame
-dotnet add package Apos.Input --version 2.5.0
-dotnet add package FontStashSharp.MonoGame --version 1.3.7
-dotnet add package Aether.Physics2D --version 2.2.0
-dotnet add package MonoGame.Aseprite --version 6.3.1
+# Frontend deps live in src/Game.UI/package.json, not in the .NET project
+cd src/Game.UI
+npm ci
+npm run build     # Vite JS build, then Tailwind CLI → wwwroot/dist
 ```
+
+> **Push-based bridge:** `Game.UI` forwards engine delta events to PixiJS via `IJSRuntime` (flat payloads, never per-frame polling). See `docs/index.md` "Performance Gold Rule".
+> **No `Content.Load<T>` / MGCB.** Assets are bundled by Vite and resolved client-side by PixiJS by key/id.
 
 ---
 
-## Tier 2: Genre-Specific (install when needed)
+## Tier 2: Hosts & Future Server
 
-| Package | Purpose | Genres / Trigger |
-|---------|---------|-----------------|
-| LiteNetLib | Reliable UDP networking | Fighting (rollback), RTS, co-op → [G9](../guides/G9_networking.md) |
-| FmodForFoxes + FmodForFoxes.Desktop | FMOD audio engine | Rhythm games, advanced audio → [G6](../guides/G6_audio.md) |
-| Arch.Persistence | ECS world serialization | Sandbox, sim, any with save/load |
-| Arch.Relationships | Entity-to-entity relationships | RPG (party members), RTS (squads) |
-| ImGui.NET | Debug overlays and console | Development/debugging |
-| Coroutine (Ellpeck) | Unity-style coroutines | Sequential async logic |
-| MLEM + MLEM.Data | Text formatting, non-XNB content | Text-heavy games, custom content |
+| Concern | Provider | Notes |
+|---------|----------|-------|
+| Web host | `src/Game.Web` — Blazor Web App (static SSR) | discovers shared RCL routes via `AddAdditionalAssemblies` |
+| Native host | `src/Game.Maui` — .NET MAUI Blazor Hybrid | Android default; iOS/MacCatalyst/Windows conditional TFMs |
+| Future server | ASP.NET Core + WebSockets/SignalR | runs the **same** `Game.Engine` authoritatively (phase 2) |
+| Networking (future) | ASP.NET Core SignalR / raw WebSockets | web transport — not a native UDP library |
 
 ```bash
-dotnet add package LiteNetLib
-dotnet add package FmodForFoxes
-dotnet add package FmodForFoxes.Desktop
-dotnet add package Arch.Persistence
-dotnet add package Arch.Relationships
-dotnet add package ImGui.NET
-dotnet add package Coroutine
-dotnet add package MLEM
-dotnet add package MLEM.Data
+dotnet watch --project src/Game.Web      # run web host
+dotnet build src/Game.Maui               # MAUI (requires MAUI workloads)
 ```
 
 ---
 
-## Tier 3: Nice-to-Have (optional)
+## Tier 3: Optional / Engine-Agnostic C# Libraries
 
-| Package/Repo | Purpose | Notes |
-|-------------|---------|-------|
-| MonoGame.Penumbra.DesktopGL / .WindowsDX | 2D lighting with soft shadows | v3.0.0, both platforms |
-| MonoGame-Mojo | 2D lighting/shadows/normal mapping | GitHub source only (not on NuGet) |
-| Roy-T.AStar | Standalone A* pathfinding | NuGet, no framework dependency |
-| BrainAI | FSM, BT, GOAP, Utility AI, pathfinding, influence maps | GitHub source reference → [G4](../guides/G4_ai_systems.md) |
-| Apos.Tweens | Fluent tweening API | Alternative to custom tweens |
+C# libraries with **no** native game-framework dependency that you may vendor or add **inside `Game.Engine`** (never in the presentation layer) when a feature is needed. They are optional and not part of the MVP.
+
+| Concern | Library | Notes |
+|---------|---------|-------|
+| ECS world serialization | Arch.Persistence (vendored in `src/Arch/`) | save/load entire worlds |
+| Entity relationships | Arch.Relationships (vendored) | party/squads/parent-child |
+| AI (FSM/BT/GOAP) | BrainAI (GitHub source) | engine-agnostic C#; vendor as source |
+| Pathfinding | Roy-T.AStar (NuGet) | standalone A*; no framework dependency |
+| Coroutines | Ellpeck/Coroutine (NuGet) | Unity-style yield; C# only |
+| Debug overlays | browser DevTools / Blazor | no ImGui needed on web |
 
 ```bash
-# BrainAI: clone from GitHub, add as source reference or local package
 # Roy-T.AStar: dotnet add package RoyT.AStar
+# BrainAI: clone from GitHub, vendor as source inside src/Game.Engine
 ```
+
+> **Rule:** any C# library added for simulation must stay inside `Game.Engine` and remain free of UI/platform deps. Presentation concerns (audio, rendering, input) are handled client-side by PixiJS/Blazor, not by C# libraries.
 
 ---
 
@@ -122,35 +118,22 @@ These are written as part of your project. ~1,000 lines total, ~14.5 hours of wo
 
 ---
 
-## Platform-Specific Packages
+## Platform Hosts (no native game-framework runtime)
 
-### iOS
+The engine ships no native game-framework runtime. Mobile/desktop targets are provided by the .NET MAUI Blazor Hybrid host (`src/Game.Maui`); the web target is the Blazor Web App host (`src/Game.Web`). There is no MGCB content pipeline and no platform-specific game framework package.
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| MonoGame.Framework.iOS | 3.8.* | iOS/Metal runtime |
-| MonoGame.Content.Builder.Task | 3.8.* | MGCB content pipeline |
-
-```xml
-<ItemGroup>
-  <PackageReference Include="MonoGame.Framework.iOS" Version="3.8.*" />
-  <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*" />
-</ItemGroup>
-
-<ItemGroup>
-  <MonoGameContentReference Include="..\MyGame.Core\Content\MyGame.mgcb" />
-</ItemGroup>
-```
-
-**Workload setup (macOS):**
+| Host | TFM | Notes |
+|------|-----|-------|
+| `src/Game.Web` | `net10.0` | Blazor Web App, static SSR; serves the shared RCL + PixiJS bundle |
+| `src/Game.Maui` | `net10.0-android` (default) | MAUI Blazor Hybrid; adds `net10.0-ios`/`-maccatalyst`/`-windows10.0.19041.0` when OS/workloads allow |
 
 ```bash
-dotnet workload restore                     # Auto-install from .csproj TFMs
-sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+# MAUI workloads must be installed for non-Android TFMs
+dotnet workload restore
+dotnet build src/Game.Maui                 # Android by default
+dotnet build src/Game.Maui -t:Run -f net10.0-ios   # iOS sim/device (Apple Silicon)
 ```
 
-**Note:** `MonoGame.Framework.iOS` 3.8.4.1 targets `net8.0-ios18.0` but works with `net10.0-ios` projects. Set `SupportedOSPlatformVersion` to `15.0` in .csproj.
+> **No native iOS game framework / content pipeline.** Assets are bundled by Vite (`src/Game.UI/wwwroot/dist`) and served as static web assets; the `BlazorWebView` loads the same RCL components as the web host. Set `SupportedOSPlatformVersion` per MAUI guidance (e.g. `15.0` for iOS) in `Game.Maui.csproj`.
 
-> **TrimmerRootAssembly:** If using reflection to access MonoGame internals (e.g., ProMotion 120Hz `CADisplayLink` patching), add `<TrimmerRootAssembly Include="MonoGame.Framework" />` to the iOS .csproj. Without this, the IL trimmer strips private fields that reflection needs.
-
-See [R3 Project Structure](./R3_project_structure.md) for the full iOS project layout and AppDelegate pattern.
+See [R3 Project Structure](./R3_project_structure.md) for the actual repo layout.

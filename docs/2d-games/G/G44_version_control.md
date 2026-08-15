@@ -13,7 +13,7 @@ and you only just noticed. Version control is your undo button for the entire pr
 Even as a solo dev, Git isn't optional. It's the difference between "I can try anything
 fearlessly" and "I'm afraid to touch this code because it finally works."
 
-This guide covers Git workflows specifically tuned for MonoGame / .NET 8 game projects —
+This guide covers Git workflows specifically tuned for the engine / .NET 8 game projects —
 including the binary asset headaches that make gamedev version control different from
 typical software projects.
 
@@ -79,16 +79,16 @@ Prefixes that work well for games:
 
 ---
 
-## 2 — .gitignore for MonoGame
+## 2 — .gitignore for the engine
 
-A proper `.gitignore` is critical. MonoGame projects generate a lot of intermediate files
+A proper `.gitignore` is critical. The engine projects generate a lot of intermediate files
 you don't want in your repo.
 
 ### Complete .gitignore
 
 ```gitignore
 # =============================================================================
-# .gitignore for MonoGame (.NET 8) Projects
+# .gitignore for the engine (.NET 8) Projects
 # =============================================================================
 
 # --- Build Output ---
@@ -107,7 +107,7 @@ obj/
 .idea/
 *.sln.iml
 
-# --- MonoGame Content Pipeline (MGCB) Intermediates ---
+# --- the engine Content Pipeline (MGCB) Intermediates ---
 # The pipeline rebuilds these from source assets.
 # Content/bin/ and Content/obj/ hold compiled .xnb files and intermediate data.
 Content/bin/
@@ -962,7 +962,7 @@ git init
 # Copy .gitignore from §2
 # Copy .gitattributes from §3
 git add -A
-git commit -m "init: MonoGame project scaffold"
+git commit -m "init: the engine project scaffold"
 
 gh repo create MyGame --private --source=. --push
 ```

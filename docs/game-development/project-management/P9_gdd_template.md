@@ -16,7 +16,7 @@
 | **Date** | [___] |
 | **Genre** | [___] *e.g., Action-Platformer, Top-Down RPG, Roguelite Shooter* |
 | **Platform Targets** | [___] *e.g., Windows, Linux, macOS, Steam Deck* |
-| **Engine / Framework** | MonoGame + Arch ECS *(modify if different)* |
+| **Engine / Framework** | Arch ECS *(modify if different)* |
 | **Target Rating** | [___] *e.g., E for Everyone, T for Teen* |
 | **Status** | [___] *Concept / Pre-Production / Production / Polish* |
 
@@ -543,7 +543,7 @@ What order does the player gain abilities/tools?
 
 ## 12. UI/UX Design
 
-> *See [G5 — UI Framework](../../monogame-arch/guides/G5_ui_framework.md) for implementation patterns, [G7 — Input Handling](../../monogame-arch/guides/G7_input_handling.md) for input architecture, and [G35 — Accessibility](../../monogame-arch/guides/G35_accessibility.md) for accessibility guidelines.*
+> *See [G5 — UI Framework](../../game-entity-component-system/guides/G5_ui_framework.md) for implementation patterns, [G7 — Input Handling](../../game-entity-component-system/guides/G7_input_handling.md) for input architecture, and [G35 — Accessibility](../../game-entity-component-system/guides/G35_accessibility.md) for accessibility guidelines.*
 
 ### Screen Flow
 
@@ -624,7 +624,7 @@ What order does the player gain abilities/tools?
 | Subtitle options | [___] | |
 | One-handed mode | [___] | |
 
-*Not everything is feasible for every project — but consider each one. See [G35 — Accessibility](../../monogame-arch/guides/G35_accessibility.md) for implementation guidance.*
+*Not everything is feasible for every project — but consider each one. See [G35 — Accessibility](../../game-entity-component-system/guides/G35_accessibility.md) for implementation guidance.*
 
 > **🪞 Ask yourself:**
 > - Can a new player understand my HUD in the first 10 seconds?
@@ -635,7 +635,7 @@ What order does the player gain abilities/tools?
 
 ## 13. Technical Design
 
-> *See [R1 — Library Stack](../../monogame-arch/reference/R1_library_stack.md) for the full library reference.*
+> *See [R1 — Library Stack](../../game-entity-component-system/reference/R1_library_stack.md) for the full library reference.*
 
 ### Architecture Overview
 
@@ -643,9 +643,9 @@ What order does the player gain abilities/tools?
 |---|---|
 | **ECS Framework** | Arch ECS *(or: [___])* |
 | **Scene Management** | [___] *e.g., Stack-based scene manager with transition support* |
-| **Physics** | [___] *e.g., Custom AABB, Box2D, Aether.Physics2D* |
+| **Physics** | [___] *e.g., Custom AABB, Box2D, a 2D physics library* |
 | **Rendering** | [___] *e.g., SpriteBatch with custom shader pipeline* |
-| **Audio Engine** | [___] *e.g., FMOD, MonoGame.Extended, custom* |
+| **Audio Engine** | [___] *e.g., Web Audio, custom* |
 | **UI System** | [___] *e.g., Custom immediate-mode, retained-mode, library name* |
 | **Serialization** | [___] *e.g., JSON via System.Text.Json, MessagePack* |
 

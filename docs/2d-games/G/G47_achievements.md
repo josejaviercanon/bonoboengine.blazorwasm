@@ -5,7 +5,7 @@
 
 ## Overview
 
-Achievements and progression systems give players long-term goals, reward mastery, and increase replayability. This guide covers an event-driven achievement architecture built on **Arch ECS v2.1.0** with persistent storage, platform integration (Steam/Game Center), and UI notifications — all within MonoGame.Framework.DesktopGL.
+Achievements and progression systems give players long-term goals, reward mastery, and increase replayability. This guide covers an event-driven achievement architecture built on **Arch ECS v2.1.0** with persistent storage, platform integration (Steam/Game Center), and UI notifications — all within the game framework.
 
 ---
 

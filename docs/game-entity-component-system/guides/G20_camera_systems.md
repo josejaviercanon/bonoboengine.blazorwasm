@@ -1,16 +1,16 @@
 # G20 — Camera Systems
 
 
-> **Category:** Guide · **Engine:** MonoGame + Arch ECS · **Tier:** Free (core) / Pro (advanced patterns)
+> **Category:** Guide · **Engine:** Arch ECS · **Tier:** Free (core) / Pro (advanced patterns)
 > **Related:** [G2 Rendering & Graphics](./G2_rendering_and_graphics.md) · [G19 Display & Resolution](./G19_display_resolution_viewports.md) · [G21 Coordinate Systems](./G21_coordinate_systems.md) · [G22 Parallax & Depth Layers](./G22_parallax_depth_layers.md) · [Camera Theory (engine-agnostic)](../../core/concepts/camera-theory.md)
 
-> Comprehensive implementation guide covering all 2D camera patterns for MonoGame: follow modes, deadzone, look-ahead, multi-target framing, cinematic sequences, shake, zoom, split screen, transitions, and ECS integration.
+> Comprehensive implementation guide covering all 2D camera patterns for the engine: follow modes, deadzone, look-ahead, multi-target framing, cinematic sequences, shake, zoom, split screen, transitions, and ECS integration.
 
 ---
 
 ## Table of Contents
 
-1. [MonoGame.Extended OrthographicCamera](#monogameextended-orthographiccamera)
+1. [PixiJS + custom C# utilities OrthographicCamera](#camera-orthographic)
 2. [Camera Follow Patterns](#camera-follow-patterns)
 3. [Camera Limits (Clamping)](#camera-limits-clamping-to-map-bounds)
 4. [Camera Shake](#camera-shake)
@@ -61,12 +61,12 @@ Every frame, the camera processes inputs through a pipeline. Understanding this 
 
 ---
 
-## MonoGame.Extended OrthographicCamera
+## PixiJS Camera (viewport)
 
-MonoGame.Extended v5.3.1 provides `OrthographicCamera` — the foundation for all camera work. It wraps a view matrix that transforms world coordinates to screen coordinates.
+PixiJS provides the camera/viewport — the foundation for all camera work. It wraps a view matrix that transforms world coordinates to screen coordinates.
 
 ```csharp
-using MonoGame.Extended;
+using EngineToolkit;
 
 // Create during scene initialization
 var camera = new OrthographicCamera(GraphicsDevice);

@@ -1,7 +1,7 @@
 # G4 — AI Systems
 > **Category:** Guide · **Related:** [R2 Capability Matrix](../R/R2_capability_matrix.md) · [C1 Genre Reference](../C/C1_genre_reference.md)
 
-> Comprehensive implementation guide covering AI architectures, pathfinding, perception, and ECS integration patterns for MonoGame + Arch ECS.
+> Comprehensive implementation guide covering AI architectures, pathfinding, perception, and ECS integration patterns for Arch ECS.
 
 ---
 

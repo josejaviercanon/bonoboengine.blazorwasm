@@ -5,7 +5,7 @@
 
 ---
 
-Game-specific design patterns with full implementations for the MonoGame + Arch ECS stack.
+Game-specific design patterns with full implementations for the Arch ECS stack.
 
 ---
 
@@ -205,7 +205,7 @@ public class NullAudioService : IAudioService
 
 **Use Service Locator for:** 5-8 ambient services (audio, input, rendering, asset loading, scene management). **Use constructor DI for:** Everything else.
 
-> **Gotcha:** Inside any class extending MonoGame's `Game` (e.g., `GameApp`), the name `Services` resolves to `Game.Services` (`GameServiceContainer`), not this static class. Use the fully qualified namespace: `YourNamespace.Services.Provide(...)`.
+> **Gotcha:** Inside any class extending the engine's `Game` (e.g., `GameApp`), the name `Services` resolves to `Game.Services` (`GameServiceContainer`), not this static class. Use the fully qualified namespace: `YourNamespace.Services.Provide(...)`.
 
 ---
 

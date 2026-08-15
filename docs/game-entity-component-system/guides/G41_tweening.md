@@ -3,7 +3,7 @@
 
 > **Category:** Guide · **Related:** [Tweening Theory](../../core/concepts/tweening-theory.md) · [G1 Custom Code Recipes](./G1_custom_code_recipes.md) · [G30 Game Feel Tooling](./G30_game_feel_tooling.md) · [G5 UI Framework](./G5_ui_framework.md) · [G42 Screen Transitions](./G42_screen_transitions.md) · [G31 Animation State Machines](./G31_animation_state_machines.md) · [G64 Combat & Damage Systems](./G64_combat_damage_systems.md)
 
-Tweening (short for "in-betweening") interpolates values over time with configurable easing curves. This guide covers a complete, zero-allocation tween engine built for MonoGame + Arch ECS.
+Tweening (short for "in-betweening") interpolates values over time with configurable easing curves. This guide covers a complete, zero-allocation tween engine built for Arch ECS.
 
 > **Start simple.** The full engine below covers every edge case, but most games need far less. A production tween system can be as small as ~70 lines — a `TweenManager` that stores a list and an `Update` loop, and a `Tween` class with from/to/duration/easing/callback. `OnComplete` chaining handles sequencing. Only add pooling (>100 concurrent tweens), generic `Tween<T>` (frequent Vector2/Color interpolation), or formal sequences (complex multi-step animations) when you hit those thresholds.
 >

@@ -434,3 +434,4 @@ FodyWeavers.xsd
 # Temp files
 src/Temp/*
 Temp/*
+nul* 

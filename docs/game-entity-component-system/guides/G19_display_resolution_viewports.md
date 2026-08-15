@@ -87,7 +87,7 @@ Render at the display's native resolution but scale all coordinates from a logic
 
 ---
 
-## MonoGame Implementation
+## The engine Implementation
 
 ### Virtual Resolution Class — Expand Mode (~80 lines)
 
@@ -294,9 +294,9 @@ spriteBatch.Begin(
 
 **Key insight:** iPhone is ~19.5:9, iPad is ~4:3, Desktop is typically 16:9. That's a massive aspect ratio range. The **Expand** strategy handles this gracefully — iPad players see more vertical space, iPhone players see more horizontal space.
 
-### MonoGame on iOS
+### The engine on iOS
 
-MonoGame automatically creates the backbuffer at the device's native pixel resolution when `LaunchScreen.storyboard` is present. No manual HiDPI configuration needed — the framework handles Retina scaling internally.
+the engine automatically creates the backbuffer at the device's native pixel resolution when `LaunchScreen.storyboard` is present. No manual HiDPI configuration needed — the framework handles Retina scaling internally.
 
 ```csharp
 // On iOS, these return the full native resolution (e.g., 2556x1179)
@@ -318,7 +318,7 @@ int h = GraphicsDevice.PresentationParameters.BackBufferHeight;
 
 ## HiDPI / Retina Displays
 
-On macOS with DesktopGL, MonoGame's backbuffer matches the window size in points, not pixels. A 1920x1080 window on a Retina Mac still gets a 1920x1080 backbuffer by default — MonoGame DesktopGL does **not** automatically render at 2x.
+On macOS with DesktopGL, the engine's backbuffer matches the window size in points, not pixels. A 1920x1080 window on a Retina Mac still gets a 1920x1080 backbuffer by default — the engine DesktopGL does **not** automatically render at 2x.
 
 This is actually what you want for the virtual resolution approach: set `PreferredBackBufferWidth/Height` to your design resolution, render to it, and the OS handles DPI scaling of the final window.
 

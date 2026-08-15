@@ -3,7 +3,7 @@
 
 > **Category:** Guide · **Related:** [R1 Library Stack](../reference/R1_library_stack.md) · [R2 Capability Matrix](../reference/R2_capability_matrix.md)
 
-> Deep dive into multiplayer networking for MonoGame 2D games using LiteNetLib, covering client-server architecture, prediction, rollback netcode, deterministic simulation, and Arch ECS integration.
+> Deep dive into multiplayer networking for the engine 2D games using LiteNetLib, covering client-server architecture, prediction, rollback netcode, deterministic simulation, and Arch ECS integration.
 
 ---
 
@@ -1951,7 +1951,7 @@ public struct FixVec2
 
     public static readonly FixVec2 Zero = new(Fix16.Zero, Fix16.Zero);
 
-    // Convert to MonoGame Vector2 for rendering only
+    // Convert to the engine Vector2 for rendering only
     public Vector2 ToVector2() => new(X.ToFloat(), Y.ToFloat());
 }
 ```

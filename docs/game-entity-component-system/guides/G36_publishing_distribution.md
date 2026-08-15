@@ -3,9 +3,9 @@
 
 > **Category:** Guide · **Related:** [G32 Deployment & Platform Builds](./G32_deployment_platform_builds.md) · [E4 Solo Project Management](../../core/project-management/E4_project_management.md) · [E9 Solo Dev Playbook](../../core/project-management/E9_solo_dev_playbook.md)
 
-> **Stack:** MonoGame · .NET · Multi-platform
+> **Stack:** the engine · .NET · Multi-platform
 
-You built the game. Now ship it. This guide covers platform-specific publishing, build automation, marketing, and post-launch operations for indie 2D games built with MonoGame.
+You built the game. Now ship it. This guide covers platform-specific publishing, build automation, marketing, and post-launch operations for indie 2D games built with the engine.
 
 ---
 
@@ -15,7 +15,7 @@ Steam is the primary PC storefront. Expect 70–80% of your PC revenue to come f
 
 ### Steamworks SDK Integration
 
-MonoGame doesn't ship with Steamworks bindings. Use **Steamworks.NET** (C# wrapper):
+the engine doesn't ship with Steamworks bindings. Use **Steamworks.NET** (C# wrapper):
 
 ```bash
 dotnet add package Steamworks.NET
@@ -74,7 +74,7 @@ Path: saves/
 Pattern: *.sav
 ```
 
-MonoGame save location:
+the engine save location:
 
 ```csharp
 public static string SaveDirectory => 
@@ -151,9 +151,9 @@ Butler uses **binary patching** — only uploads changed bytes. Fast incremental
 
 ## iOS App Store
 
-### MonoGame iOS Pipeline
+### The engine iOS Pipeline
 
-MonoGame supports iOS via **Xamarin.iOS / .NET for iOS**:
+the engine supports iOS via **Xamarin.iOS / .NET for iOS**:
 
 ```bash
 # Create iOS project
@@ -210,12 +210,12 @@ An overview of indie console programs. Each requires a separate application and 
 | **Nintendo** | [Nintendo Developer Portal](https://developer.nintendo.com/) | ~$450 (Switch dev kit) | Apply with company info + game; NintendoSDK |
 | **PlayStation** | [PlayStation Partners](https://partners.playstation.com/) | Free (PS4 test kit on approval) | Apply with studio info; PS SDK |
 
-### MonoGame on Consoles
+### The engine on Consoles
 
-MonoGame doesn't officially support console SDKs. Options:
+the engine doesn't officially support console SDKs. Options:
 
 1. **FNA** — Andrew Russell's reimplementation; has shipped on all major consoles
-2. **Custom port** — Use MonoGame's architecture but replace the graphics/input backend
+2. **Custom port** — Use the engine's architecture but replace the graphics/input backend
 3. **Engine switch** — Some developers port to a console-friendly engine for that platform
 
 **Reality check:** Console ports are significant work. Ship on PC first, validate market fit, then port if sales justify it.

@@ -2,7 +2,7 @@
 
 > **Category:** Guide · **Related:** [G10 Custom Game Systems §8 Undo/Redo](./G10_custom_game_systems.md) · [G38 Scene Management](./G38_scene_management.md) · [G5 UI Framework](./G5_ui_framework.md) · [G41 Tweening](./G41_tweening.md) · [G42 Screen Transitions](./G42_screen_transitions.md) · [G7 Input Handling](./G7_input_handling.md) · [G61 Tutorial & Onboarding](./G61_tutorial_onboarding.md) · [G30 Game Feel Tooling](./G30_game_feel_tooling.md)
 
-> A complete implementation guide for puzzle game architecture in MonoGame + Arch ECS. Covers grid-based puzzle state, undo/redo with state snapshots, level loading and progression, move counting and scoring, hint systems, puzzle validation, level select, star ratings, and genre-specific patterns for Sokoban, match-3, sliding puzzles, and logic grids. Everything is composable — use the pieces your puzzle game needs.
+> A complete implementation guide for puzzle game architecture in Arch ECS. Covers grid-based puzzle state, undo/redo with state snapshots, level loading and progression, move counting and scoring, hint systems, puzzle validation, level select, star ratings, and genre-specific patterns for Sokoban, match-3, sliding puzzles, and logic grids. Everything is composable — use the pieces your puzzle game needs.
 
 ---
 

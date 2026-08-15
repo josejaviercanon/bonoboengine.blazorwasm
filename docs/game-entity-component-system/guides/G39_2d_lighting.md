@@ -5,7 +5,7 @@
 
 ---
 
-Complete 2D lighting and shadow system built on MonoGame + Arch ECS. Covers the lightmap compositing approach, point/spot/ambient lights, ray-cast shadow volumes, normal-map lighting, light cookies, and performance strategies — with full HLSL shaders and production C# code.
+Complete 2D lighting and shadow system built on Arch ECS. Covers the lightmap compositing approach, point/spot/ambient lights, ray-cast shadow volumes, normal-map lighting, light cookies, and performance strategies — with full HLSL shaders and production C# code.
 
 > **Recommended starting point: Simple Lightmap.** The full system below covers shadow casting, normal maps, and advanced techniques. But for most 2D games — especially top-down — a simple lightmap with radial gradient textures, additive light rendering, and multiply compositing is all you need. This approach powers FireStarter's entire lighting system in ~230 lines.
 >
@@ -907,7 +907,7 @@ Tools for generating normal maps from 2D sprites:
 **Workflow:**
 1. Paint or auto-generate normal maps with one of the tools above.
 2. Name convention: `player.png` → `player_n.png` for the normal map.
-3. Load both in MonoGame and bind to the shader.
+3. Load both in the engine and bind to the shader.
 
 ```csharp
 // Loading paired textures

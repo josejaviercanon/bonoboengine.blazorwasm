@@ -1,5 +1,5 @@
 # E4 — Solo Project Management
-> **Category:** Explanation · **Related:** [E5 AI Workflow](./E5_ai_workflow.md) · [E9 Solo Dev Playbook](./E9_solo_dev_playbook.md) · [R3 Project Structure](../R/R3_project_structure.md) · [E6 Game Design Fundamentals](./E6_game_design_fundamentals.md) · [E8 MonoGameStudio Post-Mortem](./E8_monogamestudio_postmortem.md)
+> **Category:** Explanation · **Related:** [E5 AI Workflow](./E5_ai_workflow.md) · [E9 Solo Dev Playbook](./E9_solo_dev_playbook.md) · [R3 Project Structure](../R/R3_project_structure.md) · [E6 Game Design Fundamentals](./E6_game_design_fundamentals.md) · [E8 the engine studio Post-Mortem](./E8_studio_postmortem.md)
 
 ---
 
@@ -206,7 +206,7 @@ Studying Stardew Valley, Hollow Knight, Celeste, Undertale, Vampire Survivors, B
 
 **Almost none succeeded on their first game.** Barone had mostly unfinished prior projects. LocalThunk had been making games for ten years. Thomas Gervraud (Brotato) shipped three games before his hit. Scott Cawthon made roughly 70 games before Five Nights at Freddy's. The current project doesn't need to be the hit — it needs to be the one that teaches you enough for the next one.
 
-**Stardew Valley was built on C#/XNA transitioning to MonoGame** — the exact tech stack in this toolkit. The framework is proven for commercial hits.
+**Stardew Valley was built on C#** — C# is proven for commercial 2D hits. This engine uses C# (Arch ECS simulation + PixiJS rendering).
 
 ### The Critical Social Milestone
 

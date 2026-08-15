@@ -1,11 +1,11 @@
 # E2 — Why Nez Was Dropped
-> **Category:** Explanation · **Related:** [E1 Architecture Overview](./E1_architecture_overview.md) · [E8 MonoGameStudio Post-Mortem](./E8_monogamestudio_postmortem.md) · [R1 Library Stack](../R/R1_library_stack.md)
+> **Category:** Explanation · **Related:** [E1 Architecture Overview](./E1_architecture_overview.md) · [E8 the engine studio Post-Mortem](./E8_studio_postmortem.md) · [R1 Library Stack](../R/R1_library_stack.md)
 
 ---
 
 ## What Nez Was
 
-[Nez](https://github.com/prime31/Nez) was a MonoGame framework created by prime31 that aimed to be a batteries-included solution for 2D game development. It wrapped MonoGame with a comprehensive feature set:
+[Nez](https://github.com/prime31/Nez) was a native C# game framework created by prime31 that aimed to be a batteries-included solution for 2D game development. It wrapped a native game runtime with a comprehensive feature set:
 
 | Feature Area | What Nez Provided |
 |---|---|
@@ -60,7 +60,7 @@ Want to use a different physics engine? You'd fight Nez's collision system the w
 ### 4. Update and maintenance concerns
 
 - **Not on NuGet** — Nez required a git submodule, which meant managing source compilation, version pinning, and merge conflicts when pulling updates
-- **MonoGame version lag** — Nez sometimes trailed behind MonoGame releases, blocking adoption of new features and .NET versions
+- **Runtime version lag** — Nez sometimes trailed behind the underlying runtime's releases, blocking adoption of new features and .NET versions
 - **No .NET 10 path** — Modern .NET compatibility required framework-level changes that weren't guaranteed
 
 ### 5. Architecture decisions made for you
@@ -86,12 +86,12 @@ Every feature Nez provided has a replacement in the composed stack — most are 
 | Scene management | **Custom** (~150 lines) | Scene manager with transitions — [G1](../G/G1_custom_code_recipes.md) |
 | Physics / collision | **Aether.Physics2D** (v2.2.0) | Full Box2D-style physics — [G3](../G/G3_physics_and_collision.md) |
 | SpatialHash broadphase | **Custom** (~80 lines) | Simple, no dependency — [G1](../G/G1_custom_code_recipes.md) |
-| Collision shapes | **MonoGame.Extended** (v5.3.1) | AABB, circle, polygon + custom shapes (~150 lines) |
+| Collision shapes | custom (System.Numerics) + custom shapes | AABB, circle, polygon (~150 lines) |
 | Render layers | **Custom** (~200 lines) | Full control over sort order and camera assignment |
 | Post-processors | **Custom** (~150 lines) | RenderTarget2D chain, your effects — [G2](../G/G2_rendering_and_graphics.md) |
-| Sprite rendering | **MonoGame.Aseprite** (v6.3.1) | Direct .aseprite import, better workflow — [G8](../G/G8_content_pipeline.md) |
-| Sprite atlas | **MonoGame.Extended** or custom | Atlas packing, texture regions |
-| UI system | **Gum.MonoGame** | Visual editor, forms controls, official MonoGame recommendation — [G5](../G/G5_ui_framework.md) |
+| Sprite rendering | Aseprite → PixiJS spritesheet (Vite) | Direct .aseprite import, better workflow — [G8](../G/G8_content_pipeline.md) |
+| Sprite atlas | PixiJS spritesheet or custom | Atlas packing, texture regions |
+| UI system | Blazor + Tailwind | Data-bound components, accessible, responsive — [G5](../G/G5_ui_framework.md) |
 | Tweening | **Custom** (~100 lines) | Property tweens with easing — [G1](../G/G1_custom_code_recipes.md) |
 | Screen transitions | **Custom** (~100 lines) | Fade, slide, etc. — [G1](../G/G1_custom_code_recipes.md) |
 | Timers | **Custom** or Coroutine (Ellpeck) | Unity-style coroutines for sequential logic |
@@ -99,8 +99,8 @@ Every feature Nez provided has a replacement in the composed stack — most are 
 | AI (FSM, BT, GOAP) | **BrainAI** | Same feature set, standalone library — [G4](../G/G4_ai_systems.md) |
 | Pathfinding | **BrainAI** | A*, breadth-first, Dijkstra |
 | Input handling | **Apos.Input** (v2.5.0) | JustPressed tracking, multi-device — [G7](../G/G7_input_handling.md) |
-| Fonts | **FontStashSharp.MonoGame** (v1.3.7) | Runtime .ttf/.otf at any size |
-| Camera | **MonoGame.Extended** | Camera2D with viewport handling — [G20](../G/G20_camera_systems.md) |
+| Fonts | PixiJS Text + web fonts | Runtime .ttf/.otf via CSS/PixiJS |
+| Camera | PixiJS camera/viewport | Viewport handling — [G20](../G/G20_camera_systems.md) |
 
 The total custom code budget is ~1,000 lines ([E1](./E1_architecture_overview.md)) — about 14.5 hours of implementation. That's less time than you'd spend fighting Nez's architecture for a single non-standard feature.
 
@@ -122,12 +122,12 @@ If you have an existing Nez project and want to migrate, here's the practical ap
 
 1. **Replace Nez's renderer** with custom render layers (~200 lines) that draw Arch entities
 2. **Replace post-processors** with a custom RenderTarget2D chain (~150 lines)
-3. **Switch sprites** to MonoGame.Aseprite for .aseprite files
+3. **Switch sprites** to Aseprite → PixiJS spritesheet (Vite) for .aseprite files
 
 ### Phase 3: Systems
 
 1. **Physics** → Aether.Physics2D (sync positions between Arch components and Aether bodies)
-2. **UI** → Gum.MonoGame (this is the biggest change — Gum has a completely different model)
+2. **UI** → Blazor + Tailwind (this is the biggest change — a web UI model)
 3. **Input** → Apos.Input (straightforward swap)
 4. **AI** → BrainAI (API is similar to Nez's AI, since BrainAI is partially derived from it)
 
@@ -160,7 +160,7 @@ With Nez, all three happened across different features.
 
 A composed library stack has a higher initial cost (you write ~1,000 lines of glue code) but a dramatically lower ongoing cost:
 
-- **Library dies?** Swap it. MonoGame.Extended stops updating? Write a camera in 200 lines. Gum gets abandoned? Switch to Myra or build a simple UI.
+- **Library dies?** Swap it. A library stops updating? Write the replacement yourself. A UI approach gets abandoned? Switch to another or build a simple one.
 - **Need something different?** Add it. No framework to fight — your glue code is yours to modify.
 - **Want to upgrade .NET?** Each library moves independently. You're not waiting for one maintainer to update the whole stack.
 

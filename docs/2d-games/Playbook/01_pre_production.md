@@ -63,7 +63,7 @@ Fill this out first. If you can't fill every field, your idea isn't ready yet.
 │                                                                     │
 │  Platform Targets:                                                  │
 │    ☐ Windows   ☐ macOS   ☐ Linux                                  │
-│    ☐ iOS       ☐ Android ☐ Web (unlikely with MonoGame)           │
+│    ☐ iOS       ☐ Android ☐ Web (unlikely with the engine)           │
 │    ☐ Steam Deck (Linux + controller)                               │
 │    Primary: ____________  Secondary: ____________                  │
 │                                                                     │
@@ -128,7 +128,7 @@ Use this alongside [C1 Genre Reference](../C/C1_genre_reference.md) (which maps 
 ### Reading the Table
 
 - **Solo Feasibility** — How realistic is shipping this alone? 5 stars = very doable
-- **Dev Time** — MVP with ~20–30 hrs/week of focused work. Assume MonoGame + Arch ECS
+- **Dev Time** — MVP with ~20–30 hrs/week of focused work. Assume Arch ECS
 - **Content Volume** — How much *stuff* (levels, dialogue, items, maps) you need to create
 - **Art Burden** — How many unique sprites, animations, tilesets you need
 
@@ -250,7 +250,7 @@ P0 = Core (must ship) · P1 = Important (should ship) · P2 = Nice-to-have (cut 
 - **Adaptive Audio?** ☐ Yes ☐ No — If yes, how? ___
 - **Voice Acting?** ☐ No ☐ Grunts/gibberish ☐ Full VO
 
-> Reference: [G6 Audio](../G/G6_audio.md) for MonoGame audio vs FMOD decision. If you need crossfading, ducking, or bus mixing → FMOD via FmodForFoxes.
+> Reference: [G6 Audio](../G/G6_audio.md) for the engine audio vs FMOD decision. If you need crossfading, ducking, or bus mixing → FMOD via FmodForFoxes.
 
 #### 3.9 Controls
 
@@ -263,7 +263,7 @@ P0 = Core (must ship) · P1 = Important (should ship) · P2 = Nice-to-have (cut 
 | Pause | Escape | Start | Pause button |
 | Menu Navigate | Arrows | D-Pad / Stick | Touch |
 
-> Reference: [G7 Input Handling](../G/G7_input_handling.md) for Apos.Input implementation, input buffering, and rebinding.
+> Reference: [G7 Input Handling](../G/G7_input_handling.md) for the input handler implementation, input buffering, and rebinding.
 
 ---
 
@@ -446,7 +446,7 @@ Outline style:            ☐ None ☐ 1px dark ☐ 1px colored ☐ Selective
 Sub-pixel animation:      ☐ Yes ☐ No (affects smoothness vs crispness)
 ```
 
-> Reference: [G8 Content Pipeline](../G/G8_content_pipeline.md) for Aseprite → MonoGame workflow, [G28 Top-Down Perspective](../G/G28_top_down_perspective.md) for top-down sprite proportions.
+> Reference: [G8 Content Pipeline](../G/G8_content_pipeline.md) for Aseprite → the engine workflow, [G28 Top-Down Perspective](../G/G28_top_down_perspective.md) for top-down sprite proportions.
 
 ---
 
@@ -461,17 +461,17 @@ Decide these before writing game code. Each choice is hard to change later.
 Start with the full reference: [R1 Library Stack](../R/R1_library_stack.md) and [R2 Capability Matrix](../R/R2_capability_matrix.md).
 
 **Tier 0 — Always Install (non-negotiable):**
-- [x] MonoGame.Framework.DesktopGL
+- [x] the game framework
 - [x] Arch 2.1.0 + Arch.System + Arch.System.SourceGenerator
 
 **Tier 1 — Essential Infrastructure:**
-- [ ] MonoGame.Extended (camera, collision shapes, math, Tiled maps)
-- [ ] MonoGame.Extended.Content.Pipeline (Tiled/atlas importers)
-- [ ] Gum.MonoGame (UI framework) → [G5](../G/G5_ui_framework.md)
-- [ ] Apos.Input (input handling) → [G7](../G/G7_input_handling.md)
-- [ ] FontStashSharp.MonoGame (runtime font rendering)
-- [ ] MonoGame.Aseprite (direct .ase import) → [G8](../G/G8_content_pipeline.md)
-- [ ] Aether.Physics2D (only if you need rigid body physics) → [G3](../G/G3_physics_and_collision.md)
+- [ ] PixiJS + custom C# (camera, collision, math, Tiled)
+- [ ] Vite + PixiJS (Tiled/atlas importers)
+- [ ] the UI framework (UI framework) → [G5](../G/G5_ui_framework.md)
+- [ ] the input handler (input handling) → [G7](../G/G7_input_handling.md)
+- [ ] the font rendering library (runtime font rendering)
+- [ ] the Aseprite spritesheet importer (direct .ase import) → [G8](../G/G8_content_pipeline.md)
+- [ ] a 2D physics library (only if you need rigid body physics) → [G3](../G/G3_physics_and_collision.md)
 
 **Tier 2 — Genre-Specific (pick what you need):**
 - [ ] BrainAI (FSM, behavior trees, GOAP, pathfinding) → [G4](../G/G4_ai_systems.md)
@@ -505,7 +505,7 @@ Start with the full reference: [R1 Library Stack](../R/R1_library_stack.md) and 
 - [ ] **Input buffering?** ☐ Yes (action games) ☐ No (turn-based/puzzle)
 - [ ] **Analog movement?** ☐ Yes (stick) ☐ No (8-dir digital)
 
-> Reference: [G7 Input Handling](../G/G7_input_handling.md) for Apos.Input setup, [C2 Game Feel](../C/C2_game_feel_and_genre_craft.md) for genre-specific input techniques (coyote time, jump buffering, etc.)
+> Reference: [G7 Input Handling](../G/G7_input_handling.md) for the input handler setup, [C2 Game Feel](../C/C2_game_feel_and_genre_craft.md) for genre-specific input techniques (coyote time, jump buffering, etc.)
 
 ### 6.4 Save System Approach
 
@@ -571,7 +571,7 @@ Everything you set up in the repo before writing game logic.
 ### 7.1 Repository Init
 
 - [ ] Create Git repo: `git init` or create on GitHub/GitLab first
-- [ ] Create `.gitignore` for MonoGame / C# / .NET:
+- [ ] Create `.gitignore` for the engine / C# / .NET:
   ```
   bin/
   obj/
@@ -611,7 +611,7 @@ Follow the structure in [R3 Project Structure](../R/R3_project_structure.md):
 - [ ] Create launcher project: `dotnet new mgdesktopgl -n MyGame.Desktop`
   - Thin launcher that references Core. Contains `Program.cs` only.
 - [ ] (Optional) Create `MyGame.iOS` / `MyGame.Android` launchers for mobile
-- [ ] Set up `PrivateAssets=all` for MonoGame.Framework.DesktopGL in Core project
+- [ ] Set up `PrivateAssets=all` for the game framework in Core project
 - [ ] Install Tier 0 + Tier 1 packages (from Section 6.1)
 - [ ] Create folder structure in Core:
   ```
@@ -708,7 +708,7 @@ List everything about your game that you've **never built before** or that you'r
 | 4 | ___________ | ☐ High ☐ Med ☐ Low | ☐ None ☐ Some ☐ Done it | ☐ Yes ☐ No |
 | 5 | ___________ | ☐ High ☐ Med ☐ Low | ☐ None ☐ Some ☐ Done it | ☐ Yes ☐ No |
 
-**Common risks for 2D MonoGame projects:**
+**Common risks for 2D the engine projects:**
 
 - Performance with large entity counts (1000+ enemies/bullets) — test with Arch ECS early
 - Procedural generation quality (looks random, not designed)

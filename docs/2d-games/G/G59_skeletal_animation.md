@@ -79,22 +79,22 @@ Spine uses bezier curves extensively. Each bone property (rotation, translation,
 
 ---
 
-## 3 — Spine Runtime for MonoGame
+## 3 — Spine Runtime for the engine
 
 [Spine](http://esotericsoftware.com/) is the industry standard for 2D skeletal animation. The runtime is split into:
 
 - **spine-csharp** — pure C# core (platform-independent)
-- **spine-monogame** — MonoGame-specific rendering
+- **spine-render-runtime** — the engine-specific rendering
 
 ### NuGet / Setup
 
-Add the spine-csharp and spine-monogame packages to your project, or include the source directly from the [spine-runtimes](https://github.com/EsotericSoftware/spine-runtimes) repo. The runtime version **must match** your Spine editor version.
+Add the spine-csharp and spine-render-runtime packages to your project, or include the source directly from the [spine-runtimes](https://github.com/EsotericSoftware/spine-runtimes) repo. The runtime version **must match** your Spine editor version.
 
 ### Loading Skeleton Data
 
 ```csharp
 using Spine;
-using Spine.MonoGame;
+using Spine.the engine;
 
 public static class SpineAssets
 {
@@ -112,7 +112,7 @@ public static class SpineAssets
 
         // Load atlas (texture pages)
         var atlasPath = Path.Combine(basePath, $"{name}.atlas");
-        var atlas = new Atlas(atlasPath, new MonoGameTextureLoader(device));
+        var atlas = new Atlas(atlasPath, new TextureLoader(device));
 
         // Load skeleton binary
         var skelPath = Path.Combine(basePath, $"{name}.skel");
@@ -133,7 +133,7 @@ public static class SpineAssets
             return cached;
 
         var atlasPath = Path.Combine(basePath, $"{name}.atlas");
-        var atlas = new Atlas(atlasPath, new MonoGameTextureLoader(device));
+        var atlas = new Atlas(atlasPath, new TextureLoader(device));
 
         var jsonPath = Path.Combine(basePath, $"{name}.json");
         var loader = new SkeletonJson(atlas) { Scale = 1f };
@@ -237,19 +237,19 @@ if (current != null)
 |---|---|---|
 | **Cost** | $70–$340 license per seat | Free editor |
 | **Runtime quality** | Best-in-class, actively maintained | Community-maintained runtimes |
-| **MonoGame support** | Official spine-monogame runtime | No official MonoGame runtime — must port or adapt |
+| **the engine support** | Official spine-render-runtime runtime | No official the engine runtime — must port or adapt |
 | **Features** | Mesh deformation, IK, path constraints, physics | Mesh deformation, IK, basic constraints |
 | **Industry adoption** | Extremely widespread | Popular in Chinese/mobile market |
 | **Ecosystem** | Massive community, tutorials, examples | Smaller English-language community |
 
 ### DragonBones in Practice
 
-DragonBones exports to JSON format. For MonoGame, you'd need to:
+DragonBones exports to JSON format. For the engine, you'd need to:
 1. Parse the DragonBones JSON format (armature, bone, slot, skin definitions)
 2. Build your own renderer or adapt an existing C# implementation
 3. Handle the animation state machine yourself
 
-**Recommendation:** Unless budget is the primary constraint, Spine's MonoGame runtime saves significant engineering time. If you go DragonBones, budget 2–4 weeks for a custom runtime integration.
+**Recommendation:** Unless budget is the primary constraint, Spine's the engine runtime saves significant engineering time. If you go DragonBones, budget 2–4 weeks for a custom runtime integration.
 
 ---
 
@@ -851,7 +851,7 @@ public static void SetAnimationIfNew(
 
 ```
 ┌──────────────┐     ┌──────────┐     ┌──────────────┐     ┌──────────┐
-│ Art (PSD/PNG) │ ──► │  Spine   │ ──► │ Export (.skel │ ──► │ MonoGame │
+│ Art (PSD/PNG) │ ──► │  Spine   │ ──► │ Export (.skel │ ──► │ the engine │
 │ body parts   │     │  Editor  │     │   + .atlas)  │     │ Runtime  │
 └──────────────┘     └──────────┘     └──────────────┘     └──────────┘
 ```
@@ -889,12 +889,12 @@ Pin your runtime version in your `.csproj` and coordinate editor version across 
 
 ```xml
 <!-- In your .csproj — pin the exact version -->
-<PackageReference Include="SpineMonoGame" Version="4.2.*" />
+<PackageReference Include="Spinethe engine" Version="4.2.*" />
 ```
 
 ### Content Pipeline Integration
 
-For MonoGame's content pipeline, Spine files are loaded directly (not through the Content Pipeline `.mgcb`). Place them in a content directory and copy to output:
+For the engine's content pipeline, Spine files are loaded directly (not through the Content Pipeline `.mgcb`). Place them in a content directory and copy to output:
 
 ```xml
 <!-- .csproj — copy Spine assets to output -->

@@ -7,7 +7,7 @@
 
 ## Two Approaches
 
-There are two viable ways to do particles in MonoGame + Arch ECS:
+There are two viable ways to do particles in Arch ECS:
 
 | Approach | When to Use | Typical Scale |
 |----------|-------------|---------------|

@@ -12,7 +12,7 @@ Most solo devs treat audio as an afterthought — something to bolt on the week 
 2. [Sound Effect Creation](#2--sound-effect-creation)
 3. [Sound Effect Sourcing](#3--sound-effect-sourcing)
 4. [Music Workflow](#4--music-workflow)
-5. [Audio Implementation in MonoGame](#5--audio-implementation-in-monogame)
+5. [Audio Implementation in the engine](#5--audio-implementation-in-the-engine)
 6. [Audio Asset Organization](#6--audio-asset-organization)
 7. [Mixing Guide](#7--mixing-guide)
 8. [Sound Design by Genre](#8--sound-design-by-genre)
@@ -125,7 +125,7 @@ In Audacity: import each layer as a separate track, align them, adjust individua
 | **OGG Vorbis** | Longer sounds, ambience, music | Compressed, ~10x smaller than WAV, good quality |
 | **MP3** | Avoid in games | Licensing concerns (historically), gapping issues with loops |
 
-**MonoGame note:** The content pipeline handles format conversion, but starting with WAV for SFX and OGG for music/ambience is the cleanest workflow.
+**the engine note:** The content pipeline handles format conversion, but starting with WAV for SFX and OGG for music/ambience is the cleanest workflow.
 
 ---
 
@@ -238,13 +238,13 @@ Implementation: Use multiple `SoundEffect` instances for layers, or swap `Song` 
 
 ---
 
-## 5 — Audio Implementation in MonoGame
+## 5 — Audio Implementation in the engine
 
 > For the full API reference, see [G6 — Audio](../G/G6_audio.md).
 
 ### SoundEffect vs Song
 
-MonoGame gives you two main audio classes. Use the right one:
+the engine gives you two main audio classes. Use the right one:
 
 | Class | Use For | Loaded Into | Simultaneous Instances |
 |---|---|---|---|
@@ -345,7 +345,7 @@ public static class AudioManager
 
 ### Positional Audio for 2D
 
-MonoGame's `pan` parameter (-1.0 left to 1.0 right) gives you basic spatial audio:
+the engine's `pan` parameter (-1.0 left to 1.0 right) gives you basic spatial audio:
 
 ```csharp
 public static void PlaySFXPositional(string name, Vector2 soundPos, Vector2 listenerPos, 
@@ -446,11 +446,11 @@ Content/
 
 ### Content Pipeline Setup
 
-In your `.mgcb` file (via the MonoGame Content Pipeline tool):
+In your `.mgcb` file (via the the engine Content Pipeline tool):
 
 - **WAV files:** Processor = Sound Effect, Quality = Best
 - **OGG files:** Processor = Song (for music) or Sound Effect (for short ambient)
-- Set the build action to compile, not copy, so MonoGame handles format conversion per platform
+- Set the build action to compile, not copy, so the engine handles format conversion per platform
 
 ---
 

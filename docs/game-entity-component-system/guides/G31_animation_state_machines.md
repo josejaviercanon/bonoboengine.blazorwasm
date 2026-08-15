@@ -3,13 +3,13 @@
 
 > **Category:** Guide · **Related:** [G2 Rendering & Graphics](./G2_rendering_and_graphics.md) · [G8 Content Pipeline](./G8_content_pipeline.md) · [G4 AI Systems](./G4_ai_systems.md) · [C2 Game Feel & Genre Craft](../../core/game-design/C2_game_feel_and_genre_craft.md)
 
-> Deep dive into 2D animation systems for MonoGame + Arch ECS: Aseprite playback, ECS animation components, state machines with transitions and priority, directional sprites, frame events, layered animation, and production-ready patterns for game feel.
+> Deep dive into 2D animation systems for Arch ECS: Aseprite playback, ECS animation components, state machines with transitions and priority, directional sprites, frame events, layered animation, and production-ready patterns for game feel.
 
 ---
 
-## 1. MonoGame.Aseprite Animation Playback
+## 1. the Aseprite spritesheet importer Animation Playback
 
-[MonoGame.Aseprite](https://github.com/AristurtleDev/monogame-aseprite) (v6.3.1) is the foundation. It loads `.aseprite`/`.ase` files directly — no export step, no sprite sheet JSON, no manual frame rectangles.
+the Aseprite spritesheet importer (v6.3.1) is the foundation. It loads `.aseprite`/`.ase` files directly — no export step, no sprite sheet JSON, no manual frame rectangles.
 
 ### 1.1 Key Types
 
@@ -24,7 +24,7 @@
 ### 1.2 Loading and Creating Animations
 
 ```csharp
-using MonoGame.Aseprite;
+using the Aseprite spritesheet importer;
 
 // In LoadContent
 AsepriteFile aseFile = Content.Load<AsepriteFile>("sprites/player");
@@ -64,7 +64,7 @@ animatedSprite.Draw(spriteBatch, new Vector2(100, 200));
 
 ### 1.4 Animation Events
 
-MonoGame.Aseprite fires callbacks at key moments during playback:
+the Aseprite spritesheet importer fires callbacks at key moments during playback:
 
 ```csharp
 // Frame begins — use for gameplay triggers
@@ -118,13 +118,13 @@ foreach (var tag in spriteSheet.Tags)
 | Use Aseprite's tag system for naming | Tag names become animation names in code — zero mapping |
 | Set frame durations in Aseprite | Authoritative timing — don't override in code unless needed |
 | Use consistent canvas sizes | All frames same size = no origin shifting between animations |
-| Hide helper layers | MonoGame.Aseprite flattens visible layers — hide hitbox/guideline layers |
+| Hide helper layers | the Aseprite spritesheet importer flattens visible layers — hide hitbox/guideline layers |
 
 ---
 
 ## 2. Animation Component for Arch ECS
 
-The `AnimatedSprite` from MonoGame.Aseprite is a class with internal state — it works, but for a pure ECS approach you want lightweight data components that systems operate on.
+The `AnimatedSprite` from the Aseprite spritesheet importer is a class with internal state — it works, but for a pure ECS approach you want lightweight data components that systems operate on.
 
 ### 2.1 Core Animation Components
 
@@ -217,7 +217,7 @@ var player = world.Create(
 | Concern | Component | Reason |
 |---|---|---|
 | Game logic reads/writes animation state | `AnimationState` | Pure data — systems query and modify without touching rendering |
-| Rendering reads sprite data | `AnimationRenderer` | Contains the MonoGame.Aseprite objects that draw |
+| Rendering reads sprite data | `AnimationRenderer` | Contains the the Aseprite spritesheet importer objects that draw |
 | AI/physics can set animations | `AnimationState` | AI system writes `CurrentAnimation = "patrol"` without knowing about sprites |
 | Serialization/networking | `AnimationState` | Pure data serializes trivially; `AnimatedSprite` doesn't |
 
@@ -1653,15 +1653,15 @@ Matrix cameraTransform = _camera.TransformMatrix *
 
 ---
 
-## 9. MonoGame.Extended Alternative (Non-Aseprite)
+## 9. PixiJS Spritesheet Alternative (Non-Aseprite)
 
-If you're not using Aseprite, [MonoGame.Extended](https://github.com/craftworkgames/MonoGame.Extended) (v5.3.1) provides its own animation system based on texture atlases and JSON definitions.
+If you're not using Aseprite, [PixiJS + custom C# utilities](https://github.com/craftworkgames/PixiJS + custom C# utilities) (v5.3.1) provides its own animation system based on texture atlases and JSON definitions.
 
 ### 9.1 SpriteSheet + AnimatedSprite (Extended)
 
 ```csharp
-using MonoGame.Extended.Graphics;
-using MonoGame.Extended.Animations;
+using EngineToolkit;
+using EngineToolkit;
 
 // Load a texture atlas (exported from TexturePacker or similar)
 Texture2D atlasTexture = Content.Load<Texture2D>("sprites/characters");
@@ -1735,7 +1735,7 @@ spriteBatch.Draw(animatedSprite, position);
 | Animation tags | ✅ Built-in | ⚠️ Manual definition |
 | Multiple characters, same workflow | ✅ One file per character | ✅ One atlas per character |
 
-> **Recommendation:** If you use Aseprite for art (most indie pixel-art games do), use MonoGame.Aseprite. It eliminates the entire export pipeline and lets artists iterate without rebuilding. Use Extended's approach only when receiving pre-exported sprite sheets from external tools.
+> **Recommendation:** If you use Aseprite for art (most indie pixel-art games do), use the Aseprite spritesheet importer. It eliminates the entire export pipeline and lets artists iterate without rebuilding. Use Extended's approach only when receiving pre-exported sprite sheets from external tools.
 
 ---
 

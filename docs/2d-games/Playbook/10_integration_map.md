@@ -1,7 +1,7 @@
 # 14 — System Integration Map
 
 > **Category:** Playbook · **Purpose:** Navigate 76+ docs, understand system dependencies, decide what to build next  
-> **Audience:** Solo indie dev building a 2D game with MonoGame + Arch ECS
+> **Audience:** Solo indie dev building a 2D game with Arch ECS
 
 ---
 
@@ -270,12 +270,12 @@ Every system in the toolkit falls into one of six layers. Higher layers depend o
 | # | System | Primary Doc | Related Docs | Key Library | Phase |
 |---|--------|------------|-------------|-------------|-------|
 | G1 | Custom Code Recipes | [G1](../G/G1_custom_code_recipes.md) | G10, G12 | — | Ref |
-| G2 | Rendering & Graphics | [G2](../G/G2_rendering_and_graphics.md) | G19, G21, G27 | MonoGame SpriteBatch | 1 |
-| G3 | Physics & Collision | [G3](../G/G3_physics_and_collision.md) | G52, G37 | Aether.Physics2D or custom | 2 |
+| G2 | Rendering & Graphics | [G2](../G/G2_rendering_and_graphics.md) | G19, G21, G27 | the engine SpriteBatch | 1 |
+| G3 | Physics & Collision | [G3](../G/G3_physics_and_collision.md) | G52, G37 | a 2D physics library or custom | 2 |
 | G4 | AI Systems | [G4](../G/G4_ai_systems.md) | G40, G10 | Custom FSM/BT | 3 |
 | G5 | UI Framework | [G5](../G/G5_ui_framework.md) | G7, G34, G55 | ImGui.NET or custom | 4 |
-| G6 | Audio | [G6](../G/G6_audio.md) | G8, R1 | FMOD or MonoGame audio | 4 |
-| G7 | Input Handling | [G7](../G/G7_input_handling.md) | G52, G5 | MonoGame Input | 1 |
+| G6 | Audio | [G6](../G/G6_audio.md) | G8, R1 | FMOD or the engine audio | 4 |
+| G7 | Input Handling | [G7](../G/G7_input_handling.md) | G52, G5 | the engine Input | 1 |
 | G8 | Content Pipeline | [G8](../G/G8_content_pipeline.md) | R1, G26 | MGCB | 1 |
 | G9 | Networking | [G9](../G/G9_networking.md) | G48, G15 | LiteNetLib | 3+ |
 | G10 | Custom Game Systems | [G10](../G/G10_custom_game_systems.md) | G12, G18, E1 | Arch ECS | 3 |
@@ -283,19 +283,19 @@ Every system in the toolkit falls into one of six layers. Higher layers depend o
 | G12 | Design Patterns | [G12](../G/G12_design_patterns.md) | G18, G11 | — | Ref |
 | G13 | C# Performance | [G13](../G/G13_csharp_performance.md) | G33, G14 | — | Ref |
 | G14 | Data Structures | [G14](../G/G14_data_structures.md) | G13, G40 | — | Ref |
-| G15 | Game Loop | [G15](../G/G15_game_loop.md) | E1, R3 | MonoGame Game class | 1 |
+| G15 | Game Loop | [G15](../G/G15_game_loop.md) | E1, R3 | the engine Game class | 1 |
 | G16 | Debugging | [G16](../G/G16_debugging.md) | G33, G17 | ImGui.NET | 5 |
 | G17 | Testing | [G17](../G/G17_testing.md) | G16, G11 | xUnit / NUnit | 5 |
 | G18 | Game Programming Patterns | [G18](../G/G18_game_programming_patterns.md) | G12, G10 | — | Ref |
-| G19 | Display Resolution & Viewports | [G19](../G/G19_display_resolution_viewports.md) | G24, G25, G2 | MonoGame Viewport | 1 |
+| G19 | Display Resolution & Viewports | [G19](../G/G19_display_resolution_viewports.md) | G24, G25, G2 | the engine Viewport | 1 |
 | G20 | Camera Systems | [G20](../G/G20_camera_systems.md) | G22, G58, G21 | Custom | 2 |
 | G21 | Coordinate Systems | [G21](../G/G21_coordinate_systems.md) | G20, G37, G3 | — | 1 |
 | G22 | Parallax & Depth Layers | [G22](../G/G22_parallax_depth_layers.md) | G20, G2, G56 | Custom | 4 |
 | G23 | Particles | [G23](../G/G23_particles.md) | G2, G30 | Custom or library | 4 |
-| G24 | Window & Display Management | [G24](../G/G24_window_display_management.md) | G19, G25 | MonoGame GameWindow | 1 |
+| G24 | Window & Display Management | [G24](../G/G24_window_display_management.md) | G19, G25 | the engine GameWindow | 1 |
 | G25 | Safe Areas & Adaptive Layout | [G25](../G/G25_safe_areas_adaptive_layout.md) | G19, G24, G5 | Custom | 4 |
 | G26 | Resource Loading & Caching | [G26](../G/G26_resource_loading_caching.md) | G8, G38 | Custom | 2 |
-| G27 | Shaders & Effects | [G27](../G/G27_shaders_and_effects.md) | G2, G39 | HLSL / MonoGame Effect | 4 |
+| G27 | Shaders & Effects | [G27](../G/G27_shaders_and_effects.md) | G2, G39 | HLSL / the engine Effect | 4 |
 | G28 | Top-Down Perspective | [G28](../G/G28_top_down_perspective.md) | G37, G52, C1 | Custom | 2 |
 | G29 | Game Editor | [G29](../G/G29_game_editor.md) | G5, G50, G43 | ImGui.NET | 5 |
 | G30 | Game Feel & Tooling | [G30](../G/G30_game_feel_tooling.md) | G41, G20, G23, C2 | Custom | 4 |
@@ -353,7 +353,7 @@ Every system in the toolkit falls into one of six layers. Higher layers depend o
 | E5 | AI Workflow | [E5](../E/E5_ai_workflow.md) | Using AI tools in game dev |
 | E6 | Game Design Fundamentals | [E6](../E/E6_game_design_fundamentals.md) | Core design principles |
 | E7 | Emergent Puzzle Design | [E7](../E/E7_emergent_puzzle_design.md) | Systems-driven puzzle games |
-| E8 | MonoGameStudio Postmortem | [E8](../E/E8_monogamestudio_postmortem.md) | Lessons from a real project |
+| E8 | the engine studio Postmortem | [E8](../E/E8_studio_postmortem.md) | Lessons from a real project |
 | E9 | Solo Dev Playbook | [E9](../E/E9_solo_dev_playbook.md) | Strategies for solo development |
 
 ### C-Series: Craft Guides (2 docs)

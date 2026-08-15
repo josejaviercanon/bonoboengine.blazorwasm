@@ -3,13 +3,13 @@
 
 > **Category:** Guide · **Related:** [R1 Library Stack](../reference/R1_library_stack.md) · [G2 Rendering & Graphics](./G2_rendering_and_graphics.md) · [G6 Audio](./G6_audio.md)
 
-> Deep dive into the MonoGame content pipeline: MGCB configuration, custom importers, Aseprite animation, Tiled maps, texture atlases, fonts, audio, data loading, hot-reload, and cross-platform content strategies.
+> Deep dive into the the engine content pipeline: MGCB configuration, custom importers, Aseprite animation, Tiled maps, texture atlases, fonts, audio, data loading, hot-reload, and cross-platform content strategies.
 
 ---
 
 ## 1. MGCB Setup & Configuration
 
-The MonoGame Content Builder (MGCB) compiles raw assets (PNGs, WAVs, FX shaders) into optimized `.xnb` binary format at build time. This enables platform-specific compression, faster load times, and smaller packages.
+The the engine Content Builder (MGCB) compiles raw assets (PNGs, WAVs, FX shaders) into optimized `.xnb` binary format at build time. This enables platform-specific compression, faster load times, and smaller packages.
 
 ### 1.1 Installing the MGCB Tools
 
@@ -46,7 +46,7 @@ The `.mgcb` file is a plain-text manifest that lists every asset and its build s
 
 #-------------------------------- References ---------------------------------#
 
-/reference:..\..\packages\MonoGame.Extended.Content.Pipeline\lib\MonoGame.Extended.Content.Pipeline.dll
+/reference:..\..\packages\PixiJS + custom C# utilities\lib\PixiJS + custom C# utilities
 
 #---------------------------------- Content ----------------------------------#
 
@@ -106,11 +106,11 @@ mgcb Content.mgcb /platform:Android
 
 ### 1.5 .csproj Integration
 
-MonoGame projects reference the `.mgcb` file in the `.csproj`, which triggers automatic content builds during `dotnet build`:
+the engine projects reference the `.mgcb` file in the `.csproj`, which triggers automatic content builds during `dotnet build`:
 
 ```xml
 <ItemGroup>
-  <MonoGameContentReference Include="Content\Content.mgcb" />
+  <ContentReference Include="Content\Content.mgcb" />
 </ItemGroup>
 ```
 
@@ -119,7 +119,7 @@ For shared-project architectures (Core + Platform projects), the platform projec
 ```xml
 <!-- In MyGame.iOS.csproj or MyGame.Android.csproj -->
 <ItemGroup>
-  <MonoGameContentReference Include="..\MyGame.Core\Content\Content.mgcb" />
+  <ContentReference Include="..\MyGame.Core\Content\Content.mgcb" />
 </ItemGroup>
 ```
 
@@ -178,10 +178,10 @@ Create a separate class library project for your pipeline extensions:
 ```bash
 dotnet new classlib -n MyGame.ContentPipeline
 cd MyGame.ContentPipeline
-dotnet add package MonoGame.Framework.Content.Pipeline
+dotnet add package the game framework
 ```
 
-> **Critical:** Pipeline extensions run at **build time** on the dev machine, not at runtime. They reference `MonoGame.Framework.Content.Pipeline`, not `MonoGame.Framework`.
+> **Critical:** Pipeline extensions run at **build time** on the dev machine, not at runtime. They reference `the game framework`, not `the game framework`.
 
 ### 3.2 Custom Importer Example — Tiled Collision Data
 
@@ -353,23 +353,23 @@ var collisionMap = Content.Load<CollisionMap>("levels/world1");
 
 ## 4. Aseprite Pipeline
 
-### 4.1 MonoGame.Aseprite Setup
+### 4.1 the Aseprite spritesheet importer Setup
 
-[MonoGame.Aseprite](https://github.com/AristurtleDev/monogame-aseprite) (v6.3.x) loads `.aseprite`/`.ase` files directly — no manual export needed. Frame durations, animation tags, layers, and slices are all preserved.
+the Aseprite spritesheet importer (v6.3.x) loads `.aseprite`/`.ase` files directly — no manual export needed. Frame durations, animation tags, layers, and slices are all preserved.
 
 **Install the runtime package:**
 ```bash
-dotnet add package MonoGame.Aseprite --version 6.3.1
+dotnet add package the Aseprite spritesheet importer --version 6.3.1
 ```
 
 **Install the content pipeline extension:**
 ```bash
-dotnet add package MonoGame.Aseprite.Content.Pipeline --version 6.3.1
+dotnet add package the Aseprite spritesheet importer --version 6.3.1
 ```
 
 **Register in `.mgcb`:**
 ```
-/reference:..\packages\MonoGame.Aseprite.Content.Pipeline\lib\MonoGame.Aseprite.Content.Pipeline.dll
+/reference:..\packages\the Aseprite spritesheet importer\lib\the Aseprite spritesheet importer
 ```
 
 Or use the MGCB Editor: **Content → References → Add** and browse to the pipeline DLL.
@@ -387,7 +387,7 @@ The importer reads the raw `.aseprite` binary format. The processor prepares it 
 
 ### 4.3 Runtime Loading — Key Types
 
-MonoGame.Aseprite provides several ways to use the loaded data:
+the Aseprite spritesheet importer provides several ways to use the loaded data:
 
 | Type | Created From | Purpose |
 |---|---|---|
@@ -400,7 +400,7 @@ MonoGame.Aseprite provides several ways to use the loaded data:
 ### 4.4 Loading and Creating Animations
 
 ```csharp
-using MonoGame.Aseprite;
+using the Aseprite spritesheet importer;
 
 // In LoadContent
 AsepriteFile aseFile = Content.Load<AsepriteFile>("sprites/player");
@@ -499,30 +499,30 @@ world.Query(in _renderQuery, (ref Position pos, ref AnimatedSpriteComponent anim
 - **One `.aseprite` file per character/entity** — keeps all animations (idle, run, jump, attack) as tags in one file.
 - **Use Aseprite's tag system** — tag names become animation names in code.
 - **Frame durations in Aseprite are authoritative** — set per-frame timing in Aseprite, not code.
-- **Layer visibility** — MonoGame.Aseprite flattens all visible layers. Use Aseprite layer visibility to exclude helper layers (guidelines, hitbox markers).
+- **Layer visibility** — the Aseprite spritesheet importer flattens all visible layers. Use Aseprite layer visibility to exclude helper layers (guidelines, hitbox markers).
 - **Slice support** — define hitboxes or anchor points via Aseprite slices, access them at runtime via `aseFile.Slices`.
 
 ---
 
 ## 5. Tiled Map Pipeline
 
-### 5.1 MonoGame.Extended Tiled Setup
+### 5.1 PixiJS + custom C# utilities Tiled Setup
 
-[MonoGame.Extended](https://github.com/craftworkgames/MonoGame.Extended) provides a complete Tiled `.tmx` map loader and renderer.
+[PixiJS + custom C# utilities](https://github.com/craftworkgames/PixiJS + custom C# utilities) provides a complete Tiled `.tmx` map loader and renderer.
 
 **Install:**
 ```bash
 # Runtime
-dotnet add package MonoGame.Extended --version 4.0.3
-dotnet add package MonoGame.Extended.Tiled --version 4.0.3
+dotnet add package PixiJS + custom C# utilities --version 4.0.3
+dotnet add package PixiJS + custom C# utilities --version 4.0.3
 
 # Content pipeline extension (for build-time processing)
-dotnet add package MonoGame.Extended.Content.Pipeline --version 4.0.3
+dotnet add package PixiJS + custom C# utilities --version 4.0.3
 ```
 
 **Register the pipeline in `.mgcb`:**
 ```
-/reference:..\packages\MonoGame.Extended.Content.Pipeline\lib\MonoGame.Extended.Content.Pipeline.dll
+/reference:..\packages\PixiJS + custom C# utilities\lib\PixiJS + custom C# utilities
 ```
 
 ### 5.2 Adding Tiled Maps to Content
@@ -562,8 +562,8 @@ In `.mgcb`:
 ### 5.3 Loading and Rendering Tiled Maps
 
 ```csharp
-using MonoGame.Extended.Tiled;
-using MonoGame.Extended.Tiled.Renderers;
+using EngineToolkit;
+using EngineToolkit;
 
 private TiledMap _tiledMap;
 private TiledMapRenderer _tiledMapRenderer;
@@ -734,7 +734,7 @@ for (int y = 0; y < _tiledMap.Height; y++)
 - **Layer naming convention:** `Background`, `Ground`, `Foreground`, `Collision`, `Objects` — consistent names simplify code.
 - **Custom properties on objects** are strings — parse them at load time (`int.Parse`, `Enum.Parse`, etc.).
 - **Animated tiles in Tiled** — set frame durations in the tileset; `TiledMapRenderer.Update()` handles playback.
-- **Isometric maps** — supported by MonoGame.Extended Tiled; set map orientation in Tiled to "Isometric."
+- **Isometric maps** — supported by PixiJS + custom C# utilities Tiled; set map orientation in Tiled to "Isometric."
 
 ---
 
@@ -744,9 +744,9 @@ for (int y = 0; y < _tiledMap.Height; y++)
 
 Drawing 100 sprites from 100 separate textures = up to 100 draw calls. Drawing 100 sprites from 1 atlas = 1 draw call. Atlases minimize GPU state changes and maximize batching.
 
-### 6.2 MonoGame.Extended Texture Atlas (JSON Hash)
+### 6.2 PixiJS + custom C# utilities Texture Atlas (JSON Hash)
 
-MonoGame.Extended can load texture atlases in the **JSON Hash** format (exported by tools like TexturePacker, Aseprite, or free alternatives like Free Texture Packer).
+PixiJS can load texture atlases (spritesheets) in the **JSON Hash** format (exported by tools like TexturePacker, Aseprite, or free alternatives like Free Texture Packer).
 
 **Atlas JSON format (TexturePacker JSON Hash):**
 ```json
@@ -785,13 +785,13 @@ MonoGame.Extended can load texture atlases in the **JSON Hash** format (exported
 
 **Load and use at runtime:**
 ```csharp
-using MonoGame.Extended.Graphics;
+using EngineToolkit;
 
 // Load texture atlas
 Texture2D atlasTexture = Content.Load<Texture2D>("sprites/atlas");
 
 // Load JSON data and create atlas (or parse manually)
-// MonoGame.Extended provides TextureAtlas with named regions:
+// PixiJS provides spritesheet/TextureAtlas with named regions:
 var atlas = TextureAtlas.Create("gameAtlas", atlasTexture, regions);
 
 // Get a specific region
@@ -856,7 +856,7 @@ spriteBatch.Draw(spriteSheet, coinPos, itemCoin, Color.White);
 
 ### 7.1 Option A: MGCB SpriteFont (Build-Time)
 
-MonoGame's built-in approach — rasterizes a system font into a glyph atlas at build time.
+the engine's built-in approach — rasterizes a system font into a glyph atlas at build time.
 
 **Create `fonts/GameFont.spritefont`:**
 ```xml
@@ -902,13 +902,13 @@ spriteBatch.End();
 - Quality can be poor for pixel art (no runtime rasterization control)
 - No dynamic sizing at runtime
 
-### 7.2 Option B: FontStashSharp (Runtime — Recommended)
+### 7.2 Option B: the font rendering library (Runtime — Recommended)
 
-[FontStashSharp](https://github.com/FontStashSharp/FontStashSharp) loads `.ttf`/`.otf` files at runtime and rasterizes glyphs on demand. Any size, any time.
+[the font rendering library](https://github.com/the font rendering library/the font rendering library) loads `.ttf`/`.otf` files at runtime and rasterizes glyphs on demand. Any size, any time.
 
 **Install:**
 ```bash
-dotnet add package FontStashSharp.MonoGame --version 1.3.7
+dotnet add package the font rendering library --version 1.3.7
 ```
 
 **Add font file to Content (copy, don't process):**
@@ -919,7 +919,7 @@ dotnet add package FontStashSharp.MonoGame --version 1.3.7
 
 **Load and use:**
 ```csharp
-using FontStashSharp;
+using the font rendering library;
 
 private FontSystem _fontSystem;
 
@@ -950,7 +950,7 @@ protected override void Draw(GameTime gameTime)
 }
 ```
 
-### 7.3 FontStashSharp — Multiple Font Weights
+### 7.3 the font rendering library — Multiple Font Weights
 
 ```csharp
 _fontSystem = new FontSystem();
@@ -978,7 +978,7 @@ void LoadFont(FontSystem fs, string path)
 
 ### 7.4 Comparison Table
 
-| Feature | MGCB SpriteFont | FontStashSharp |
+| Feature | MGCB SpriteFont | the font rendering library |
 |---|---|---|
 | Fixed at build time | ✅ Yes | ❌ No — runtime |
 | Any size at runtime | ❌ No | ✅ Yes |
@@ -989,20 +989,20 @@ void LoadFont(FontSystem fs, string path)
 | Emoji / CJK support | ❌ Limited | ✅ With appropriate .ttf |
 | Performance | Pre-rasterized = fastest draw | First use of each glyph/size builds cache |
 
-**Recommendation:** Use FontStashSharp for everything. MGCB SpriteFont is legacy.
+**Recommendation:** Use the font rendering library for everything. MGCB SpriteFont is legacy.
 
-### 7.5 FontStashSharp Gotchas
+### 7.5 the font rendering library Gotchas
 
 - **`.ttc` files not supported** — TrueType Collection files (common on macOS system fonts) cause `stbtt_InitFont failed`. Use individual `.ttf` files.
 - **Do NOT load system fonts** — `File.ReadAllBytes("/System/Library/Fonts/...")` fails on iOS sandbox. Always bundle `.ttf` via MGCB `/copy`.
 - **Use `TitleContainer.OpenStream()`** — the only cross-platform way to access content files. Works on Desktop, iOS, and Android.
-- **Glyph atlas memory** — FontStashSharp creates internal textures for glyph caches. For many sizes/characters, monitor memory. Call `_fontSystem.Reset()` to clear if needed.
+- **Glyph atlas memory** — the font rendering library creates internal textures for glyph caches. For many sizes/characters, monitor memory. Call `_fontSystem.Reset()` to clear if needed.
 
 ---
 
 ## 8. Audio Content
 
-### 8.1 Audio Formats in MonoGame
+### 8.1 Audio Formats in the engine
 
 | Format | Type | MGCB Processing | Use Case |
 |---|---|---|---|
@@ -1501,9 +1501,9 @@ MyGame.Core/
 | Asset Type | Pipeline Strategy | Why |
 |---|---|---|
 | Sprites / textures | MGCB `TextureProcessor` | Premultiplied alpha, platform optimization |
-| Aseprite files | MGCB via MonoGame.Aseprite pipeline | Full animation support |
+| Aseprite files | MGCB via the Aseprite spritesheet importer pipeline | Full animation support |
 | Tiled maps | MGCB via Extended pipeline | Pre-parsed at build time |
-| Fonts (.ttf) | MGCB `/copy` | FontStashSharp loads raw .ttf |
+| Fonts (.ttf) | MGCB `/copy` | the font rendering library loads raw .ttf |
 | Sound effects | MGCB `SoundEffectProcessor` | Platform-optimal compression |
 | Music | MGCB `SongProcessor` | Streaming format |
 | Shaders (.fx) | MGCB `EffectProcessor` | Compiled to platform shaders |
@@ -1516,7 +1516,7 @@ MyGame.Core/
 
 ### 12.1 What's the Same (Almost Everything)
 
-The core value of MonoGame's content pipeline is **cross-platform transparency**. The same `Content.Load<T>()` call works everywhere:
+The core value of the engine's content pipeline is **cross-platform transparency**. The same `Content.Load<T>()` call works everywhere:
 
 ```csharp
 // This exact code runs on Desktop, iOS, and Android
@@ -1561,7 +1561,7 @@ string json = File.ReadAllText("Content/data/items.json");
 
 ### 12.4 iOS-Specific Notes
 
-- Content is embedded in the `.app` bundle via `MonoGameContentReference` in `.csproj`.
+- Content is embedded in the `.app` bundle via `ContentReference` in `.csproj`.
 - No `Resources/` folder access — if you use a separate Resources folder, you must add those files to the iOS project with `BundleResource` build action.
 - System fonts aren't accessible — always bundle `.ttf` files.
 
@@ -1658,10 +1658,10 @@ Or via MSBuild:
 | Dark fringes around sprites | Wrong BlendState for alpha mode | Use `AlphaBlend` for MGCB sprites, `NonPremultiplied` for `FromStream()` |
 | Blurry pixel art | Wrong SamplerState | Use `SamplerState.PointClamp` everywhere |
 | Font crashes on iOS | Loading system fonts via `File.ReadAllBytes` | Bundle `.ttf` via `/copy`, use `TitleContainer.OpenStream()` |
-| `stbtt_InitFont failed` | FontStashSharp given a `.ttc` file | Use individual `.ttf` files, not `.ttc` collections |
+| `stbtt_InitFont failed` | the font rendering library given a `.ttc` file | Use individual `.ttf` files, not `.ttc` collections |
 | Tiled map tileset not found | Tileset PNG not added to `.mgcb` | Add tileset images as separate content entries |
 | Pipeline DLL not found | Wrong `/reference:` path in `.mgcb` | Update path to point to correct pipeline DLL location |
-| Content builds but doesn't appear | Missing `MonoGameContentReference` in `.csproj` | Add `<MonoGameContentReference>` to project file |
+| Content builds but doesn't appear | Missing `ContentReference` in `.csproj` | Add `<ContentReference>` to project file |
 | Texture appears as solid color | Texture format incompatible with platform | Use `TextureFormat=Color` for maximum compatibility |
 | Audio pops/clicks | WAV sample rate mismatch | Normalize audio to 44100 Hz before import |
 
@@ -1708,7 +1708,7 @@ var tiledMap  = Content.Load<TiledMap>("tilemaps/level1");
 using var stream = TitleContainer.OpenStream(
     Path.Combine("Content", "data", "items.json"));
 
-// FontStashSharp
+// the font rendering library
 using var fontStream = TitleContainer.OpenStream(
     Path.Combine("Content", "fonts", "MyFont.ttf"));
 ```
@@ -1720,7 +1720,7 @@ using var fontStream = TitleContainer.OpenStream(
 | Textures | MGCB `TextureProcessor` | `Texture2D` | `PremultiplyAlpha=True` for pixel art |
 | Aseprite | MGCB `AsepriteFileProcessor` | `AsepriteFile` → `SpriteSheet` → `AnimatedSprite` | No manual export needed |
 | Tiled maps | MGCB `TiledMapProcessor` | `TiledMap` | Include tileset PNGs separately |
-| Fonts | MGCB `/copy` | `DynamicSpriteFont` (FontStashSharp) | Bundle .ttf, load with `TitleContainer` |
+| Fonts | MGCB `/copy` | `DynamicSpriteFont` (the font rendering library) | Bundle .ttf, load with `TitleContainer` |
 | SFX | MGCB `SoundEffectProcessor` | `SoundEffect` | Use .wav source, Quality=Best for short clips |
 | Music | MGCB `SongProcessor` | `Song` | Use .ogg source, streamed playback |
 | Shaders | MGCB `EffectProcessor` | `Effect` | Auto-compiles to platform shaders |

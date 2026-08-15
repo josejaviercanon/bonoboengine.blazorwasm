@@ -10,7 +10,7 @@
 
 Screen transitions are the glue between scenes. A hard cut from gameplay to a menu feels jarring; a half-second fade feels intentional. This guide builds a **TransitionManager** that captures render targets from old and new scenes, runs animated transitions between them, and supports async loading screens for heavier scene swaps.
 
-Everything here targets **MonoGame.Framework.DesktopGL** with **Arch ECS v2.1.0** and integrates with the scene lifecycle from [G38](./G38_scene_management.md).
+Everything here targets **the game framework** with **Arch ECS v2.1.0** and integrates with the scene lifecycle from [G38](./G38_scene_management.md).
 
 ### Simpler Alternative: Progress-Based Transitions
 

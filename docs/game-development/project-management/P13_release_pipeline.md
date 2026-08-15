@@ -2,12 +2,12 @@
 
 
 
-A step-by-step guide for building, testing, signing, and uploading release builds of your MonoGame DesktopGL game. This covers everything from `dotnet publish` to getting your game on Steam and itch.io.
+A step-by-step guide for building, testing, signing, and uploading release builds of your the engine DesktopGL game. This covers everything from `dotnet publish` to getting your game on Steam and itch.io.
 
 > **Related docs:**
-> - [G32 — Deployment & Platform Builds](../../monogame-arch/guides/G32_deployment_platform_builds.md)
-> - [G36 — Publishing & Distribution](../../monogame-arch/guides/G36_publishing_distribution.md)
-> - [G51 — Crash Reporting](../../monogame-arch/guides/G51_crash_reporting.md)
+> - [G32 — Deployment & Platform Builds](../../game-entity-component-system/guides/G32_deployment_platform_builds.md)
+> - [G36 — Publishing & Distribution](../../game-entity-component-system/guides/G36_publishing_distribution.md)
+> - [G51 — Crash Reporting](../../game-entity-component-system/guides/G51_crash_reporting.md)
 
 ---
 
@@ -91,7 +91,7 @@ Single-file bundles your entire app into one executable. Players see one `.exe` 
 
 Trimming removes unused .NET framework code, reducing file size by 20-50%. But it can break things.
 
-**Safe for MonoGame:** General trimming works fine for most game code.
+**Safe for the engine:** General trimming works fine for most game code.
 
 **Watch out for:**
 - Reflection-heavy code (JSON serializers, plugin systems)
@@ -103,7 +103,7 @@ If trimming breaks something, add trim roots:
 ```xml
 <ItemGroup>
   <TrimmerRootAssembly Include="YourGame" />
-  <TrimmerRootAssembly Include="MonoGame.Framework" />
+  <TrimmerRootAssembly Include="the game framework" />
 </ItemGroup>
 ```
 
@@ -350,7 +350,7 @@ PROTON_LOG=1 %command%
 ### Common Linux Issues
 
 **Missing `libSDL2`**
-MonoGame DesktopGL needs SDL2. On most distros it's pre-installed, but if not:
+the engine DesktopGL needs SDL2. On most distros it's pre-installed, but if not:
 
 ```bash
 # Ubuntu/Debian
@@ -368,7 +368,7 @@ Linux file systems are case-sensitive. `Content/Textures/Player.png` ≠ `Conten
 **Fix:** Be consistent with casing everywhere. Lowercase everything is simplest.
 
 **Missing OpenAL**
-MonoGame uses OpenAL for audio:
+the engine uses OpenAL for audio:
 
 ```bash
 sudo apt install libopenal1
@@ -704,7 +704,7 @@ In Steamworks dashboard, set launch options:
 
 ### Steam Input API
 
-If you want controller support (recommended), see [G32](../../monogame-arch/guides/G32_deployment_platform_builds.md) for Steam Input integration details. At minimum, configure default controller templates in the Steamworks dashboard so controllers work out of the box.
+If you want controller support (recommended), see [G32](../../game-entity-component-system/guides/G32_deployment_platform_builds.md) for Steam Input integration details. At minimum, configure default controller templates in the Steamworks dashboard so controllers work out of the box.
 
 ---
 
@@ -789,9 +789,9 @@ butler status yourusername/yourgame
 
 ## 7. Content Pipeline Build
 
-### How MonoGame Content Works in Release
+### How the engine Content Works in Release
 
-The MonoGame Content Builder (MGCB) compiles raw assets (`.png`, `.wav`, `.fx`) into optimized `.xnb` files. These built assets go in your `Content/` folder.
+The the engine Content Builder (MGCB) compiles raw assets (`.png`, `.wav`, `.fx`) into optimized `.xnb` files. These built assets go in your `Content/` folder.
 
 ### Ensuring Content is Included
 
@@ -799,7 +799,7 @@ Your `.csproj` should reference the content project:
 
 ```xml
 <ItemGroup>
-  <MonoGameContentReference Include="Content\Content.mgcb" />
+  <ContentReference Include="Content\Content.mgcb" />
 </ItemGroup>
 ```
 
@@ -831,7 +831,7 @@ mgcb-editor Content/Content.mgcb  # GUI
 The content wasn't copied to the output. Check your `.csproj`:
 
 ```xml
-<MonoGameContentReference Include="Content\Content.mgcb" />
+<ContentReference Include="Content\Content.mgcb" />
 ```
 
 **"Could not load asset" for specific files**
@@ -845,7 +845,7 @@ The content wasn't copied to the output. Check your `.csproj`:
 - Platform mismatch: Build content for `DesktopGL`, not `Windows`
 
 **Effect (.fx) compilation failures on non-Windows**
-MonoGame's effect compiler has platform-specific quirks. If effects fail on Linux/macOS CI:
+the engine's effect compiler has platform-specific quirks. If effects fail on Linux/macOS CI:
 - Pre-build effects on Windows and commit the `.xnb` files
 - Or use the `mgfxc` tool with Wine on Linux
 
@@ -899,7 +899,7 @@ Go through this on **every platform** before you ship.
 
 ### Release Infrastructure
 
-- [ ] Crash reporting is enabled and tested — see [G51](../../monogame-arch/guides/G51_crash_reporting.md)
+- [ ] Crash reporting is enabled and tested — see [G51](../../game-entity-component-system/guides/G51_crash_reporting.md)
 - [ ] Version number is correct and displayed in-game
 - [ ] Store page text and screenshots are up to date
 - [ ] System requirements listed accurately
@@ -1311,13 +1311,13 @@ Copy this for every release. Print it, put it in a Notion page, whatever works f
 #### Post-Release
 
 - [ ] Patch notes posted (Steam, itch.io, social media)
-- [ ] Crash reporting confirmed working — see [G51](../../monogame-arch/guides/G51_crash_reporting.md)
+- [ ] Crash reporting confirmed working — see [G51](../../game-entity-component-system/guides/G51_crash_reporting.md)
 - [ ] Monitor for bug reports (24-48 hours)
 - [ ] Celebrate! You shipped a game! 🎉
 
 ---
 
 > **See also:**
-> - [G32 — Deployment & Platform Builds](../../monogame-arch/guides/G32_deployment_platform_builds.md) for platform-specific build details
-> - [G36 — Publishing & Distribution](../../monogame-arch/guides/G36_publishing_distribution.md) for store setup and marketing
-> - [G51 — Crash Reporting](../../monogame-arch/guides/G51_crash_reporting.md) for setting up crash analytics
+> - [G32 — Deployment & Platform Builds](../../game-entity-component-system/guides/G32_deployment_platform_builds.md) for platform-specific build details
+> - [G36 — Publishing & Distribution](../../game-entity-component-system/guides/G36_publishing_distribution.md) for store setup and marketing
+> - [G51 — Crash Reporting](../../game-entity-component-system/guides/G51_crash_reporting.md) for setting up crash analytics

@@ -3,13 +3,13 @@
 
 > **Category:** Guide · **Related:** [G8 Content Pipeline](./G8_content_pipeline.md) · [G24 Window & Display Management](./G24_window_display_management.md) · [G25 Safe Areas & Adaptive Layout](./G25_safe_areas_adaptive_layout.md) · [E4 Solo Project Management](../../core/project-management/E4_project_management.md)
 
-> Everything needed to ship a MonoGame + Arch ECS game: dotnet publish flags, platform-specific builds, Steam/itch.io distribution, code signing, CI/CD pipelines, and troubleshooting deployment failures.
+> Everything needed to ship a Arch ECS game: dotnet publish flags, platform-specific builds, Steam/itch.io distribution, code signing, CI/CD pipelines, and troubleshooting deployment failures.
 
 ---
 
 ## 1. Critical .NET Publish Flags
 
-MonoGame games have specific runtime requirements that differ from typical .NET applications. Getting the publish flags wrong causes micro-stutters, missing dependencies, or broken builds.
+the engine games have specific runtime requirements that differ from typical .NET applications. Getting the publish flags wrong causes micro-stutters, missing dependencies, or broken builds.
 
 ### 1.1 The Essential Command
 
@@ -86,7 +86,7 @@ Set publish flags in the project file so you don't forget them:
 
 ## 2. DesktopGL vs WindowsDX
 
-MonoGame ships two desktop backends. Choose the right one before you start — switching mid-project is possible but tedious.
+the engine ships two desktop backends. Choose the right one before you start — switching mid-project is possible but tedious.
 
 ### 2.1 Comparison
 
@@ -124,7 +124,7 @@ WindowsDX builds require the DirectX End-User Runtime on the player's machine. M
 https://www.microsoft.com/en-us/download/details.aspx?id=35
 ```
 
-DesktopGL has no such requirement — SDL2 and OpenAL libraries are bundled with the MonoGame NuGet package.
+DesktopGL has no such requirement — SDL2 and OpenAL libraries are bundled with the the engine NuGet package.
 
 ### 2.4 Switching Between Backends
 
@@ -132,10 +132,10 @@ The only change is the NuGet package reference:
 
 ```xml
 <!-- DesktopGL -->
-<PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.*" />
+<PackageReference Include="the game framework" Version="3.8.*" />
 
 <!-- WindowsDX -->
-<PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.*" />
+<PackageReference Include="the game framework" Version="3.8.*" />
 ```
 
 Game code is identical. Content pipeline builds are the same (MGCB compiles shaders for the target platform). The `.mgcb` file's `/platform:` directive should match: `DesktopGL` or `WindowsDX`.
@@ -403,7 +403,7 @@ codesign --force --deep --options runtime \
 
 > **Why `allow-jit` and `allow-unsigned-executable-memory`?** The .NET runtime uses JIT compilation, which requires writing and executing code in memory. Without these entitlements, the hardened runtime blocks the JIT and the game crashes on launch.
 
-> **Why `disable-library-validation`?** MonoGame loads native libraries (SDL2, OpenAL) that aren't signed with your certificate. Without this entitlement, the hardened runtime refuses to load them.
+> **Why `disable-library-validation`?** the engine loads native libraries (SDL2, OpenAL) that aren't signed with your certificate. Without this entitlement, the hardened runtime refuses to load them.
 
 ### 4.5 Notarization
 
@@ -475,7 +475,7 @@ xcrun stapler staple MyGame.dmg
 
 ### 5.1 Library Dependencies
 
-MonoGame DesktopGL on Linux requires SDL2 and OpenAL. These are bundled with the MonoGame NuGet package as native libraries, but some distributions may need system packages:
+the engine DesktopGL on Linux requires SDL2 and OpenAL. These are bundled with the the engine NuGet package as native libraries, but some distributions may need system packages:
 
 ```bash
 # Ubuntu/Debian
@@ -555,7 +555,7 @@ Install to `/usr/share/applications/` or `~/.local/share/applications/`.
 
 When distributing on Steam for Linux, Steam provides the **Steam Linux Runtime** (based on a fixed set of libraries). Your game runs inside this container, which provides consistent library versions regardless of the user's distribution.
 
-For MonoGame self-contained builds, this usually "just works" because you bundle the .NET runtime and MonoGame bundles SDL2/OpenAL. If you depend on additional system libraries, test inside the Steam Runtime:
+For the engine self-contained builds, this usually "just works" because you bundle the .NET runtime and the engine bundles SDL2/OpenAL. If you depend on additional system libraries, test inside the Steam Runtime:
 
 ```bash
 # Test with Steam Runtime Scout (deprecated) or Sniper
@@ -581,18 +581,18 @@ iOS builds require a separate platform project that references your Core game pr
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MonoGame.Framework.iOS" Version="3.8.*" />
-    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*" />
+    <PackageReference Include="the game framework" Version="3.8.*" />
+    <PackageReference Include="the content builder" Version="3.8.*" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\MyGame.Core\MyGame.Core.csproj" />
-    <MonoGameContentReference Include="..\MyGame.Core\Content\Content.mgcb" />
+    <ContentReference Include="..\MyGame.Core\Content\Content.mgcb" />
   </ItemGroup>
 
   <!-- Required for .NET runtime reflection (JIT/AOT) -->
   <ItemGroup>
-    <TrimmerRootAssembly Include="MonoGame.Framework" />
+    <TrimmerRootAssembly Include="the game framework" />
   </ItemGroup>
 </Project>
 ```
@@ -695,7 +695,7 @@ Beyond TestFlight, full App Store submission requires:
 - **AOT compilation is mandatory** — iOS doesn't allow JIT. .NET for iOS uses Mono AOT. Reflection-heavy code may fail.
 - **Add `Arch.AOT.SourceGenerator`** — Arch ECS needs this for iOS AOT compatibility.
 - **`TitleContainer.OpenStream()` is the only way to load content** — `File.ReadAllText()` won't find bundled content.
-- **Metal is the only graphics API** — OpenGL ES is deprecated and removed on modern iOS. MonoGame.Framework.iOS uses Metal.
+- **Metal is the only graphics API** — OpenGL ES is deprecated and removed on modern iOS. the game framework uses Metal.
 - **Maximum binary size** — App Store has a 4 GB limit. Self-contained .NET + game content typically fits well under this.
 
 ---
@@ -717,13 +717,13 @@ Beyond TestFlight, full App Store submission requires:
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MonoGame.Framework.Android" Version="3.8.*" />
-    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*" />
+    <PackageReference Include="the game framework" Version="3.8.*" />
+    <PackageReference Include="the content builder" Version="3.8.*" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\MyGame.Core\MyGame.Core.csproj" />
-    <MonoGameContentReference Include="..\MyGame.Core\Content\Content.mgcb" />
+    <ContentReference Include="..\MyGame.Core\Content\Content.mgcb" />
   </ItemGroup>
 </Project>
 ```
@@ -902,7 +902,7 @@ The Steam overlay (Shift+Tab) works automatically with DesktopGL. Ensure your ga
 
 ```csharp
 // Don't grab the mouse exclusively — prevents overlay from appearing
-// This is handled correctly by default in MonoGame DesktopGL
+// This is handled correctly by default in the engine DesktopGL
 
 // Register for overlay activation (pause the game when overlay opens)
 Callback<GameOverlayActivated_t>.Create(data =>
@@ -1369,18 +1369,18 @@ Add to the release job:
 |------|---------|-----------|
 | `README.txt` | Basic instructions, controls, known issues | ✅ Yes |
 | `LICENSE.txt` | Your game's license (proprietary or open source) | ✅ Yes |
-| `THIRD_PARTY_LICENSES.txt` | Licenses for MonoGame, Arch, libraries, fonts, assets | ✅ Yes |
+| `THIRD_PARTY_LICENSES.txt` | Licenses for the engine, Arch, libraries, fonts, assets | ✅ Yes |
 | `CHANGELOG.txt` | Version history | Recommended |
 
 ### 12.3 Third-Party License Compliance
 
-MonoGame (Ms-PL), Arch (Apache 2.0), SDL2 (zlib), OpenAL Soft (LGPL 2.1), FontStashSharp (MIT), etc. — each has license terms. Create a `THIRD_PARTY_LICENSES.txt`:
+the engine (Ms-PL), Arch (Apache 2.0), SDL2 (zlib), OpenAL Soft (LGPL 2.1), the font rendering library (MIT), etc. — each has license terms. Create a `THIRD_PARTY_LICENSES.txt`:
 
 ```text
 This game uses the following open-source software:
 
-MonoGame Framework — Microsoft Public License (Ms-PL)
-https://github.com/MonoGame/MonoGame/blob/develop/LICENSE.txt
+the engine Framework — Microsoft Public License (Ms-PL)
+https://github.com/the engine/the engine/blob/develop/LICENSE.txt
 
 Arch ECS — Apache License 2.0
 https://github.com/genaray/Arch/blob/master/LICENSE
@@ -1388,8 +1388,8 @@ https://github.com/genaray/Arch/blob/master/LICENSE
 SDL2 — zlib License
 https://www.libsdl.org/license.php
 
-FontStashSharp — MIT License
-https://github.com/FontStashSharp/FontStashSharp/blob/main/LICENSE
+the font rendering library — MIT License
+https://github.com/the font rendering library/the font rendering library/blob/main/LICENSE
 
 [... additional libraries, fonts, sound effects, etc.]
 ```
@@ -1408,7 +1408,7 @@ Graphics: OpenGL 3.0 compatible
 Storage: [X] MB available space
 ```
 
-For 2D MonoGame games, requirements are extremely low. Be honest — don't list higher specs than needed.
+For 2D the engine games, requirements are extremely low. Be honest — don't list higher specs than needed.
 
 ---
 
@@ -1420,14 +1420,14 @@ For 2D MonoGame games, requirements are extremely low. Be honest — don't list 
 |---------|-------|-----|
 | **"App is damaged and can't be opened" (macOS)** | Not code-signed or notarized | Sign and notarize the .app bundle (see Section 4) |
 | **Game launches then immediately closes** | Missing native library (SDL2, OpenAL) | Check publish output includes native libs; verify self-contained build |
-| **`ContentLoadException: file not found`** | Content not copied to output, or case mismatch | Verify `MonoGameContentReference` in .csproj; check case sensitivity on Linux |
+| **`ContentLoadException: file not found`** | Content not copied to output, or case mismatch | Verify `ContentReference` in .csproj; check case sensitivity on Linux |
 | **White/pink screen on launch** | Content directory missing entirely | Ensure Content/ folder is alongside the executable in the publish output |
 | **Micro-stutters during first 2 minutes** | ReadyToRun or TieredCompilation enabled | Set `-p:PublishReadyToRun=false -p:TieredCompilation=false` |
 | **`DllNotFoundException: libSDL2`** | SDL2 native library not found | DesktopGL NuGet should bundle it; verify `runtimes/` folder in output |
 | **`DllNotFoundException: steam_api64`** | Steamworks native DLL missing | Copy `steam_api64.dll` / `libsteam_api.so` / `libsteam_api.dylib` to output |
 | **Steam overlay not appearing** | Game not launched through Steam, or overlay disabled | Launch via Steam client; check Steam settings → In-Game → Enable overlay |
 | **Black screen on Linux** | OpenGL driver issues | Install latest Mesa drivers; try `MESA_GL_VERSION_OVERRIDE=3.3` |
-| **App crashes on iOS launch** | Trimmer removed reflection targets | Add `<TrimmerRootAssembly Include="MonoGame.Framework" />` to .csproj |
+| **App crashes on iOS launch** | Trimmer removed reflection targets | Add `<TrimmerRootAssembly Include="the game framework" />` to .csproj |
 | **Android crash: `java.lang.UnsatisfiedLinkError`** | Wrong architecture or missing native lib | Ensure building for correct RID (`android-arm64`); check native lib inclusion |
 | **itch.io "No compatible downloads"** | Wrong channel name | Use `windows`, `mac`, `linux` as channel names for auto-detection |
 

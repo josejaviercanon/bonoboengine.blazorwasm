@@ -5,7 +5,7 @@
 
 **Game feel is the one area where AI can't replace human judgment.** But you can build tools that compress the iteration loop from "change code → recompile → test → repeat" to "drag slider → feel it instantly." This guide covers lightweight ImGui-based tooling for tuning game feel parameters at runtime, recording/comparing iterations, and exporting tuned values for production use.
 
-**Philosophy:** These tools exist to serve the game, not to become the game. Total budget: ~500-800 lines, 1-2 days of work. If you're spending more, you're falling into the [tool-building trap](../E/E8_monogamestudio_postmortem.md).
+**Philosophy:** These tools exist to serve the game, not to become the game. Total budget: ~500-800 lines, 1-2 days of work. If you're spending more, you're falling into the [tool-building trap](../E/E8_studio_postmortem.md).
 
 ---
 

@@ -23,15 +23,15 @@
 
 ## Overview
 
-Tilemaps are the backbone of most 2D games — they define the world geometry, collision surfaces, visual layers, and spawn logic. This guide covers everything from loading Tiled editor maps into MonoGame, to efficient rendering with viewport culling, autotiling with bitmasks, collision extraction, chunk streaming for large worlds, animated tiles, and full Arch ECS integration.
+Tilemaps are the backbone of most 2D games — they define the world geometry, collision surfaces, visual layers, and spawn logic. This guide covers everything from loading Tiled editor maps into the engine, to efficient rendering with viewport culling, autotiling with bitmasks, collision extraction, chunk streaming for large worlds, animated tiles, and full Arch ECS integration.
 
 **Key dependencies:**
 
 | Package | Purpose |
 |---|---|
-| `MonoGame.Framework.DesktopGL` | Core framework, SpriteBatch rendering |
-| `MonoGame.Extended` | Tiled map loading (`TiledMap`), cameras |
-| `MonoGame.Extended.Tiled` | `.tmx` / `.tsx` content pipeline processors |
+| `the game framework` | Core framework, SpriteBatch rendering |
+| `PixiJS + custom C# utilities` | Tiled map loading (`TiledMap`), cameras |
+| `PixiJS + custom C# utilities` | `.tmx` / `.tsx` content pipeline processors |
 | `Arch` (v2.1.0) | ECS world, queries, components |
 
 ---
@@ -40,12 +40,12 @@ Tilemaps are the backbone of most 2D games — they define the world geometry, c
 
 ### 1.1 Content Pipeline Setup
 
-Add the MonoGame.Extended content pipeline references to your `.mgcb` file:
+Add the PixiJS + custom C# utilities content pipeline references to your `.mgcb` file:
 
 ```
 #-------------------------------- References --------------------------------#
 
-/reference:..\..\packages\MonoGame.Extended.Content.Pipeline\lib\MonoGame.Extended.Content.Pipeline.dll
+/reference:..\..\packages\TiledContentPipeline\lib\TiledContentPipeline
 
 #---------------------------------- Content ---------------------------------#
 
@@ -74,11 +74,11 @@ Content/
 
 > **Tip:** Tiled saves tileset image paths as relative. Keep `.tsx` and `.png` siblings or adjust paths in the `.tmx` to match your Content folder layout.
 
-### 1.2 Loading via MonoGame.Extended
+### 1.2 Loading via PixiJS + custom C# utilities
 
 ```csharp
-using MonoGame.Extended.Tiled;
-using MonoGame.Extended.Tiled.Renderers;
+using Tiled;
+using Tiled;
 
 public class MapLoadingSystem
 {
@@ -247,7 +247,7 @@ public static RawMap LoadJson(string tmjPath)
 using Arch.Core;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MonoGame.Extended.Tiled;
+using Tiled;
 
 // Represents a loaded tilemap resource attached to an entity
 public record struct TilemapComponent(
@@ -264,7 +264,7 @@ public record struct CameraBounds(
 public record struct ActiveMap;
 ```
 
-### 2.2 MonoGame.Extended Renderer (Quick Start)
+### 2.2 PixiJS + custom C# utilities Renderer (Quick Start)
 
 ```csharp
 public class TilemapRenderSystem
@@ -742,7 +742,7 @@ public record struct TileFlagGrid(
 ### 4.2 Extracting Collision from Tiled Object Layers
 
 ```csharp
-using MonoGame.Extended.Tiled;
+using Tiled;
 
 public static class TileCollisionExtractor
 {

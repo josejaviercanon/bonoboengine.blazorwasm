@@ -222,8 +222,8 @@ Use a spatial hash (grid of cell lists) for efficient neighbor lookups in steeri
 
 ## Related Engine Guides
 
-- **MonoGame:** [G40 — Pathfinding](../../monogame-arch/guides/G40_pathfinding.md) (A*, flow fields, nav mesh implementation with Arch ECS)
-- **MonoGame:** [G4 — AI Systems](../../monogame-arch/guides/G4_ai_systems.md) (steering behaviors, tactical AI, squad movement)
+- **This engine:** [G40 — Pathfinding](../../game-entity-component-system/guides/G40_pathfinding.md) (A*, flow fields, nav mesh implementation with Arch ECS)
+- **This engine:** [G4 — AI Systems](../../game-entity-component-system/guides/G4_ai_systems.md) (steering behaviors, tactical AI, squad movement)
 - **Godot:** [G7 — TileMap & Terrain](../../godot-arch/guides/G7_tilemap_and_terrain.md) (AStarGrid2D integration, procedural dungeon generation, chunk-based worlds)
 
 ## Related Concept Docs

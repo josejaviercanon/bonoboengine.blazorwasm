@@ -1,7 +1,7 @@
 # G33 — Profiling & Optimization Workflow
 > **Category:** Guide · **Related:** [G13 C# Performance](./G13_csharp_performance.md) · [G15 Game Loop](./G15_game_loop.md) · [G16 Debugging](./G16_debugging.md) · [G2 Rendering & Graphics](./G2_rendering_and_graphics.md)
 
-> Systematic approach to finding and fixing performance problems in MonoGame + Arch ECS games. Measure first, optimize second, verify always.
+> Systematic approach to finding and fixing performance problems in Arch ECS games. Measure first, optimize second, verify always.
 
 ---
 
@@ -72,7 +72,7 @@ public class BoundDetector
 }
 ```
 
-> **Note:** `_lastGpuMs` above measures CPU-side draw call submission time, not actual GPU execution. True GPU profiling requires platform-specific tools (Xcode GPU profiler, RenderDoc, PIX). However, for 2D MonoGame games, CPU-side draw submission time correlates strongly with GPU load — more draw calls and state changes means more work on both sides.
+> **Note:** `_lastGpuMs` above measures CPU-side draw call submission time, not actual GPU execution. True GPU profiling requires platform-specific tools (Xcode GPU profiler, RenderDoc, PIX). However, for 2D the engine games, CPU-side draw submission time correlates strongly with GPU load — more draw calls and state changes means more work on both sides.
 
 **Quick diagnostic rules:**
 
@@ -285,7 +285,7 @@ public static class ProfilerOverlay
                 0, null, 0f, 16.67f, new System.Numerics.Vector2(330, 60));
         }
 
-        // MonoGame GPU metrics
+        // the engine GPU metrics
         ImGui.Text($"Draw Calls: {_graphicsDevice?.Metrics.DrawCount ?? 0}");
         ImGui.Text($"Sprites: {_graphicsDevice?.Metrics.SpriteCount ?? 0}");
         ImGui.Text($"Texture Swaps: {_graphicsDevice?.Metrics.TextureCount ?? 0}");
@@ -299,9 +299,9 @@ public static class ProfilerOverlay
 }
 ```
 
-### 2.4 MonoGame Built-in Metrics
+### 2.4 the engine Built-in Metrics
 
-MonoGame exposes GPU metrics every frame — check these before reaching for external tools:
+the engine exposes GPU metrics every frame — check these before reaching for external tools:
 
 ```csharp
 var m = GraphicsDevice.Metrics;
@@ -314,7 +314,7 @@ m.TargetCount;      // Number of render target switches
 m.PixelShaderCount; // Shader changes
 m.PrimitiveCount;   // Total triangles submitted
 
-// Reset happens automatically each frame in MonoGame
+// Reset happens automatically each frame in the engine
 ```
 
 **Healthy baselines for 2D games:**
@@ -787,7 +787,7 @@ The most accessible .NET memory profiler:
 
 ### 6.2 Finding Texture Leaks
 
-Textures are the most common GPU memory leak in MonoGame:
+Textures are the most common GPU memory leak in the engine:
 
 ```csharp
 public class TextureLeakDetector
@@ -1549,7 +1549,7 @@ The definitive iOS profiling tool:
 ```
 Product → Profile (Cmd+I) in Xcode
 
-Key Instruments for MonoGame:
+Key Instruments for the engine:
 ┌──────────────────────────────────────────────────┐
 │ Time Profiler      — CPU hot paths per thread    │
 │ Allocations        — heap allocations over time  │
@@ -2062,7 +2062,7 @@ public class HeadlessGame : IDisposable
 | Question | Tool | Section |
 |---|---|---|
 | "Which system is slowest?" | Built-in Stopwatch timing + ImGui | §2 |
-| "Am I CPU or GPU bound?" | BoundDetector + MonoGame Metrics | §1.2 |
+| "Am I CPU or GPU bound?" | BoundDetector + the engine Metrics | §1.2 |
 | "Where are allocations?" | `GC.GetAllocatedBytesForCurrentThread()` + AllocationTracker | §4 |
 | "Why did I get a GC pause?" | dotnet-counters, PerfView | §3.1, §3.3 |
 | "What's the hot path?" | dotTrace Timeline, VS CPU Usage | §3.4, §3.5 |

@@ -2,7 +2,7 @@
 
 > **Category:** Guide · **Related:** [G40 Pathfinding](./G40_pathfinding.md) · [G64 Combat & Damage](./G64_combat_damage_systems.md) · [G52 Character Controller](./G52_character_controller.md) · [G31 Animation State Machines](./G31_animation_state_machines.md) · [G12 Design Patterns](./G12_design_patterns.md) · [G37 Tilemap Systems](./G37_tilemap_systems.md) · [G67 Object Pooling](./G67_object_pooling.md) · [R2 Capability Matrix](../reference/R2_capability_matrix.md) · [C1 Genre Reference](../../core/game-design/C1_genre_reference.md)
 
-> Comprehensive implementation guide covering AI architectures, pathfinding, perception, group tactics, dynamic difficulty, and ECS integration patterns for MonoGame + Arch ECS. Every system is composable — combine FSMs, behavior trees, steering, and utility AI freely via ECS component composition.
+> Comprehensive implementation guide covering AI architectures, pathfinding, perception, group tactics, dynamic difficulty, and ECS integration patterns for Arch ECS. Every system is composable — combine FSMs, behavior trees, steering, and utility AI freely via ECS component composition.
 
 ---
 

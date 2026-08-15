@@ -1,7 +1,7 @@
 # G10 — Custom Game Systems
 > **Category:** Guide · **Related:** [G1 Custom Code Recipes](./G1_custom_code_recipes.md) · [R2 Capability Matrix](../reference/R2_capability_matrix.md) · [C1 Genre Reference](../../core/game-design/C1_genre_reference.md)
 
-> Comprehensive implementation guide for 10 essential game systems built with MonoGame + Arch ECS. These are systems no library provides well enough — you'll write them as reusable modules in your Core project. Each is genre-agnostic and composable. Store them in `src/Systems/` per the [project structure](../reference/R3_project_structure.md).
+> Comprehensive implementation guide for 10 essential game systems built with Arch ECS. These are systems no library provides well enough — you'll write them as reusable modules in your Core project. Each is genre-agnostic and composable. Store them in `src/Systems/` per the [project structure](../reference/R3_project_structure.md).
 
 ---
 

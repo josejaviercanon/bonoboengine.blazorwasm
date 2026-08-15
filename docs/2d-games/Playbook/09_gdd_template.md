@@ -16,7 +16,7 @@
 | **Date** | [___] |
 | **Genre** | [___] *e.g., Action-Platformer, Top-Down RPG, Roguelite Shooter* |
 | **Platform Targets** | [___] *e.g., Windows, Linux, macOS, Steam Deck* |
-| **Engine / Framework** | MonoGame + Arch ECS *(modify if different)* |
+| **Engine / Framework** | Arch ECS *(modify if different)* |
 | **Target Rating** | [___] *e.g., E for Everyone, T for Teen* |
 | **Status** | [___] *Concept / Pre-Production / Production / Polish* |
 
@@ -643,9 +643,9 @@ What order does the player gain abilities/tools?
 |---|---|
 | **ECS Framework** | Arch ECS *(or: [___])* |
 | **Scene Management** | [___] *e.g., Stack-based scene manager with transition support* |
-| **Physics** | [___] *e.g., Custom AABB, Box2D, Aether.Physics2D* |
+| **Physics** | [___] *e.g., Custom AABB, Box2D, a 2D physics library* |
 | **Rendering** | [___] *e.g., SpriteBatch with custom shader pipeline* |
-| **Audio Engine** | [___] *e.g., FMOD, MonoGame.Extended, custom* |
+| **Audio Engine** | [___] *e.g., Web Audio, custom* |
 | **UI System** | [___] *e.g., Custom immediate-mode, retained-mode, library name* |
 | **Serialization** | [___] *e.g., JSON via System.Text.Json, MessagePack* |
 

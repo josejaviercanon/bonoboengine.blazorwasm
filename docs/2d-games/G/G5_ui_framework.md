@@ -1,7 +1,7 @@
 # G5 — UI Framework
 > **Category:** Guide · **Related:** [R1 Library Stack](../R/R1_library_stack.md) · [C1 Genre Reference](../C/C1_genre_reference.md)
 
-> Complete setup and usage guide for Gum.MonoGame — the official MonoGame UI recommendation.
+> Complete setup and usage guide for the UI framework — the official the engine UI recommendation.
 
 ---
 
@@ -11,13 +11,13 @@
 Install via NuGet (actively updated — latest is `2026.3.4.1`):
 
 ```bash
-dotnet add package Gum.MonoGame
+dotnet add package the UI framework
 ```
 
 Minimal Game class integration:
 
 ```csharp
-using MonoGameGum;
+using the UI framework;
 using Gum.Forms;
 using Gum.Forms.Controls;
 
@@ -55,7 +55,7 @@ public class Game1 : Game
 }
 ```
 
-> **Nez/MonoGame.Extended:** Works alongside them. For Nez, call `GumUI.Initialize(Core.GraphicsDevice, ...)` instead.
+> **Nez/PixiJS + custom C# utilities:** Works alongside them. For Nez, call `GumUI.Initialize(Core.GraphicsDevice, ...)` instead.
 
 ### 2 Layout System
 
@@ -167,8 +167,8 @@ btn.Visual.Color = new Color(40, 40, 60);    // background tint
 btn.Visual.SetProperty("FontSize", 18);
 
 // Font integration — Gum supports custom fonts via BitmapFont or
-// integration with FontStashSharp for runtime font rendering:
-// 1. Add FontStashSharp NuGet
+// integration with the font rendering library for runtime font rendering:
+// 1. Add the font rendering library NuGet
 // 2. Create fonts at runtime
 // 3. Assign to Gum text objects via custom renderers
 ```
@@ -238,7 +238,7 @@ For touch: Gum handles touch input as mouse input on mobile platforms — no spe
 
 ### 8 Framework Comparison
 
-| Feature | **Gum.MonoGame** | **Myra** | **Custom SpriteBatch** |
+| Feature | **the UI framework** | **Myra** | **Custom SpriteBatch** |
 |---|---|---|---|
 | Layout engine | Full (anchoring, stacking, percentage, auto-size) | CSS-like grid/stack | Manual calculation |
 | Forms controls | ✅ Complete set (Button, TextBox, ListBox, etc.) | ✅ Rich widget set | ❌ Build from scratch |
@@ -249,7 +249,7 @@ For touch: Gum handles touch input as mouse input on mobile platforms — no spe
 | Best for | Production UI, complex menus, data-heavy screens | Rapid prototyping, tool UIs | Simple HUDs, minimal UI |
 
 **When to use each:**
-- **Gum** → Full game UI: menus, inventory, dialogue, HUD. Best layout engine in the MonoGame ecosystem.
+- **Gum** → Full game UI: menus, inventory, dialogue, HUD. Best layout engine in the the engine ecosystem.
 - **Myra** → Quick prototyping or dev tools. Good if you prefer CSS-like styling.
 - **Custom SpriteBatch** → Simple health bars, score displays, debug text. When you need <5 UI elements and full rendering control.
 

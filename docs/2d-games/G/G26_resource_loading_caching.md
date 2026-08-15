@@ -3,7 +3,7 @@
 
 ---
 
-## Resource Types in MonoGame
+## Resource Types in the engine
 
 Your game loads three categories of resources, each with different lifecycle and caching behavior:
 
@@ -17,7 +17,7 @@ Your game loads three categories of resources, each with different lifecycle and
 
 ## MGCB Assets (Content.Load)
 
-MonoGame's `ContentManager` compiles assets at build time (via MGCB) and loads them at runtime. This is the primary asset path for textures, sounds, effects, and maps.
+the engine's `ContentManager` compiles assets at build time (via MGCB) and loads them at runtime. This is the primary asset path for textures, sounds, effects, and maps.
 
 ### Automatic Caching
 
@@ -89,7 +89,7 @@ _levelResources = new LevelResources(Services, "forest_01");
 | .mp3, .ogg | Song | `Song` |
 | .spritefont | Sprite Font | `SpriteFont` |
 | .tmx (Tiled map) | Extended Content Pipeline | `TiledMap` |
-| .ase/.aseprite | MonoGame.Aseprite | `AsepriteFile` |
+| .ase/.aseprite | the Aseprite spritesheet importer | `AsepriteFile` |
 
 ---
 
@@ -154,9 +154,9 @@ public sealed class DataCache
 
 ---
 
-## FontStashSharp Fonts
+## the font rendering library Fonts
 
-FontStashSharp loads .ttf/.otf files at runtime (not through MGCB). The `FontSystem` object should be created once and reused.
+the font rendering library loads .ttf/.otf files at runtime (not through MGCB). The `FontSystem` object should be created once and reused.
 
 ```csharp
 /// <summary>Global font manager — create once, use everywhere.</summary>
@@ -173,7 +173,7 @@ public sealed class FontManager : IDisposable
         _fontSystem.AddFont(fontStream);
     }
 
-    /// <summary>Get a font at a specific pixel size. FontStashSharp caches internally.</summary>
+    /// <summary>Get a font at a specific pixel size. the font rendering library caches internally.</summary>
     public SpriteFontBase GetFont(float size) => _fontSystem.GetFont(size);
 
     public void Dispose() => _fontSystem.Dispose();
@@ -202,7 +202,7 @@ Texture atlases pack multiple sprites into a single texture, reducing draw call 
 
 ### Loading Atlases
 
-With MonoGame.Extended:
+With PixiJS + custom C# utilities:
 
 ```csharp
 // Loaded via MGCB (Extended Content Pipeline processes the atlas)
@@ -212,7 +212,7 @@ TextureRegion2D playerRegion = atlas.GetRegion("player_idle");
 spriteBatch.Draw(playerRegion, position, Color.White);
 ```
 
-With MonoGame.Aseprite (direct .ase import):
+With the Aseprite spritesheet importer (direct .ase import):
 
 ```csharp
 AsepriteFile aseFile = Content.Load<AsepriteFile>("sprites/player");
@@ -320,7 +320,7 @@ public async Task LoadSceneAssetsAsync(ContentManager content, IProgress<float> 
 }
 ```
 
-**Important caveat:** MonoGame's `ContentManager.Load<Texture2D>()` creates GPU resources, which must happen on the main thread on some platforms. The safest approach for cross-platform:
+**Important caveat:** the engine's `ContentManager.Load<Texture2D>()` creates GPU resources, which must happen on the main thread on some platforms. The safest approach for cross-platform:
 
 1. Load non-GPU data (JSON, audio) on background thread
 2. Queue GPU resource creation (textures, effects) for the main thread
@@ -365,16 +365,16 @@ These are approximate — iOS doesn't publish hard limits. Monitor memory with X
 
 ## Comparison to Godot's Resource System
 
-| Godot | MonoGame Equivalent |
+| Godot | the engine Equivalent |
 |-------|-------------------|
 | `preload("res://sprite.png")` | `Content.Load<Texture2D>("sprite")` — loaded at scene init, cached |
-| `load("res://sprite.png")` | Same as above — MonoGame always caches by name |
+| `load("res://sprite.png")` | Same as above — the engine always caches by name |
 | Reference counting (auto-free) | Manual — `ContentManager.Unload()` or `IDisposable` |
 | `.tres` custom resource | JSON file + `System.Text.Json` deserialization |
 | `ResourceLoader.load_threaded_request()` | `Task.Run(() => Content.Load<T>(...))` with caveats |
 | Scene instancing (`PackedScene`) | No equivalent — ECS entities are created via factory methods |
 
-The main difference: Godot reference-counts resources and frees them when unused. MonoGame uses explicit scoping — you decide when to load and unload via ContentManager lifetime.
+The main difference: Godot reference-counts resources and frees them when unused. The engine uses explicit scoping — you decide when to load and unload via ContentManager lifetime.
 
 ---
 

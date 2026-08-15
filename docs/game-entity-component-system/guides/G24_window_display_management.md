@@ -43,11 +43,11 @@ public class GameApp : Game
 These are different concepts:
 
 - **Window size** (`Window.ClientBounds`): The size of the OS window in screen points. On macOS Retina, a 1920x1080 window occupies 1920x1080 points but the actual pixel count may differ.
-- **Backbuffer size** (`PreferredBackBufferWidth/Height`): The resolution MonoGame renders at. This is what `GraphicsDevice.PresentationParameters.BackBufferWidth/Height` returns after initialization.
+- **Backbuffer size** (`PreferredBackBufferWidth/Height`): The resolution the engine renders at. This is what `GraphicsDevice.PresentationParameters.BackBufferWidth/Height` returns after initialization.
 
 On **DesktopGL**, the backbuffer matches the preferred size you set. The OS scales the window to fit your display.
 
-On **iOS**, the backbuffer automatically matches the device's native pixel resolution (when `LaunchScreen.storyboard` is present). `PreferredBackBufferWidth/Height` is ignored — MonoGame overrides it.
+On **iOS**, the backbuffer automatically matches the device's native pixel resolution (when `LaunchScreen.storyboard` is present). `PreferredBackBufferWidth/Height` is ignored — the engine overrides it.
 
 ---
 
@@ -159,7 +159,7 @@ IsFixedTimeStep = true;
 TargetElapsedTime = TimeSpan.FromSeconds(1.0 / 60.0);
 ```
 
-MonoGame syncs `Present()` to the monitor's refresh rate. On a 60Hz display, this gives exactly 60fps with zero tearing. On a 144Hz display, you get 144fps (but `TargetElapsedTime` still controls how often `Update()` runs).
+the engine syncs `Present()` to the monitor's refresh rate. On a 60Hz display, this gives exactly 60fps with zero tearing. On a 144Hz display, you get 144fps (but `TargetElapsedTime` still controls how often `Update()` runs).
 
 ### VSync Off
 
@@ -169,7 +169,7 @@ IsFixedTimeStep = true;
 TargetElapsedTime = TimeSpan.FromSeconds(1.0 / 60.0);
 ```
 
-MonoGame calls `Update()`/`Draw()` as fast as possible, up to `TargetElapsedTime` rate. Without VSync, screen tearing may occur. This mode is useful for benchmarking or when you implement your own frame limiter.
+the engine calls `Update()`/`Draw()` as fast as possible, up to `TargetElapsedTime` rate. Without VSync, screen tearing may occur. This mode is useful for benchmarking or when you implement your own frame limiter.
 
 ### Relationship to Game Loop
 
@@ -177,21 +177,21 @@ See [G15 Game Loop](./G15_game_loop.md) for the fixed-timestep accumulator patte
 
 | Setting | Effect |
 |---------|--------|
-| `IsFixedTimeStep = true` | MonoGame calls Update/Draw at `TargetElapsedTime` rate |
-| `IsFixedTimeStep = false` | MonoGame calls Update/Draw every frame (variable dt) |
+| `IsFixedTimeStep = true` | the engine calls Update/Draw at `TargetElapsedTime` rate |
+| `IsFixedTimeStep = false` | the engine calls Update/Draw every frame (variable dt) |
 | `SynchronizeWithVerticalRetrace = true` | Present() waits for VBlank (caps to display Hz) |
 | Both true | Update/Draw at target rate, present synced to display |
 
 For the recommended fixed-timestep accumulator:
 - Desktop: `IsFixedTimeStep = true`, `TargetElapsedTime = 1/60`, VSync on
-- iOS 60Hz: Same as desktop — MonoGame uses CADisplayLink at 60Hz
+- iOS 60Hz: Same as desktop — the engine uses CADisplayLink at 60Hz
 - iOS 120Hz ProMotion: `TargetElapsedTime = 1/120`, logic accumulator still ticks at 60Hz
 
 ---
 
 ## Graphics Profiles
 
-MonoGame supports two graphics profiles:
+the engine supports two graphics profiles:
 
 | Profile | Texture Size | Shader Model | Non-Power-of-2 Textures | NPOT Wrap |
 |---------|-------------|--------------|--------------------------|-----------|
@@ -229,7 +229,7 @@ Window.Position = new Point(
     (display.Height - Window.ClientBounds.Height) / 2);
 ```
 
-**Note:** MonoGame DesktopGL (SDL2) handles multi-monitor DPI scaling inconsistently across platforms. Test on actual hardware if multi-monitor support is important.
+**Note:** the engine DesktopGL (SDL2) handles multi-monitor DPI scaling inconsistently across platforms. Test on actual hardware if multi-monitor support is important.
 
 ---
 
@@ -237,7 +237,7 @@ Window.Position = new Point(
 
 iOS apps are always fullscreen. There is no windowed mode, no resize, no multi-monitor.
 
-### What MonoGame Handles Automatically
+### What the engine Handles Automatically
 - Backbuffer at native pixel resolution (when LaunchScreen.storyboard is present)
 - Orientation changes (if multiple orientations are allowed in Info.plist)
 - Retina/non-Retina scaling
@@ -256,11 +256,11 @@ iOS apps are always fullscreen. There is no windowed mode, no resize, no multi-m
 
 ### ProMotion Display Rate
 
-MonoGame 3.8.4 uses the deprecated `CADisplayLink.FrameInterval` which caps at 60Hz. To enable 120Hz on ProMotion devices:
+the engine 3.8.4 uses the deprecated `CADisplayLink.FrameInterval` which caps at 60Hz. To enable 120Hz on ProMotion devices:
 
 1. Set `TargetElapsedTime` to 1/120 in `GameApp`
 2. Hook `GameApp.PlatformTargetFpsChanged` in the iOS AppDelegate
-3. Use reflection to set `PreferredFrameRateRange` on MonoGame's internal `CADisplayLink`
+3. Use reflection to set `PreferredFrameRateRange` on the engine's internal `CADisplayLink`
 4. Add `CADisableMinimumFrameDurationOnPhone` to Info.plist for iPhone
 
 See [G15 Game Loop](./G15_game_loop.md) for the full pattern.
@@ -306,7 +306,7 @@ Window.AllowUserResizing = false;  // Fixed size for pixel-perfect
 
 **Forgetting `LaunchScreen.storyboard` on iOS:** Without it, iOS runs your app in a legacy compatibility mode with a scaled-down resolution. The backbuffer will be smaller than the actual screen, everything looks blurry, and touch coordinates are offset.
 
-**Setting backbuffer size on iOS:** MonoGame ignores `PreferredBackBufferWidth/Height` on iOS — the backbuffer always matches the device. Don't rely on these values being what you set.
+**Setting backbuffer size on iOS:** the engine ignores `PreferredBackBufferWidth/Height` on iOS — the backbuffer always matches the device. Don't rely on these values being what you set.
 
 **`Window.ClientBounds` is zero during construction:** Window dimensions aren't available until after `Initialize()`. Don't create resolution-dependent resources in the constructor.
 

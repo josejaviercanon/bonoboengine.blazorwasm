@@ -1,8 +1,8 @@
 # G — Stitch UI Workflow for Game Development
 
-> **Category:** Guide · **Engine:** Engine-Agnostic · **Related:** [G5 UI Framework (MonoGame)](../../monogame-arch/guides/G5_ui_framework.md) · [P5 Art Pipeline](../project-management/P5_art_pipeline.md) · [C1 Genre Reference](C1_genre_reference.md)
+> **Category:** Guide · **Engine:** Engine-Agnostic · **Related:** [G5 UI Framework (the engine)](../../game-entity-component-system/guides/G5_ui_framework.md) · [P5 Art Pipeline](../project-management/P5_art_pipeline.md) · [C1 Genre Reference](C1_genre_reference.md)
 
-> How to use Google Stitch — a free AI-native design canvas — to prototype game UI before implementation. Covers prompt engineering for game interfaces, export pipelines, and translation to MonoGame and Godot UI systems.
+> How to use Google Stitch — a free AI-native design canvas — to prototype game UI before implementation. Covers prompt engineering for game interfaces, export pipelines, and translation to the engine and Godot UI systems.
 
 ---
 
@@ -18,7 +18,7 @@
 8. [Vibe Design for Game Aesthetics](#8-vibe-design-for-game-aesthetics)
 9. [DESIGN.md for Game Style Systems](#9-designmd-for-game-style-systems)
 10. [Export Pipeline — Stitch to Game Engine](#10-export-pipeline--stitch-to-game-engine)
-11. [Integration with MonoGame](#11-integration-with-monogame)
+11. [Integration with the engine](#11-integration-with-the-engine)
 12. [Integration with Godot](#12-integration-with-godot)
 13. [Advanced Workflows](#13-advanced-workflows)
 14. [Limitations & What Stitch Is Not](#14-limitations--what-stitch-is-not)
@@ -128,7 +128,7 @@ With Stitch, steps 1-2 collapse into seconds:
 
 ### What Stitch Does NOT Do
 
-- Generate actual game engine UI code (no GDScript Control nodes, no MonoGame Gum layouts)
+- Generate actual game engine UI code (no GDScript Control nodes, no the engine Blazor/Tailwind layouts)
 - Render at pixel-art resolutions (it generates web-scale UI)
 - Handle real-time gameplay interactions (hover states, drag & drop, animation)
 - Replace your game's rendering pipeline
@@ -260,7 +260,7 @@ texture, copper/bronze accents, handwritten-style font for recipe names.
 
 **Too prescriptive about implementation:**
 ```
-❌ "Create a MonoGame Gum layout with GraphicalUiElement containers"
+❌ "Create a the engine Blazor/Tailwind layout with GraphicalUiElement containers"
 ❌ "Build a Godot Control node tree with VBoxContainer"
 ```
 Stitch generates web UI — describe what it looks like, not how it's coded.
@@ -622,7 +622,7 @@ After establishing your game's visual style through vibe design, extract or crea
 1. Create your DESIGN.md from the first screen you're happy with
 2. When designing subsequent screens, import the DESIGN.md to maintain consistency
 3. Update the DESIGN.md if you make stylistic decisions that should propagate
-4. **Export to engine** — The DESIGN.md doubles as your style specification document when implementing in MonoGame or Godot
+4. **Export to engine** — The DESIGN.md doubles as your style specification document when implementing in the engine or Godot
 
 ### Extracting Design Systems from References
 
@@ -698,11 +698,11 @@ Step 5: Compare
 
 ---
 
-## 11. Integration with MonoGame
+## 11. Integration with the engine
 
-MonoGame has two primary UI approaches: **Gum.MonoGame** (the recommended full UI framework) and **ImGui.NET** (for debug/dev UI). Stitch designs translate to both.
+the engine has two primary UI approaches: **the UI framework** (the recommended full UI framework) and **ImGui.NET** (for debug/dev UI). Stitch designs translate to both.
 
-### Stitch → Gum.MonoGame
+### Stitch → the UI framework
 
 Gum is a layout engine with containers, anchoring, and component trees — structurally similar to how Stitch generates UI.
 
@@ -845,14 +845,14 @@ ImGui.Columns(1);
 ImGui.End();
 ```
 
-### MonoGame-Specific Extraction Tips
+### The engine-Specific Extraction Tips
 
 1. **Scale factor** — Stitch designs at web resolution. If your game uses a 320×180 base, divide all pixel values by your scale factor (e.g., 1920÷320 = 6× scale, so a 48px Stitch element ≈ 8px in-game)
 2. **Colors are direct** — Hex colors from CSS map directly to `new Color(r, g, b)`
 3. **Font sizes don't translate** — Web font sizes and game bitmap/SDF font sizes use different metrics. Use the *hierarchy* (heading > body > caption) rather than exact px values
 4. **Z-ordering** — CSS `z-index` maps to child order in Gum (later children render on top)
 
-See [G5 — UI Framework](../../monogame-arch/guides/G5_ui_framework.md) for comprehensive Gum.MonoGame setup and advanced layout techniques.
+See [G5 — UI Framework](../../game-entity-component-system/guides/G5_ui_framework.md) for comprehensive the UI framework setup and advanced layout techniques.
 
 ---
 
@@ -1151,7 +1151,7 @@ You still need art assets from your art pipeline. Stitch designs tell you what *
 
 ### Font Rendering Differences
 
-Web fonts render differently than game engine fonts (bitmap fonts, SDF fonts, FontStashSharp). The visual hierarchy from Stitch (heading > subheading > body > caption) transfers, but exact pixel sizing does not.
+Web fonts render differently than game engine fonts (bitmap fonts, SDF fonts, the font rendering library). The visual hierarchy from Stitch (heading > subheading > body > caption) transfers, but exact pixel sizing does not.
 
 ---
 
@@ -1274,7 +1274,7 @@ Bottom: [action buttons].
 
 ## Related Guides
 
-- [G5 — UI Framework (MonoGame Gum)](../../monogame-arch/guides/G5_ui_framework.md) — Full Gum.MonoGame implementation reference
+- [G5 — UI Framework (the engine Gum)](../../game-entity-component-system/guides/G5_ui_framework.md) — Full the UI framework implementation reference
 - [P5 — Art Pipeline](../project-management/P5_art_pipeline.md) — UI art creation and asset pipeline
 - [C1 — Genre Reference](C1_genre_reference.md) — Genre-specific UI patterns and conventions
 - [C2 — Game Feel](C2_game_feel_and_genre_craft.md) — UI juice, screen shake, and feel

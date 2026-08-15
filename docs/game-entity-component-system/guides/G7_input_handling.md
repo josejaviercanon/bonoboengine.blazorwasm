@@ -1,19 +1,19 @@
 # G7 — Input Handling
 > **Category:** Guide · **Related:** [R1 Library Stack](../reference/R1_library_stack.md) · [C1 Genre Reference](../../core/game-design/C1_genre_reference.md) · [G52 Character Controller](./G52_character_controller.md) · [G15 Game Loop](./G15_game_loop.md) · [G30 Game Feel Tooling](./G30_game_feel_tooling.md)
 
-> Apos.Input deep dive — setup, input buffering, rebinding, multi-device support, and ECS integration.
+> the input handler deep dive — setup, input buffering, rebinding, multi-device support, and ECS integration.
 
 ---
 
 ### 1 Setup & Core API
 
 ```bash
-dotnet add package Apos.Input
+dotnet add package the input handler
 ```
 
 ```csharp
-using Apos.Input;
-using Track = Apos.Input.Track;
+using the input handler;
+using Track = the input handler.Track;
 
 protected override void LoadContent() => InputHelper.Setup(this);
 
@@ -158,7 +158,7 @@ public static class GamepadHelper
     public static void SetRumble(int playerIndex, float low, float high, float durationSec)
     {
         GamePad.SetVibration(playerIndex, low, high);
-        // Schedule stop via timer (MonoGame doesn't auto-stop)
+        // Schedule stop via timer (the engine doesn't auto-stop)
     }
 }
 ```
@@ -279,7 +279,7 @@ public class InputRecorder
 
 ### 7 Simultaneous Keyboard + Gamepad
 
-Apos.Input handles this natively via `AnyCondition`:
+the input handler handles this natively via `AnyCondition`:
 
 ```csharp
 // This just works — both inputs are polled every frame
@@ -343,4 +343,4 @@ public bool HandleInput()
 }
 ```
 
-> **Pattern:** UI layer uses `Track.*` conditions. Gameplay uses regular conditions. If the UI consumes a key via Track, the regular condition won't fire for the same frame. This is Apos.Input's killer feature for input layering.
+> **Pattern:** UI layer uses `Track.*` conditions. Gameplay uses regular conditions. If the UI consumes a key via Track, the regular condition won't fire for the same frame. This is the input handler's killer feature for input layering.

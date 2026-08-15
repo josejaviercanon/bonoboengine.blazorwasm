@@ -2,7 +2,7 @@
 
 > **Category:** Guide · **Related:** [G10 Custom Game Systems §3](./G10_custom_game_systems.md) · [G38 Scene Management](./G38_scene_management.md) · [G64 Combat & Damage](./G64_combat_damage_systems.md) · [G65 Economy & Shop](./G65_economy_shop_systems.md) · [G53 Procedural Generation](./G53_procedural_generation.md) · [G67 Object Pooling](./G67_object_pooling.md) · [G48 Online Services](./G48_online_services.md)
 
-> A complete implementation guide for save/load systems in MonoGame + Arch ECS. Covers ECS world serialization, versioned save formats, migration pipelines, autosave, async I/O, cloud saves, save encryption, thumbnail captures, and genre-specific patterns. Everything is composable — use the pieces your game needs.
+> A complete implementation guide for save/load systems in Arch ECS. Covers ECS world serialization, versioned save formats, migration pipelines, autosave, async I/O, cloud saves, save encryption, thumbnail captures, and genre-specific patterns. Everything is composable — use the pieces your game needs.
 
 ---
 
@@ -661,7 +661,7 @@ public static class SaveJson
         Converters =
         {
             new JsonStringEnumConverter(),
-            new Vector2Converter(),      // MonoGame types need custom converters
+            new Vector2Converter(),      // the engine types need custom converters
             new RectangleConverter(),
             new ColorConverter(),
             new TimeSpanConverter()
@@ -677,9 +677,9 @@ public static class SaveJson
 }
 ```
 
-### MonoGame Type Converters
+### The engine Type Converters
 
-MonoGame's `Vector2`, `Rectangle`, `Color`, etc. don't serialize cleanly with `System.Text.Json` out of the box:
+the engine's `Vector2`, `Rectangle`, `Color`, etc. don't serialize cleanly with `System.Text.Json` out of the box:
 
 ```csharp
 public class Vector2Converter : JsonConverter<Vector2>
@@ -1693,7 +1693,7 @@ public class AsyncSaveManager
 ```csharp
 /// <summary>
 /// Captures a small thumbnail of the current frame for save file display.
-/// Uses MonoGame's RenderTarget2D to grab and downscale.
+/// Uses the engine's RenderTarget2D to grab and downscale.
 /// </summary>
 public class SaveThumbnailCapture
 {
@@ -1746,7 +1746,7 @@ public class SaveThumbnailCapture
         if (base64.Length > MaxBase64Size)
         {
             // Too large — try JPEG-style quality reduction
-            // MonoGame doesn't have native JPEG, so we skip the thumbnail
+            // the engine doesn't have native JPEG, so we skip the thumbnail
             return null;
         }
         return base64;

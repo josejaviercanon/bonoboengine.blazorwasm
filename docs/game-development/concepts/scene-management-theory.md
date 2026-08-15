@@ -188,4 +188,4 @@ Each subsystem follows the same lifecycle (init, load, update, draw, unload) and
 
 ---
 
-*For MonoGame implementation, see [G38 — Scene Management](../../monogame-arch/guides/G38_scene_management.md). Implementation examples for other engines are available in their respective modules.*
+*For the engine implementation, see [G38 — Scene Management](../../game-entity-component-system/guides/G38_scene_management.md). Implementation examples for other engines are available in their respective modules.*

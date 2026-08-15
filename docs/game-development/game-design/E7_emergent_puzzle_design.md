@@ -1,7 +1,7 @@
 # E7 — Emergent Puzzle Design
 
 
-> **Category:** Explanation · **Related:** [C1 Genre Reference](C1_genre_reference.md) · [C2 Game Feel & Genre Craft](C2_game_feel_and_genre_craft.md) · [G10 Custom Game Systems](../../monogame-arch/guides/G10_custom_game_systems.md) · [G3 Physics & Collision](../../monogame-arch/guides/G3_physics_and_collision.md) · [Combat Theory](../concepts/combat-theory.md) · [G68 Puzzle Game Systems](../../monogame-arch/guides/G68_puzzle_game_systems.md)
+> **Category:** Explanation · **Related:** [C1 Genre Reference](C1_genre_reference.md) · [C2 Game Feel & Genre Craft](C2_game_feel_and_genre_craft.md) · [G10 Custom Game Systems](../../game-entity-component-system/guides/G10_custom_game_systems.md) · [G3 Physics & Collision](../../game-entity-component-system/guides/G3_physics_and_collision.md) · [Combat Theory](../concepts/combat-theory.md) · [G68 Puzzle Game Systems](../../game-entity-component-system/guides/G68_puzzle_game_systems.md)
 
 ---
 

@@ -56,7 +56,7 @@ public class SceneManager
 
 ## 2. Render Layer System (~200 lines)
 
-MonoGame's SpriteBatch handles sprite rendering. This adds render layer ordering and optional per-layer post-processing.
+the engine's SpriteBatch handles sprite rendering. This adds render layer ordering and optional per-layer post-processing.
 
 ```csharp
 public class RenderLayer
@@ -68,7 +68,7 @@ public class RenderLayer
 }
 ```
 
-**Pattern:** Sort layers by `Order`. For each layer: if it has a `PostProcessor`, draw to its `RenderTarget2D`, apply the shader, then composite to screen. Otherwise draw directly. MonoGame.Extended's `OrthographicCamera` provides the transformation matrix for `SpriteBatch.Begin()`.
+**Pattern:** Sort layers by `Order`. For each layer: if it has a `PostProcessor`, draw to its `RenderTarget2D`, apply the shader, then composite to screen. Otherwise draw directly. PixiJS / custom C# utilities `OrthographicCamera` provides the transformation matrix for `SpriteBatch.Begin()`.
 
 **See also:** [G2 Rendering & Graphics](./G2_rendering_and_graphics.md) for post-processor shaders and lighting.
 
@@ -134,13 +134,13 @@ public class SpatialHash<T>
 
 **Choosing the right spatial structure:** See [G14 Data Structures](./G14_data_structures.md) for when to use brute-force, spatial hash, or quadtrees.
 
-**See also:** [G3 Physics & Collision](./G3_physics_and_collision.md) for narrow-phase shape collision and Aether.Physics2D.
+**See also:** [G3 Physics & Collision](./G3_physics_and_collision.md) for narrow-phase shape collision and a 2D physics library.
 
 ---
 
 ## 4. Collision Shapes (~150 lines)
 
-Narrow-phase collision checks. MonoGame.Extended provides these too, but they're simple enough to own.
+Narrow-phase collision checks. PixiJS + custom C# utilities provides these too, but they're simple enough to own.
 
 **AABB vs AABB:**
 ```csharp
@@ -201,7 +201,7 @@ public static class Ease
 
 **Manage with a `TweenManager`** that holds a `List<Tween>`, calls `Update()` on each, and removes completed ones.
 
-**Alternative:** `Apos.Tweens` NuGet for a fluent API.
+**Alternative:** `a tweening library` NuGet for a fluent API.
 
 > **Growth path:** `OnComplete` callback chaining is sufficient for sequencing (slide in → then fade text). Only add pooling when you exceed ~100 concurrent tweens, generic `Tween<T>` when you frequently interpolate Vector2/Color, or a formal `TweenSequence` class when callback chains become unreadable.
 
@@ -303,4 +303,4 @@ public class ObjectPool<T> where T : class, new()
 
 Draw thick lines by generating quads from line segments. For each segment: compute perpendicular offset from the line direction, create 4 vertices forming a quad, draw as a triangle strip or two triangles.
 
-For smooth joins: use miter joins (bisect the angle between segments) or rounded caps (draw a circle at each vertex). MonoGame.Extended also provides primitive drawing if you prefer a library.
+For smooth joins: use miter joins (bisect the angle between segments) or rounded caps (draw a circle at each vertex). PixiJS + custom C# utilities also provides primitive drawing if you prefer a library.

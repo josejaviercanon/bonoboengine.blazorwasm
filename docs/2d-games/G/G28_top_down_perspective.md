@@ -3,7 +3,7 @@
 
 # Building games in three-quarter perspective: a technical deep dive
 
-**The 3/4 top-down view — used by Stardew Valley, Chrono Trigger, CrossCode, and dozens of landmark RPGs — relies on a surprisingly consistent set of art conventions and engine patterns.** Understanding these patterns before writing code saves months of refactoring. The core insight: art decisions about tile size, sprite proportions, and layering directly dictate your render pipeline, collision system, and entity architecture. This report distills the technical approaches of shipped games into actionable patterns for a C#/MonoGame + Arch ECS stack.
+**The 3/4 top-down view — used by Stardew Valley, Chrono Trigger, CrossCode, and dozens of landmark RPGs — relies on a surprisingly consistent set of art conventions and engine patterns.** Understanding these patterns before writing code saves months of refactoring. The core insight: art decisions about tile size, sprite proportions, and layering directly dictate your render pipeline, collision system, and entity architecture. This report distills the technical approaches of shipped games into actionable patterns for a C#/Arch ECS stack.
 
 ---
 
@@ -15,7 +15,7 @@ Native render resolution clusters around **480×270** for modern pixel art games
 
 Character sprites follow a consistent proportional convention: **one tile wide, two tiles tall** (typically 16×32 pixels). This creates the visual height illusion while keeping pathfinding and collision on a single-tile footprint. Chrono Trigger's Crono (~15×36) and Zelda's Link (~24×32) are slightly wider for expressiveness, but their collision still maps to roughly one tile width. The "feet" occupy the bottom tile for collision while the upper body visually overlaps whatever is behind the character — this is the fundamental mechanism that makes the 3/4 depth illusion work.
 
-The engine architectures behind these games reveal two camps. Unity powers Graveyard Keeper, Moonlighter, and Enter the Gungeon. GameMaker drives Undertale, Deltarune, and Hyper Light Drifter. Stardew Valley uses C#/XNA (migrated to MonoGame in 2021), making it the closest analog to your stack. CrossCode rewrote ~90% of Impact.js into a custom HTML5 engine with JSON-driven data and modular features. Eastward built "Gii," a custom engine on the open-source MOAI framework, to achieve its 3D lighting on pixel art. Teams build custom engines when they need specific technical features — CrossCode's Z-height system, Eastward's bump-mapped lighting — that off-the-shelf tools don't provide.
+The engine architectures behind these games reveal two camps. Unity powers Graveyard Keeper, Moonlighter, and Enter the Gungeon. GameMaker drives Undertale, Deltarune, and Hyper Light Drifter. Stardew Valley uses C#/XNA (migrated to the engine in 2021), making it the closest analog to your stack. CrossCode rewrote ~90% of Impact.js into a custom HTML5 engine with JSON-driven data and modular features. Eastward built "Gii," a custom engine on the open-source MOAI framework, to achieve its 3D lighting on pixel art. Teams build custom engines when they need specific technical features — CrossCode's Z-height system, Eastward's bump-mapped lighting — that off-the-shelf tools don't provide.
 
 ### Three approaches to depth illusion
 
@@ -105,11 +105,11 @@ Wall and building rendering (showing fronts and tops simultaneously) drives tile
 
 ---
 
-## Implementation patterns for MonoGame + Arch ECS
+## Implementation patterns for Arch ECS
 
 ### Render pipeline architecture
 
-The render pipeline for a 3/4 view game in MonoGame requires multiple SpriteBatch passes with different configurations. Each layer gets its own Begin/End block:
+The render pipeline for a 3/4 view game in the engine requires multiple SpriteBatch passes with different configurations. Each layer gets its own Begin/End block:
 
 The ground tile pass uses `SpriteSortMode.Deferred` (draw order matches iteration order) with `SamplerState.PointClamp` and the camera transform matrix. Only tiles within the camera viewport are drawn — calculate the visible tile range from camera bounds and iterate only that subset. For large maps, divide into **16×16 tile chunks** with pre-built vertex buffers; only render chunks intersecting the viewport.
 
@@ -129,13 +129,13 @@ Arch's archetype storage means entities with identical component sets share memo
 
 ### Tiled map integration
 
-DotTiled is the recommended TMX parser for new projects (actively maintained, supports TMX and JSON formats). TiledCS is simpler with no dependencies and has MonoGame examples. MonoGame.Extended includes a built-in Tiled map loader that works with the content pipeline.
+DotTiled is the recommended TMX parser for new projects (actively maintained, supports TMX and JSON formats). TiledCS is simpler with no dependencies and has the engine examples. PixiJS + custom C# utilities includes a built-in Tiled map loader that works with the content pipeline.
 
 The recommended Tiled layer structure for 3/4 view games uses six layers: Ground (base terrain), GroundDecor (flowers, puddles, paths), BelowEntities (bottom halves of walls, fence bases), an Object layer for collision shapes (invisible, not rendered), AboveEntities (tree canopies, rooftops), and a second Object layer for entity spawn points, triggers, and NPC positions.
 
 ### Aseprite integration
 
-MonoGame.Aseprite (NuGet package, v6.3.1) loads `.aseprite` files directly without the MGCB content pipeline. It produces `SpriteSheet`, `AnimatedSprite`, `Tilemap`, and `TextureAtlas` objects. Aseprite tags map to animation names, slices provide per-frame collision rectangles. This gives you a complete art-to-engine pipeline: create sprite art in Aseprite → tag animations → export → load directly in MonoGame → create animated sprites from tags.
+the Aseprite spritesheet importer (NuGet package, v6.3.1) loads `.aseprite` files directly without the MGCB content pipeline. It produces `SpriteSheet`, `AnimatedSprite`, `Tilemap`, and `TextureAtlas` objects. Aseprite tags map to animation names, slices provide per-frame collision rectangles. This gives you a complete art-to-engine pipeline: create sprite art in Aseprite → tag animations → export → load directly in the engine → create animated sprites from tags.
 
 For the ECS animation system, extract frame rectangles and timing data from the Aseprite file at load time and store them in a `SpriteAnimation` component. The `AnimationSystem` queries all entities with `AnimationState` and `Sprite`, advances frame timers, and updates the `Sprite.SourceRect` when frames change.
 
@@ -159,6 +159,6 @@ For SNES-era technical depth, **The Cutting Room Floor** (tcrf.net) has exhausti
 
 The 3/4 top-down perspective imposes a specific set of constraints that have been solved the same way across three decades of games: **16×16 tiles, 480×270 native resolution scaled 4×, characters at 16×32 with foot-area collision, Y-sorting by collision box bottom, and a minimum three-layer render pipeline** (ground, Y-sorted entities, overlay). These aren't arbitrary conventions — they emerge from the geometry of the perspective itself.
 
-For a MonoGame + Arch ECS implementation, the critical architectural decisions are: render to a RenderTarget2D at native resolution for pixel-perfect scaling; use multiple SpriteBatch passes (one per layer) rather than trying to sort everything in one pass; collect Y-sorted entities into a buffer before sorting since Arch queries don't guarantee order; keep collision boxes small and at entity feet, completely separate from visual sprite bounds; and integrate Tiled for maps and Aseprite for sprites via DotTiled and MonoGame.Aseprite respectively.
+For a Arch ECS implementation, the critical architectural decisions are: render to a RenderTarget2D at native resolution for pixel-perfect scaling; use multiple SpriteBatch passes (one per layer) rather than trying to sort everything in one pass; collect Y-sorted entities into a buffer before sorting since Arch queries don't guarantee order; keep collision boxes small and at entity feet, completely separate from visual sprite bounds; and integrate Tiled for maps and Aseprite for sprites via DotTiled and the Aseprite spritesheet importer respectively.
 
 The highest-value visual upgrade beyond basic sprite rendering is **normal maps with dynamic lighting** — Graveyard Keeper and Eastward prove this transforms static pixel art into atmospheric, living scenes. Combined with LUT color grading for day/night cycles and a minimal post-processing stack (bloom, vignette), these techniques deliver disproportionate visual impact for modest implementation effort. Start with the fundamentals — correct Y-sorting, proper collision shapes, clean layer separation — then layer in 2.5D techniques once the foundation is solid.

@@ -195,4 +195,4 @@ Two common orientations: flat-top and pointy-top. Use axial or cube coordinates 
 
 ---
 
-*For MonoGame implementation, see [G37 — Tilemap Systems](../../monogame-arch/guides/G37_tilemap_systems.md). Implementation examples for other engines are available in their respective modules.*
+*For the engine implementation, see [G37 — Tilemap Systems](../../game-entity-component-system/guides/G37_tilemap_systems.md). Implementation examples for other engines are available in their respective modules.*

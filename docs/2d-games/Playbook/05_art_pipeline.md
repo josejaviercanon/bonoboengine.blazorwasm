@@ -147,9 +147,9 @@ Consistent layer names across all your `.aseprite` files make batch operations a
 - **Color Curves** (Edit → Adjustments → Curves) — For batch-adjusting value/contrast across frames.
 - **Export Spritesheet** (File → Export Sprite Sheet) — Use "By Rows" or "Packed" layout. Set padding to 1–2px to prevent texture bleeding. Check "Trim Cels" to remove empty space per frame. Export the JSON data file alongside the PNG.
 
-### Aseprite → MonoGame Pipeline
+### Aseprite → the engine Pipeline
 
-The recommended integration uses **MonoGame.Aseprite**, which loads `.aseprite` files directly through the content pipeline — no manual export step needed.
+The recommended integration uses **the Aseprite spritesheet importer**, which loads `.aseprite` files directly through the content pipeline — no manual export step needed.
 
 ```
 YourGame/
@@ -161,7 +161,7 @@ YourGame/
 ```
 
 **Setup:**
-1. Add `MonoGame.Aseprite` NuGet package
+1. Add `the Aseprite spritesheet importer` NuGet package
 2. Reference `.aseprite` files in your Content project
 3. The pipeline processor reads tags, layers, and frame data automatically
 4. In code, load via `Content.Load<AsepriteFile>("Sprites/player")`
@@ -198,7 +198,7 @@ npc_merchant_talk_01.png
 ```
 {entity}_{action}.png          ← Single animation sheet
 {entity}_spritesheet.png       ← All animations packed
-{entity}.aseprite              ← Source file (if using MonoGame.Aseprite)
+{entity}.aseprite              ← Source file (if using the Aseprite spritesheet importer)
 ```
 
 **Tileset naming:**
@@ -269,7 +269,7 @@ Content/
 - Group by **function**, not by file type
 - Subfolders for entity categories (Enemies, NPCs), not per-entity unless the entity has many files
 - Keep the tree shallow — 2–3 levels max
-- Source `.aseprite` files live alongside their exports (or replace exports entirely if using MonoGame.Aseprite)
+- Source `.aseprite` files live alongside their exports (or replace exports entirely if using the Aseprite spritesheet importer)
 
 ---
 
@@ -280,7 +280,7 @@ Content/
 **Use individual sprites when:**
 - Prototyping — easiest to swap in/out
 - Sprites are large (>128×128) and few in number
-- You're using MonoGame.Aseprite (it handles frame data internally)
+- You're using the Aseprite spritesheet importer (it handles frame data internally)
 
 **Use sprite sheets when:**
 - You have many small sprites (particles, UI icons, items)
@@ -314,11 +314,11 @@ Content/
 ### Atlas Tools
 
 - **Aseprite** — Built-in sheet export, good for per-entity sheets
-- **TexturePacker** — Industry standard for combining multiple sources into one atlas. Exports MonoGame-compatible formats.
+- **TexturePacker** — Industry standard for combining multiple sources into one atlas. Exports the engine-compatible formats.
 - **Free alternatives:** ShoeBox (free), Littera (for bitmap fonts), or write a simple packing script with `ImageSharp`
-- **MonoGame Content Pipeline** — Can process sprite sheets directly. Configure the `.mgcb` file with the appropriate importer/processor.
+- **the engine Content Pipeline** — Can process sprite sheets directly. Configure the `.mgcb` file with the appropriate importer/processor.
 
-### MonoGame Content Pipeline Setup
+### The engine Content Pipeline Setup
 
 In your `.mgcb` file:
 ```
@@ -464,9 +464,9 @@ Tile indices based on UDLR neighbors:
 1. **Export tileset from Aseprite** as a single PNG (grid layout, no spacing unless your engine expects it)
 2. **Import into Tiled** — Map → New Tileset → embed or reference the PNG
 3. **Paint your map** — Use layers: `ground`, `walls`, `decoration`, `collision` (invisible)
-4. **Export as TMX or JSON** — Load in MonoGame with a TMX loader library
+4. **Export as TMX or JSON** — Load in the engine with a TMX loader library
 
-See [G37 — Tilemap Systems](../G/G37_tilemap_systems.md) for MonoGame-side tilemap rendering, collision layers, and chunked loading.
+See [G37 — Tilemap Systems](../G/G37_tilemap_systems.md) for the engine-side tilemap rendering, collision layers, and chunked loading.
 
 **Tiled tips:**
 - Use **object layers** for spawn points, triggers, and zones — not tile layers
@@ -569,7 +569,7 @@ For pixel art games:
 - Free pixel fonts: m5x7, m3x6, Press Start 2P, Silkscreen, silver
 
 For non-pixel games:
-- Use **FontStashSharp** for dynamic font rendering in MonoGame — supports TrueType/OpenType, runtime sizing, and text effects.
+- Use **the font rendering library** for dynamic font rendering in the engine — supports TrueType/OpenType, runtime sizing, and text effects.
 - Choose 1–2 fonts max: one for body text, one for headers/titles.
 - Prioritize readability over style, especially for body text and dialogue.
 
@@ -682,7 +682,7 @@ Art assets are usually the largest part of your game. Optimize without sacrifici
 
 **Power of 2 (POT) vs Arbitrary:**
 - **POT textures** (64, 128, 256, 512, 1024, 2048, 4096) — Required by some older GPUs. Always safe. Mipmapping requires POT.
-- **Non-POT (NPOT)** — Supported by all modern GPUs and MonoGame. Fine for sprite sheets and UI. Avoids wasted padding.
+- **Non-POT (NPOT)** — Supported by all modern GPUs and the engine. Fine for sprite sheets and UI. Avoids wasted padding.
 - **Recommendation:** Use NPOT for sprite sheets (pack tightly), but keep max dimension ≤ 4096×4096. Some mobile GPUs cap at 2048.
 
 ### Compression
@@ -693,7 +693,7 @@ Art assets are usually the largest part of your game. Optimize without sacrifici
 | **DXT/BC compression** | Lossy | 4:1 or 8:1 ratio | Large textures, backgrounds. Some artifacts on sharp pixel art. |
 | **Indexed color** | Lossless, limited palette | ~4:1 for 16-color | Pixel art with strict palette. Tiny file sizes. |
 
-**For pixel art games:** PNG (Color format in MonoGame) is almost always fine. Your textures are small. Don't compress pixel art with DXT — it smears pixels.
+**For pixel art games:** PNG (Color format in the engine) is almost always fine. Your textures are small. Don't compress pixel art with DXT — it smears pixels.
 
 **For hand-drawn / HD games:** Consider DXT compression for large background layers. Test for visible artifacts.
 
@@ -714,7 +714,7 @@ Texture Memory = Width × Height × 4 bytes (RGBA)
 **Budget guidelines:**
 - Aim for total texture memory under 256 MB for a desktop game, under 64 MB for mobile
 - A typical 2D indie game uses 20–80 MB of texture memory
-- Monitor with `GraphicsDevice.Metrics` in MonoGame
+- Monitor with `GraphicsDevice.Metrics` in the engine
 
 ### When to Split vs Combine Atlases
 
@@ -826,7 +826,7 @@ Update this weekly. It's your sanity check for scope.
 - [ ] Apply palette and shading
 - [ ] Animate (key poses → in-betweens)
 - [ ] Tag animations in Aseprite
-- [ ] Export (spritesheet + JSON, or save `.aseprite` for MonoGame.Aseprite)
+- [ ] Export (spritesheet + JSON, or save `.aseprite` for the Aseprite spritesheet importer)
 - [ ] Test in-game at actual size and speed
 - [ ] Run through style consistency checklist
 

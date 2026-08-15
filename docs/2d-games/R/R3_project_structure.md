@@ -6,351 +6,106 @@
 ## Solution Layout
 
 ```
-MyGame/
-├── MyGame.slnx                    (.NET 10+ default; .sln also supported)
-│
-├── MyGame.Core/                    (shared game logic — 95%+ of code)
-│   ├── src/
-│   │   ├── Core/                   # App bootstrap, service locator, constants
-│   │   │   ├── GameApp.cs          # MonoGame Game subclass, scene manager pump
-│   │   │   ├── SceneManager.cs     # Custom scene manager → G1
-│   │   │   └── ServiceLocator.cs   # Static access to shared services
-│   │   │
-│   │   ├── ECS/                    # Arch components, systems, world management
-│   │   │   ├── Components/         # Pure data structs (Position, Velocity, BulletData...)
-│   │   │   ├── Systems/            # Arch systems (MovementSystem, CollisionSystem...)
-│   │   │   ├── Tags/               # Tag components (PlayerTag, EnemyTag, ProjectileTag...)
-│   │   │   └── WorldManager.cs     # Arch World lifecycle, system registration
-│   │   │
-│   │   ├── Scenes/                 # Scene subclasses (MainMenu, Gameplay, Battle...)
-│   │   │
-│   │   ├── Rendering/              # Custom render layer system → G1, G2
-│   │   │   ├── RenderLayerSystem.cs
-│   │   │   ├── PostProcessors/     # Custom HLSL shader wrappers
-│   │   │   └── Camera/             # Camera follow, shake, deadzone logic
-│   │   │
-│   │   ├── Collision/              # Custom SpatialHash + shape checks → G1, G3
-│   │   │   ├── SpatialHash.cs
-│   │   │   └── CollisionShapes.cs
-│   │   │
-│   │   ├── Systems/                # Game-specific systems → G10
-│   │   │   ├── Inventory/
-│   │   │   ├── Dialogue/
-│   │   │   ├── Crafting/
-│   │   │   ├── Combat/
-│   │   │   ├── SaveLoad/
-│   │   │   └── Procgen/
-│   │   │
-│   │   ├── AI/                     # BrainAI integration → G4
-│   │   │
-│   │   ├── UI/                     # Gum-based UI screens → G5
-│   │   │
-│   │   ├── Audio/                  # Audio manager → G6
-│   │   │
-│   │   ├── Input/                  # Apos.Input abstraction → G7
-│   │   │
-│   │   ├── Animation/              # Tweens, coroutines → G1
-│   │   │   ├── TweenManager.cs
-│   │   │   └── Transitions/        # Screen transition effects
-│   │   │
-│   │   ├── Shaders/                # Custom HLSL .fx files → G2, G27
-│   │   │
-│   │   └── Utils/                  # Math helpers, extensions, object pool
-│   │       └── ObjectPool.cs       # Generic Pool<T> → G1
+bonoboengine.blazorwasm/
+├── bonoboWebGame.slnx              # .NET 10 XML solution
+├── src/
+│   ├── Game.Engine/                # Pure C# class lib (net10.0) — authoritative simulation
+│   │   ├── Game.Engine.csproj      # refs Arch.csproj + Arch.Generators (analyzer)
+│   │   ├── Components/             # Pure data structs (Position, Velocity, BulletData...)
+│   │   ├── Systems/                 # Arch systems (MovementSystem, CollisionSystem...)
+│   │   ├── Tags/                    # Zero-size markers (PlayerTag, EnemyTag, ProjectileTag...)
+│   │   ├── Events/                  # Delta event types emitted to the presentation layer
+│   │   ├── Commands/                # Input/action command types consumed by ProcessCommand
+│   │   └── (GameSimulation.cs)      # World lifecycle, tick pump, ProcessCommand, events out
 │   │
-│   ├── Content/                    # MGCB content project → G8
-│   │   ├── sprites/
-│   │   ├── tilemaps/
-│   │   ├── shaders/
-│   │   ├── fonts/
-│   │   └── audio/
+│   ├── Game.UI/                     # Shared Razor Class Library — refs Game.Engine
+│   │   ├── Frontend/                # PixiJS/TypeScript source (Vite entry: game.ts)
+│   │   ├── wwwroot/dist/            # Generated JS/CSS — DO NOT hand-edit
+│   │   ├── GameView.razor           # @page "/", full-viewport PixiJS container + HUD
+│   │   └── Game.UI.csproj
 │   │
-│   └── Resources/                  # Runtime data (JSON configs, level defs, item databases)
-│       ├── items.json
-│       ├── dialogue/
-│       ├── levels/
-│       └── waves/
+│   ├── Game.Web/                    # Blazor Web App host (static SSR)
+│   │   ├── Components/              # App.razor, Routes.razor (AdditionalAssemblies)
+│   │   ├── Program.cs               # MapStaticAssets, AddInteractiveServerComponents
+│   │   └── Game.Web.csproj
+│   │
+│   ├── Game.Maui/                   # .NET MAUI Blazor Hybrid host
+│   │   └── Game.Maui.csproj          # net10.0-android default; iOS/MacCat/Windows conditional
+│   │
+│   ├── Arch/                        # Vendored Arch ECS source (net10.0, T4 templates)
+│   │   └── Arch.csproj
+│   └── Arch.Generators/             # Roslyn analyzer pack (links Arch source generators)
+│       └── Arch.Generators.csproj   # netstandard2.0, OutputItemType="Analyzer"
 │
-├── MyGame.Desktop/                 # DesktopGL launcher (Program.cs + app.manifest)
-├── MyGame.iOS/                     # iOS launcher (AppDelegate + Directory.Build.props)
-│   ├── Program.cs                  # UIApplicationDelegate with deferred game creation
-│   ├── Directory.Build.props       # Build output redirect (iCloud Drive workaround)
-│   └── MyGame.iOS.csproj           # MonoGame.Framework.iOS + MGCB reference
-└── MyGame.Android/                 # Android platform (TBD)
+└── docs/
+    ├── index.md                     # Architecture source of truth
+    ├── 2d-games/                    # Bonobo-aligned + engine-agnostic concept toolkit
+    ├── game-development/            # Engine-agnostic subset
+    └── game-entity-component-system/# Mirrored toolkit (guides/ + reference/) + Bonobo ECS rules
 ```
 
 ---
 
 ## Key Principles
 
-**95% of code lives in `MyGame.Core/`.** Platform projects (Desktop, iOS, Android) are thin wrappers that just bootstrap the game.
+**`Game.Engine` holds the entire authoritative simulation** with zero UI/platform dependencies. Hosts (`Game.Web`, `Game.Maui`) are thin bootstrappers; the shared presentation lives in `Game.UI`.
 
-**ECS/ is for Arch-specific code.** Components are pure data structs. Systems are Arch query systems. Tags are zero-size marker components.
+**`Game.Engine/Components/` is for Arch-specific data.** Components are pure `struct` value types (no methods). `Systems/` are stateless Arch query systems. `Tags/` are zero-size markers.
 
-**Systems/ is for game logic.** Inventory, dialogue, crafting — these are custom C# modules that may or may not use Arch internally, but they represent game-level features.
+**`Game.Engine/Systems/` is for game logic.** Inventory, dialogue, crafting, combat — custom C# modules that run inside the simulation tick. They must never touch `IJSRuntime`, Blazor, or platform APIs.
 
-**Rendering/ and Collision/ hold the ~500 lines of custom glue code** that replaces Nez's rendering pipeline and collision system.
+**`Game.UI/` is the presentation layer.** Blazor components + Tailwind for HUD/menus; PixiJS (bundled by Vite to `wwwroot/dist`) for the 2D canvas. It is a pure mirror of engine state via push-based delta events.
 
-**Resources/ is for runtime data.** JSON files loaded at runtime. Not compiled by MGCB. Use System.Text.Json for deserialization.
-
-**Content/ is for MGCB-compiled assets.** Textures, tilemaps, shaders, fonts, audio — compiled at build time to .xnb format.
+**`Frontend/` is the asset pipeline.** Vite bundles sprites/audio/data into `wwwroot/dist`; there is no MGCB and no `Content.Load<T>`. Assets are resolved client-side by PixiJS by key/id.
 
 ---
 
-## iOS Platform Details
+## Host Platforms
 
-### AppDelegate Pattern
+The engine ships two hosts that load the same shared `Game.UI` Razor Class Library. There is no per-platform game class, no `UIApplicationDelegate`, and no raw iOS bootstrapping — .NET MAUI handles the native shell.
 
-iOS uses UIKit's `UIApplicationDelegate` with deferred game creation. MonoGame 3.8.4 on iOS triggers a display link callback before `_platform` is assigned, causing `NullReferenceException` in `Game.get_IsActive()`.
+### Game.Web (Blazor Web App)
 
-**Fix:** Defer `new GameApp()` + `Run()` to the next run loop iteration:
+Static SSR host. `Program.cs` wires `MapStaticAssets()`, interactive server components, and discovers shared RCL routes via `AddAdditionalAssemblies(typeof(GameView).Assembly)`. PixiJS is bootstrapped client-side from `Components/App.razor` (inline `load`-event script reading `#pixi-viewport[data-message]`).
 
-```csharp
-using System.Reflection;
-using CoreAnimation;
-using Foundation;
-using Microsoft.Xna.Framework;
-using UIKit;
+### Game.Maui (.NET MAUI Blazor Hybrid)
 
-[Register("AppDelegate")]
-internal class AppDelegate : UIApplicationDelegate
-{
-    private Core.GameApp? _game;  // MUST be a field — Game.Run() is non-blocking on iOS
+Uses `<UseMaui>true</UseMaui>` + a `BlazorWebView`. Targets `net10.0-android` by default; `net10.0-ios`/`-maccatalyst`/`-windows10.0.19041.0` are added conditionally when OS/workloads allow. XAML source-gen inflator is enabled; Windows is unpackaged.
 
-    public override UIWindow? Window { get; set; }
+> **No native game-framework reflection.** MAUI provides the native window, lifecycle, and input. There are no `TrimmerRootAssembly` reflection hacks, no display-link patching, and no platform-specific game-framework package references.
 
-    public override bool FinishedLaunching(UIApplication application, NSDictionary? launchOptions)
-    {
-        NSRunLoop.Main.InvokeOnMainThread(() =>
-        {
-            _game = new Core.GameApp();
-
-            // Hook ProMotion 120Hz support — MonoGame 3.8.4 uses deprecated
-            // FrameInterval API which caps at 60Hz. Patch the display link
-            // with PreferredFrameRateRange after each TargetElapsedTime change.
-            _game.PlatformTargetFpsChanged = () =>
-            {
-                int targetFps = (int)Math.Round(1.0 / _game.TargetElapsedTime.TotalSeconds);
-                SetDisplayLinkFrameRate(_game, targetFps);
-            };
-
-            _game.Run();
-        });
-        return true;
-    }
-
-    /// <summary>
-    /// Uses reflection to access MonoGame's internal CADisplayLink and set
-    /// PreferredFrameRateRange for ProMotion 120Hz support.
-    /// </summary>
-    private static void SetDisplayLinkFrameRate(Game game, int targetFps)
-    {
-        try
-        {
-            BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance;
-
-            // MonoGame 3.8.4: Game.Platform is an internal field
-            FieldInfo? platformField = typeof(Game).GetField("Platform", flags);
-            object? platform = platformField?.GetValue(game);
-            if (platform == null) return;
-
-            // iOSGamePlatform._displayLink is the CADisplayLink
-            FieldInfo? dlField = platform.GetType().GetField("_displayLink", flags);
-            if (dlField?.GetValue(platform) is not CADisplayLink displayLink) return;
-
-            displayLink.PreferredFrameRateRange = new CAFrameRateRange
-            {
-                Minimum = 30,
-                Maximum = targetFps,
-                Preferred = targetFps
-            };
-        }
-        catch
-        {
-            // Reflection failed — MonoGame internals may have changed.
-        }
-    }
-}
-
-internal static class Program
-{
-    private static void Main(string[] args)
-    {
-        UIApplication.Main(args, null, typeof(AppDelegate));
-    }
-}
-```
-
-**Critical:**
-- `Game.Run()` is **non-blocking** on iOS (starts display link and returns). Using `using var game` or a local variable causes immediate disposal/GC.
-- `OperatingSystem.IsMacOS()` returns **false** on iOS. Use `OperatingSystem.IsIOS()` for iOS detection.
-- `CAFrameRateRange` in .NET iOS has no 3-argument constructor — use object initializer syntax.
-- `<TrimmerRootAssembly Include="MonoGame.Framework" />` in .csproj preserves MonoGame fields from the IL trimmer so reflection works.
-
-### MyGame.iOS.csproj
+### Game.Maui.csproj (excerpt)
 
 ```xml
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Razor">
   <PropertyGroup>
-    <TargetFramework>net10.0-ios</TargetFramework>
+    <TargetFrameworks>net10.0-android</TargetFrameworks>
     <OutputType>Exe</OutputType>
-    <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
+    <UseMaui>true</UseMaui>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
-  <!-- Code signing for physical device builds -->
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'ios-arm64'">
-    <CodesignKey>Apple Development</CodesignKey>
-  </PropertyGroup>
-
   <ItemGroup>
-    <ProjectReference Include="..\MyGame.Core\MyGame.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="MonoGame.Framework.iOS" Version="3.8.*" />
-    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*" />
-  </ItemGroup>
-
-  <!-- Launch screen (required for native resolution) -->
-  <ItemGroup>
-    <BundleResource Include="LaunchScreen.storyboard" />
-  </ItemGroup>
-
-  <!-- Preserve MonoGame internals from IL trimmer so reflection can access
-       the private _displayLink field for ProMotion 120Hz support -->
-  <ItemGroup>
-    <TrimmerRootAssembly Include="MonoGame.Framework" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <MonoGameContentReference Include="..\MyGame.Core\Content\MyGame.mgcb" />
+    <ProjectReference Include="..\Game.UI\Game.UI.csproj" />
   </ItemGroup>
 </Project>
 ```
 
-### iCloud Drive Codesign Workaround
+iOS/MacCatalyst/Windows TFMs are appended to `TargetFrameworks` when the host OS and MAUI workloads support them. Set `SupportedOSPlatformVersion` (e.g. `15.0` for iOS) per MAUI guidance. There is no MGCB content reference and no platform-specific game-framework package — assets ship as static web assets under `Game.UI/wwwroot/dist`.
 
-If the project lives on iCloud Drive, codesign fails with "resource fork, Finder information, or similar detritus not allowed" — iCloud adds `com.apple.FinderInfo` xattr that codesign rejects. `xattr -cr` does NOT fix it (iCloud re-adds immediately).
-
-**Fix:** Redirect build output via `Directory.Build.props`:
-
-```xml
-<Project>
-  <PropertyGroup>
-    <BaseOutputPath>$(HOME)/.local/share/MyGame/ios-build/bin/</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(HOME)/.local/share/MyGame/ios-build/obj/</BaseIntermediateOutputPath>
-  </PropertyGroup>
-</Project>
-```
-
-### LaunchScreen.storyboard
-
-**Required for native resolution.** Without a launch storyboard, iOS runs the app in legacy compatibility mode — scaled down with brown letterbox bars and incorrect touch offset.
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0"
-    toolsVersion="22154" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none"
-    useAutolayout="YES" launchScreen="YES" useTraitCollections="YES"
-    useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
-    <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22130"/>
-        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
-        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
-    </dependencies>
-    <scenes>
-        <scene sceneID="EHf-IW-A2E">
-            <objects>
-                <viewController id="01J-lp-oVM" sceneMemberID="viewController">
-                    <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
-                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
-                        <autoresizingMask key="autoresizingMask"
-                            widthSizable="YES" heightSizable="YES"/>
-                        <viewLayoutGuide key="safeArea" id="Bcu-3y-fUS"/>
-                        <color key="backgroundColor" red="0" green="0" blue="0"
-                            alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                    </view>
-                </viewController>
-                <placeholder placeholderIdentifier="IBFirstResponder"
-                    id="iYj-Kq-Ea1" userLabel="First Responder"
-                    sceneMemberID="firstResponder"/>
-            </objects>
-        </scene>
-    </scenes>
-</document>
-```
-
-**Key requirements:**
-- `targetRuntime` must be `"iOS.CocoaTouch"` — NOT `"AppleSDK"` (causes ibtool compilation error)
-- Must include `<dependencies>` block with `com.apple.InterfaceBuilder.IBCocoaTouchPlugin`
-- Must include `<viewLayoutGuide key="safeArea">` when `useSafeAreas="YES"` is set
-- Add to .csproj as `<BundleResource Include="LaunchScreen.storyboard" />`
-- Add to Info.plist: `<key>UILaunchStoryboardName</key><string>LaunchScreen</string>`
-
-### Info.plist
-
-Key entries for an iOS MonoGame project:
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleName</key>
-    <string>MyGame</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.mygame.app</string>
-    <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
-    <key>MinimumOSVersion</key>
-    <string>15.0</string>
-    <key>UIDeviceFamily</key>
-    <array>
-        <integer>1</integer>  <!-- iPhone -->
-        <integer>2</integer>  <!-- iPad -->
-    </array>
-    <key>UISupportedInterfaceOrientations</key>
-    <array>
-        <string>UIInterfaceOrientationLandscapeLeft</string>
-        <string>UIInterfaceOrientationLandscapeRight</string>
-    </array>
-    <key>UILaunchStoryboardName</key>
-    <string>LaunchScreen</string>
-    <key>UIStatusBarHidden</key>
-    <true/>
-    <key>UIRequiresFullScreen</key>
-    <true/>
-    <key>LSRequiresIPhoneOS</key>
-    <true/>
-    <!-- Required for ProMotion 120Hz on iPhone (iPad works without it) -->
-    <key>CADisableMinimumFrameDurationOnPhone</key>
-    <true/>
-</dict>
-</plist>
-```
-
-### Build & Deploy Commands
+### Build & Run
 
 ```bash
-# Desktop
-dotnet build MyGame.Desktop/
-dotnet run --project MyGame.Desktop/
+# Web host
+dotnet watch --project src/Game.Web
 
-# iOS Simulator (Apple Silicon)
-dotnet build MyGame.iOS/ -r iossimulator-arm64
-dotnet build MyGame.iOS/ -r iossimulator-arm64 -t:Run
+# MAUI (Android default; install MAUI workloads for other TFMs)
+dotnet build src/Game.Maui
+dotnet build src/Game.Maui -t:Run -f net10.0-android
 
-# Physical device (requires code signing)
-dotnet build MyGame.iOS/ -r ios-arm64
-dotnet build MyGame.iOS/ -r ios-arm64 -t:Run -p:_DeviceName=<UDID>
-
-# Find device UDID
-xcrun xctrace list devices
+# iOS sim/device (Apple Silicon, requires MAUI iOS workloads)
+dotnet build src/Game.Maui -t:Run -f net10.0-ios -r iossimulator-arm64
 ```
 
-> **Note:** iOS incremental builds may not pick up source changes. Use `--no-incremental` to force a full rebuild when in doubt.
+> **Frontend first.** Run `npm run build` in `src/Game.UI` before `dotnet build` so static web assets are present. Never run multiple `dotnet` commands concurrently (static-web-asset compression can race).
+> **Generated output.** `wwwroot/dist` is produced by Vite/Tailwind — never hand-edit or commit it. iOS launch screens, Info.plist, and orientation settings are handled by MAUI's platform conventions, not hand-authored storyboard/plist files.

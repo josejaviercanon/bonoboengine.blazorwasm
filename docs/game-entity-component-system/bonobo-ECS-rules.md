@@ -18,7 +18,7 @@ Engine-specific rules for the Bonobo engine: an authoritative C# simulation back
 - **UI:** Blazor components + Tailwind CSS v4 (in `src/Game.UI`, the shared Razor Class Library).
 - **Hosts:** `src/Game.Web` (Blazor Web App, static SSR) and `src/Game.Maui` (.NET MAUI Blazor Hybrid, Android default; iOS/MacCatalyst/Windows conditional).
 - **Serialization:** System.Text.Json with source generators (AOT-friendly, allocation-free). Planned.
-- **NOT in this stack:** MonoGame, Gum, Apos.Input, Aether.Physics2D, MonoGame.Extended, MonoGame.Aseprite, FontStashSharp, MGCB content pipeline, FMOD. Generic gamedev lore referencing these lives in `docs/2d-games/` (the untouched upstream MonoGame toolkit) and should be treated as illustrative, not prescriptive.
+- **NOT in this stack:** native game-framework runtimes and their UI/input/physics/content-pipeline libraries (Gum, Apos.Input, Aether.Physics2D, PixiJS + custom C# utilities, the Aseprite spritesheet importer, FontStashSharp, MGCB-style content pipelines, FMOD). The `docs/2d-games/` concept toolkit is now aligned to this stack (Bonobo-aligned architecture/reference + engine-agnostic guides); treat any remaining native-framework specifics there as illustrative, not prescriptive.
 
 ### Project Structure (actual)
 
@@ -42,7 +42,7 @@ bonoboengine.blazorwasm/
 └── docs/
     ├── index.md                       # Architecture source of truth
     ├── game-entity-component-system/  # ← Bonobo-adapted ECS docs (this file)
-    └── 2d-games/                      # Upstream MonoGame+Arch reference (illustrative)
+    └── 2d-games/                      # Bonobo-aligned + engine-agnostic concept toolkit
 ```
 
 ### ECS folder conventions inside Game.Engine
@@ -254,7 +254,7 @@ npx tsc --noEmit
 | `Game.UI/` (Razor + Frontend) | Presentation: Blazor components, PixiJS, Tailwind | Contain authoritative simulation logic |
 | `Game.Web/` / `Game.Maui/` | Hosts: bootstrap, wiring, static SSR / MAUI shell | Contain game or ECS logic |
 
-### Simulation Lifecycle (NOT a MonoGame Update/Draw loop)
+### Simulation Lifecycle (NOT a native game-framework Update/Draw loop)
 
 The Bonobo engine has **no** `Initialize/LoadContent/Update/Draw` lifecycle. It is a deterministic tick pump separated from rendering:
 
@@ -300,5 +300,5 @@ These Bonobo + Arch rules build on top of the engine-agnostic rules in `docs/gam
 
 When core rules and Bonobo rules conflict, Bonobo rules take precedence for this repository.
 
-> **Generic gamedev reference:** `docs/2d-games/` holds the upstream "Universal 2D Engine Toolkit" (MonoGame + Arch flavored). It is valuable for engine-agnostic concepts (game loops, pooling, pathfinding, AI patterns), but its MonoGame/Gum/Apos/MGCB specifics do **not** apply here. Treat MonoGame mentions there as illustrative, not prescriptive.
+> **Generic gamedev reference:** `docs/2d-games/` holds the "Universal 2D Engine Toolkit" — architecture/reference docs aligned to the Bonobo stack (Arch ECS + PixiJS + Blazor + Tailwind + System.Text.Json) plus engine-agnostic concept guides. Use it for game loops, pooling, pathfinding, AI patterns, and the like; native game-framework specifics do **not** apply here.
 

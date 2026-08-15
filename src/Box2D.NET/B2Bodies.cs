@@ -1,0 +1,2165 @@
+// SPDX-FileCopyrightText: 2023 Erin Catto
+// SPDX-FileCopyrightText: 2025 Ikpil Choi(ikpil@naver.com)
+// SPDX-License-Identifier: MIT
+
+using System;
+using System.Text;
+using static Box2D.NET.B2Arrays;
+using static Box2D.NET.B2Cores;
+using static Box2D.NET.B2Diagnostics;
+using static Box2D.NET.B2Constants;
+using static Box2D.NET.B2Contacts;
+using static Box2D.NET.B2MathFunction;
+using static Box2D.NET.B2Ids;
+using static Box2D.NET.B2Shapes;
+using static Box2D.NET.B2Worlds;
+using static Box2D.NET.B2Joints;
+using static Box2D.NET.B2IdPools;
+using static Box2D.NET.B2Islands;
+using static Box2D.NET.B2Sensors;
+using static Box2D.NET.B2SolverSets;
+using static Box2D.NET.B2BroadPhases;
+using static Box2D.NET.B2ArenaAllocators;
+
+namespace Box2D.NET
+{
+    public static class B2Bodies
+    {
+        private static string b2TruncateBodyName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return string.Empty;
+            }
+
+            int maximumByteCount = B2_NAME_LENGTH;
+            if (Encoding.UTF8.GetByteCount(name) <= maximumByteCount)
+            {
+                return name;
+            }
+
+            int characterCount = 0;
+            int byteCount = 0;
+            while (characterCount < name.Length)
+            {
+                int scalarCharacterCount =
+                    char.IsHighSurrogate(name[characterCount]) &&
+                    characterCount + 1 < name.Length &&
+                    char.IsLowSurrogate(name[characterCount + 1])
+                        ? 2
+                        : 1;
+                int scalarByteCount = Encoding.UTF8.GetByteCount(name, characterCount, scalarCharacterCount);
+                if (byteCount + scalarByteCount > maximumByteCount)
+                {
+                    break;
+                }
+
+                characterCount += scalarCharacterCount;
+                byteCount += scalarByteCount;
+            }
+
+            return name.Substring(0, characterCount);
+        }
+
+        // Identity body state, notice the deltaRotation is {1, 0}
+        internal static readonly B2BodyState b2_identityBodyState = new B2BodyState()
+        {
+            linearVelocity = new B2Vec2(0.0f, 0.0f),
+            angularVelocity = 0.0f,
+            flags = 0,
+            deltaPosition = new B2Vec2(0.0f, 0.0f),
+            deltaRotation = new B2Rot(1.0f, 0.0f),
+        };
+
+        public static B2Sweep b2MakeSweep(B2BodySim bodySim)
+        {
+            B2Sweep s = new B2Sweep();
+            s.c1 = bodySim.center0;
+            s.c2 = bodySim.center;
+            s.q1 = bodySim.rotation0;
+            s.q2 = bodySim.transform.q;
+            s.localCenter = bodySim.localCenter;
+            return s;
+        }
+
+        public static void b2LimitVelocity(B2BodyState state, float maxLinearSpeed)
+        {
+            float v2 = b2LengthSquared(state.linearVelocity);
+            if (v2 > maxLinearSpeed * maxLinearSpeed)
+            {
+                state.linearVelocity = b2MulSV(maxLinearSpeed / MathF.Sqrt(v2), state.linearVelocity);
+            }
+        }
+
+        public static void b2RemoveBodySim(ref B2Array<B2BodySim> bodySims, ref B2Array<B2Body> bodies, int localIndex)
+        {
+            B2_ASSERT(0 <= localIndex && localIndex < bodySims.count);
+            int lastIndex = bodySims.count - 1;
+            bodySims.data[localIndex].CopyFrom(bodySims.data[lastIndex]);
+            B2Body movedBody = b2Array_Get(ref bodies, bodySims.data[localIndex].bodyId);
+            B2_ASSERT(movedBody.localIndex == lastIndex);
+            movedBody.localIndex = localIndex;
+            if (localIndex != lastIndex)
+            {
+                bodySims.data[lastIndex] = new B2BodySim();
+            }
+
+            bodySims.count -= 1;
+        }
+
+        // Get a validated body from a world using an id.
+        public static B2Body b2GetBodyFullId(B2World world, B2BodyId bodyId)
+        {
+            B2_ASSERT(b2Body_IsValid(bodyId));
+
+            // id index starts at one so that zero can represent null
+            return b2Array_Get(ref world.bodies, bodyId.index1 - 1);
+        }
+
+        public static B2Transform b2GetBodyTransformQuick(B2World world, B2Body body)
+        {
+            B2SolverSet set = b2Array_Get(ref world.solverSets, body.setIndex);
+            B2BodySim bodySim = b2Array_Get(ref set.bodySims, body.localIndex);
+            return bodySim.transform;
+        }
+
+        public static B2Transform b2GetBodyTransform(B2World world, int bodyId)
+        {
+            B2Body body = b2Array_Get(ref world.bodies, bodyId);
+            return b2GetBodyTransformQuick(world, body);
+        }
+
+        // Create a b2BodyId from a raw id.
+        public static B2BodyId b2MakeBodyId(B2World world, int bodyId)
+        {
+            B2Body body = b2Array_Get(ref world.bodies, bodyId);
+            return new B2BodyId(bodyId + 1, world.worldId, body.generation);
+        }
+
+        public static B2BodySim b2GetBodySim(B2World world, B2Body body)
+        {
+            B2SolverSet set = b2Array_Get(ref world.solverSets, body.setIndex);
+            B2BodySim bodySim = b2Array_Get(ref set.bodySims, body.localIndex);
+            return bodySim;
+        }
+
+        public static B2BodyState b2GetBodyState(B2World world, B2Body body)
+        {
+            if (body.setIndex == (int)B2SolverSetType.b2_awakeSet)
+            {
+                B2SolverSet set = b2Array_Get(ref world.solverSets, (int)B2SolverSetType.b2_awakeSet);
+                return b2Array_Get(ref set.bodyStates, body.localIndex);
+            }
+
+            return null;
+        }
+
+        public static void b2SyncBodyFlags(B2World world, B2Body body)
+        {
+            // Never sync transient flags
+            uint flags = body.flags & ~(uint)B2BodyFlags.b2_bodyTransientFlags;
+
+            B2BodySim bodySim = b2GetBodySim(world, body);
+            bodySim.flags = flags;
+
+            B2BodyState bodyState = b2GetBodyState(world, body);
+            if (bodyState != null)
+            {
+                bodyState.flags = flags;
+            }
+        }
+
+        public static void b2CreateIslandForBody(B2World world, int setIndex, B2Body body)
+        {
+            B2_ASSERT(body.islandId == B2_NULL_INDEX);
+            B2_ASSERT(setIndex != (int)B2SolverSetType.b2_disabledSet);
+
+            B2Island island = b2CreateIsland(world, setIndex);
+            b2Array_Push(ref island.bodies, body.id);
+            body.islandId = island.islandId;
+            body.islandIndex = 0;
+
+            b2ValidateIsland(world, island.islandId);
+        }
+
+        internal static void b2RemoveBodyFromIsland(B2World world, B2Body body)
+        {
+            if (body.islandId == B2_NULL_INDEX)
+            {
+                B2_ASSERT(body.islandIndex == B2_NULL_INDEX);
+                return;
+            }
+
+            int islandId = body.islandId;
+            B2Island island = b2Array_Get(ref world.islands, islandId);
+            {
+                int localIndex = body.islandIndex;
+                int movedBodyId = island.bodies.data[island.bodies.count - 1];
+                island.bodies.data[localIndex] = movedBodyId;
+                B2_VALIDATE(world.bodies.data[movedBodyId].islandIndex == island.bodies.count - 1);
+                world.bodies.data[movedBodyId].islandIndex = localIndex;
+                island.bodies.count -= 1;
+            }
+
+            if (island.bodies.count == 0)
+            {
+                // Destroy empty island
+                B2_ASSERT(island.contacts.count == 0);
+                B2_ASSERT(island.joints.count == 0);
+
+                // Free the island
+                b2DestroyIsland(world, island.islandId);
+            }
+            else
+            {
+                b2ValidateIsland(world, islandId);
+            }
+
+            body.islandId = B2_NULL_INDEX;
+            body.islandIndex = B2_NULL_INDEX;
+        }
+
+        public static void b2DestroyBodyContacts(B2World world, B2Body body, bool wakeBodies)
+        {
+            // Destroy the attached contacts
+            int edgeKey = body.headContactKey;
+            while (edgeKey != B2_NULL_INDEX)
+            {
+                int contactId = edgeKey >> 1;
+                int edgeIndex = edgeKey & 1;
+
+                B2Contact contact = b2Array_Get(ref world.contacts, contactId);
+                edgeKey = contact.edges[edgeIndex].nextKey;
+                b2DestroyContact(world, contact, wakeBodies);
+            }
+
+            b2ValidateSolverSets(world);
+        }
+        /// Create a rigid body given a definition. No reference to the definition is retained. So you can create the definition
+        /// on the stack and pass it as a pointer.
+        /// @code{.c}
+        /// b2BodyDef bodyDef = b2DefaultBodyDef();
+        /// b2BodyId myBodyId = b2CreateBody(myWorldId, &bodyDef);
+        /// @endcode
+        /// @warning This function is locked during callbacks.
+        public static B2BodyId b2CreateBody(B2WorldId worldId, in B2BodyDef def)
+        {
+            B2_CHECK_DEF(def);
+            B2_ASSERT(b2IsValidVec2(def.position));
+            B2_ASSERT(b2IsValidRotation(def.rotation));
+            B2_ASSERT(b2IsValidVec2(def.linearVelocity));
+            B2_ASSERT(b2IsValidFloat(def.angularVelocity));
+            B2_ASSERT(b2IsValidFloat(def.linearDamping) && def.linearDamping >= 0.0f);
+            B2_ASSERT(b2IsValidFloat(def.angularDamping) && def.angularDamping >= 0.0f);
+            B2_ASSERT(b2IsValidFloat(def.sleepThreshold) && def.sleepThreshold >= 0.0f);
+            B2_ASSERT(b2IsValidFloat(def.gravityScale));
+
+            B2World world = b2GetWorldFromId(worldId);
+            B2_ASSERT(world.locked == false);
+
+            if (world.locked)
+            {
+                return b2_nullBodyId;
+            }
+
+            bool isAwake = (def.isAwake || def.enableSleep == false) && def.isEnabled;
+
+            // determine the solver set
+            int setId;
+            if (def.isEnabled == false)
+            {
+                // any body type can be disabled
+                setId = (int)B2SolverSetType.b2_disabledSet;
+            }
+            else if (def.type == B2BodyType.b2_staticBody)
+            {
+                setId = (int)B2SolverSetType.b2_staticSet;
+            }
+            else if (isAwake == true)
+            {
+                setId = (int)B2SolverSetType.b2_awakeSet;
+            }
+            else
+            {
+                // new set for a sleeping body in its own island
+                setId = b2AllocId(world.solverSetIdPool);
+                if (setId == world.solverSets.count)
+                {
+                    // Create a zero initialized solver set. All sub-arrays are also zero initialized.
+                    b2Array_Push(ref world.solverSets, new B2SolverSet());
+                }
+                else
+                {
+                    B2_ASSERT(world.solverSets.data[setId].setIndex == B2_NULL_INDEX);
+                }
+
+                world.solverSets.data[setId].setIndex = setId;
+            }
+
+            B2_ASSERT(0 <= setId && setId < world.solverSets.count);
+
+            int bodyId = b2AllocId(world.bodyIdPool);
+
+            uint lockFlags = 0;
+            lockFlags |= def.motionLocks.linearX ? (uint)B2BodyFlags.b2_lockLinearX : 0;
+            lockFlags |= def.motionLocks.linearY ? (uint)B2BodyFlags.b2_lockLinearY : 0;
+            lockFlags |= def.motionLocks.angularZ ? (uint)B2BodyFlags.b2_lockAngularZ : 0;
+
+
+            B2SolverSet set = b2Array_Get(ref world.solverSets, setId);
+            ref B2BodySim bodySim = ref b2Array_Emplace(ref set.bodySims);
+            //*bodySim = ( b2BodySim ){ 0 };
+            bodySim.Clear();
+            bodySim.transform.p = def.position;
+            bodySim.transform.q = def.rotation;
+            bodySim.center = def.position;
+            bodySim.rotation0 = bodySim.transform.q;
+            bodySim.center0 = bodySim.center;
+            bodySim.minExtent = B2_HUGE;
+            bodySim.maxExtent = 0.0f;
+            bodySim.linearDamping = def.linearDamping;
+            bodySim.angularDamping = def.angularDamping;
+            bodySim.gravityScale = def.gravityScale;
+            bodySim.bodyId = bodyId;
+            bodySim.flags = lockFlags;
+            bodySim.flags |= def.isBullet ? (uint)B2BodyFlags.b2_isBullet : 0;
+            bodySim.flags |= def.allowFastRotation ? (uint)B2BodyFlags.b2_allowFastRotation : 0;
+            bodySim.flags |= def.type == B2BodyType.b2_dynamicBody ? (uint)B2BodyFlags.b2_dynamicFlag : 0;
+            bodySim.flags |= def.enableSleep ? (uint)B2BodyFlags.b2_enableSleep : 0;
+            bodySim.flags |= def.enableContactRecycling ? (uint)B2BodyFlags.b2_bodyEnableContactRecycling : 0;
+
+
+            if (setId == (int)B2SolverSetType.b2_awakeSet)
+            {
+                ref B2BodyState bodyState = ref b2Array_Emplace(ref set.bodyStates);
+                //B2_ASSERT( ( (uintptr_t)bodyState & 0x1F ) == 0 );
+                //*bodyState = ( b2BodyState ){ 0 }; 
+                bodyState.Clear();
+                bodyState.linearVelocity = def.linearVelocity;
+                bodyState.angularVelocity = def.angularVelocity;
+                bodyState.deltaRotation = b2Rot_identity;
+                bodyState.flags = bodySim.flags;
+            }
+
+            if (bodyId == world.bodies.count)
+            {
+                b2Array_Push(ref world.bodies, new B2Body());
+            }
+            else
+            {
+                B2_ASSERT(world.bodies.data[bodyId].id == B2_NULL_INDEX);
+            }
+
+            B2Body body = b2Array_Get(ref world.bodies, bodyId);
+
+            body.name = b2TruncateBodyName(def.name);
+
+            body.userData = def.userData;
+            body.setIndex = setId;
+            body.localIndex = set.bodySims.count - 1;
+            body.generation += 1;
+            body.headShapeId = B2_NULL_INDEX;
+            body.shapeCount = 0;
+            body.headChainId = B2_NULL_INDEX;
+            body.headContactKey = B2_NULL_INDEX;
+            body.contactCount = 0;
+            body.headJointKey = B2_NULL_INDEX;
+            body.jointCount = 0;
+            body.islandId = B2_NULL_INDEX;
+            body.islandIndex = B2_NULL_INDEX;
+            body.bodyMoveIndex = B2_NULL_INDEX;
+            body.id = bodyId;
+            body.mass = 0.0f;
+            body.inertia = 0.0f;
+            body.sleepThreshold = def.sleepThreshold;
+            body.sleepTime = 0.0f;
+            body.type = def.type;
+            body.flags = bodySim.flags;
+
+            // dynamic and kinematic bodies that are enabled need a island
+            if (setId >= (int)B2SolverSetType.b2_awakeSet)
+            {
+                b2CreateIslandForBody(world, setId, body);
+            }
+
+            b2ValidateSolverSets(world);
+
+            B2BodyId id = new B2BodyId(bodyId + 1, world.worldId, body.generation);
+            return id;
+        }
+
+        // careful calling this because it can invalidate body, state, joint, and contact pointers
+        internal static bool b2WakeBody(B2World world, B2Body body)
+        {
+            if (body.setIndex >= (int)B2SolverSetType.b2_firstSleepingSet)
+            {
+                b2WakeSolverSet(world, body.setIndex);
+                b2ValidateSolverSets(world);
+                return true;
+            }
+
+            return false;
+        }
+        /// Destroy a rigid body given an id. This destroys all shapes and joints attached to the body.
+        /// Do not keep references to the associated shapes and joints.
+        public static void b2DestroyBody(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorldLocked(bodyId.world0);
+            if (world == null)
+            {
+                return;
+            }
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            // Wake bodies attached to this body, even if this body is static.
+            bool wakeBodies = true;
+
+            // Destroy the attached joints
+            int edgeKey = body.headJointKey;
+            while (edgeKey != B2_NULL_INDEX)
+            {
+                int jointId = edgeKey >> 1;
+                int edgeIndex = edgeKey & 1;
+
+                B2Joint joint = b2Array_Get(ref world.joints, jointId);
+                edgeKey = joint.edges[edgeIndex].nextKey;
+
+                // Careful because this modifies the list being traversed
+                b2DestroyJointInternal(world, joint, wakeBodies);
+            }
+
+            // Destroy all contacts attached to this body.
+            b2DestroyBodyContacts(world, body, wakeBodies);
+
+            // Destroy the attached shapes and their broad-phase proxies.
+            int shapeId = body.headShapeId;
+            while (shapeId != B2_NULL_INDEX)
+            {
+                B2Shape shape = b2Array_Get(ref world.shapes, shapeId);
+
+                if (shape.sensorIndex != B2_NULL_INDEX)
+                {
+                    b2DestroySensor(world, shape);
+                }
+
+                b2DestroyShapeProxy(shape, world.broadPhase);
+
+                // Return shape to free list.
+                b2FreeId(world.shapeIdPool, shapeId);
+                shape.id = B2_NULL_INDEX;
+
+                shapeId = shape.nextShapeId;
+            }
+
+            // Destroy the attached chains. The associated shapes have already been destroyed above.
+            int chainId = body.headChainId;
+            while (chainId != B2_NULL_INDEX)
+            {
+                B2ChainShape chain = b2Array_Get(ref world.chainShapes, chainId);
+
+                b2FreeChainData(chain);
+
+                // Return chain to free list.
+                b2FreeId(world.chainIdPool, chainId);
+                chain.id = B2_NULL_INDEX;
+
+                chainId = chain.nextChainId;
+            }
+
+            b2RemoveBodyFromIsland(world, body);
+
+            // Remove body sim from solver set that owns it
+            B2SolverSet set = b2Array_Get(ref world.solverSets, body.setIndex);
+            b2RemoveBodySim(ref set.bodySims, ref world.bodies, body.localIndex);
+
+            // Remove body state from awake set
+            if (body.setIndex == (int)B2SolverSetType.b2_awakeSet)
+            {
+                b2Array_RemoveSwap(ref set.bodyStates, body.localIndex);
+            }
+            else if (set.setIndex >= (int)B2SolverSetType.b2_firstSleepingSet && set.bodySims.count == 0)
+            {
+                // Remove solver set if it is empty
+                b2DestroySolverSet(world, set.setIndex);
+            }
+
+            // Free body and id (preserve body generation)
+            b2FreeId(world.bodyIdPool, body.id);
+
+            body.setIndex = B2_NULL_INDEX;
+            body.localIndex = B2_NULL_INDEX;
+            body.id = B2_NULL_INDEX;
+
+            b2ValidateSolverSets(world);
+        }
+        /// Get the maximum capacity required for retrieving all the touching contacts on a body
+        public static int b2Body_GetContactCapacity(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorldLocked(bodyId.world0);
+            if (world == null)
+            {
+                return 0;
+            }
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            // Conservative and fast
+            return body.contactCount;
+        }
+        /// Get the touching contact data for a body.
+        /// @note Box2D uses speculative collision so some contact points may be separated.
+        /// @returns the number of elements filled in the provided array
+        /// @warning do not ignore the return value, it specifies the valid number of elements
+        public static int b2Body_GetContactData(B2BodyId bodyId, Span<B2ContactData> contactData, int capacity)
+        {
+            B2World world = b2GetWorldLocked(bodyId.world0);
+            if (world == null)
+            {
+                return 0;
+            }
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            int contactKey = body.headContactKey;
+            int index = 0;
+            while (contactKey != B2_NULL_INDEX && index < capacity)
+            {
+                int contactId = contactKey >> 1;
+                int edgeIndex = contactKey & 1;
+
+                B2Contact contact = b2Array_Get(ref world.contacts, contactId);
+
+                // Is contact touching?
+                if (0 != (contact.flags & (uint)B2ContactFlags.b2_contactTouchingFlag))
+                {
+                    B2Shape shapeA = b2Array_Get(ref world.shapes, contact.shapeIdA);
+                    B2Shape shapeB = b2Array_Get(ref world.shapes, contact.shapeIdB);
+
+                    contactData[index].contactId = new B2ContactId(contact.contactId + 1, bodyId.world0, 0, contact.generation);
+                    contactData[index].shapeIdA = new B2ShapeId(shapeA.id + 1, bodyId.world0, shapeA.generation);
+                    contactData[index].shapeIdB = new B2ShapeId(shapeB.id + 1, bodyId.world0, shapeB.generation);
+
+                    B2ContactSim contactSim = b2GetContactSim(world, contact);
+                    contactData[index].manifold = contactSim.manifold;
+
+                    index += 1;
+                }
+
+                contactKey = contact.edges[edgeIndex].nextKey;
+            }
+
+            B2_ASSERT(index <= capacity);
+
+            return index;
+        }
+        /// Get the current world AABB that contains all the attached shapes. Note that this may not encompass the body origin.
+        /// If there are no shapes attached then the returned AABB is empty and centered on the body origin.
+        public static B2AABB b2Body_ComputeAABB(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorldLocked(bodyId.world0);
+            if (world == null)
+            {
+                return new B2AABB();
+            }
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            if (body.headShapeId == B2_NULL_INDEX)
+            {
+                B2Transform transform = b2GetBodyTransform(world, body.id);
+                return new B2AABB(transform.p, transform.p);
+            }
+
+            B2Shape shape = b2Array_Get(ref world.shapes, body.headShapeId);
+            B2AABB aabb = shape.aabb;
+            while (shape.nextShapeId != B2_NULL_INDEX)
+            {
+                shape = b2Array_Get(ref world.shapes, shape.nextShapeId);
+                aabb = b2AABB_Union(aabb, shape.aabb);
+            }
+
+            return aabb;
+        }
+
+        internal static void b2UpdateBodyMassData(B2World world, B2Body body)
+        {
+            // Mass is no longer dirty
+            body.flags &= ~(uint)B2BodyFlags.b2_dirtyMass;
+
+            B2BodySim bodySim = b2GetBodySim(world, body);
+
+            // Compute mass data from shapes. Each shape has its own density.
+            body.mass = 0.0f;
+            body.inertia = 0.0f;
+
+            bodySim.invMass = 0.0f;
+            bodySim.invInertia = 0.0f;
+            bodySim.localCenter = b2Vec2_zero;
+            bodySim.minExtent = B2_HUGE;
+            bodySim.maxExtent = 0.0f;
+
+            // Static and kinematic sims have zero mass.
+            if (body.type != B2BodyType.b2_dynamicBody)
+            {
+                bodySim.center = bodySim.transform.p;
+                bodySim.center0 = bodySim.center;
+
+                // Need extents for kinematic bodies for sleeping to work correctly.
+                if (body.type == B2BodyType.b2_kinematicBody)
+                {
+                    int nextShapeId = body.headShapeId;
+                    while (nextShapeId != B2_NULL_INDEX)
+                    {
+                        B2Shape s = b2Array_Get(ref world.shapes, nextShapeId);
+
+                        B2ShapeExtent extent = b2ComputeShapeExtent(s, b2Vec2_zero);
+                        bodySim.minExtent = b2MinFloat(bodySim.minExtent, extent.minExtent);
+                        bodySim.maxExtent = b2MaxFloat(bodySim.maxExtent, extent.maxExtent);
+
+                        nextShapeId = s.nextShapeId;
+                    }
+                }
+
+                return;
+            }
+
+            int shapeCount = body.shapeCount;
+            ArraySegment<B2MassData> masses = b2StackAlloc<B2MassData>(world.stack, shapeCount, "mass data");
+
+            // Accumulate mass over all shapes.
+            B2Vec2 localCenter = b2Vec2_zero;
+            int shapeId = body.headShapeId;
+            int shapeIndex = 0;
+            while (shapeId != B2_NULL_INDEX)
+            {
+                B2Shape s = b2Array_Get(ref world.shapes, shapeId);
+                shapeId = s.nextShapeId;
+
+                if (s.density == 0.0f)
+                {
+                    masses[shapeIndex] = new B2MassData();
+                    shapeIndex += 1;
+                    continue;
+                }
+
+                B2MassData massData = b2ComputeShapeMass(s);
+                body.mass += massData.mass;
+                localCenter = b2MulAdd(localCenter, massData.mass, massData.center);
+
+                masses[shapeIndex] = massData;
+                shapeIndex += 1;
+            }
+
+            // Compute center of mass.
+            if (body.mass > 0.0f)
+            {
+                bodySim.invMass = 1.0f / body.mass;
+                localCenter = b2MulSV(bodySim.invMass, localCenter);
+            }
+
+            // Second loop to accumulate the rotational inertia about the center of mass
+            for (shapeIndex = 0; shapeIndex < shapeCount; ++shapeIndex)
+            {
+                B2MassData massData = masses[shapeIndex];
+                if (massData.mass == 0.0f)
+                {
+                    continue;
+                }
+
+                // Shift to center of mass. This is safe because it can only increase.
+                B2Vec2 offset = b2Sub(localCenter, massData.center);
+                float inertia = massData.rotationalInertia + massData.mass * b2Dot(offset, offset);
+                body.inertia += inertia;
+            }
+
+            b2StackFree(world.stack, masses);
+            masses = null;
+
+            B2_ASSERT(body.inertia >= 0.0f);
+
+            if (body.inertia > 0.0f)
+            {
+                bodySim.invInertia = 1.0f / body.inertia;
+            }
+            else
+            {
+                body.inertia = 0.0f;
+                bodySim.invInertia = 0.0f;
+            }
+
+            // Move center of mass.
+            B2Vec2 oldCenter = bodySim.center;
+            bodySim.localCenter = localCenter;
+            bodySim.center = b2TransformPoint(bodySim.transform, bodySim.localCenter);
+            bodySim.center0 = bodySim.center;
+
+            // Update center of mass velocity
+            B2BodyState state = b2GetBodyState(world, body);
+            if (state != null)
+            {
+                B2Vec2 deltaLinear = b2CrossSV(state.angularVelocity, b2Sub(bodySim.center, oldCenter));
+                state.linearVelocity = b2Add(state.linearVelocity, deltaLinear);
+            }
+
+            // Compute body extents relative to center of mass
+            shapeId = body.headShapeId;
+            while (shapeId != B2_NULL_INDEX)
+            {
+                B2Shape s = b2Array_Get(ref world.shapes, shapeId);
+
+                B2ShapeExtent extent = b2ComputeShapeExtent(s, localCenter);
+                bodySim.minExtent = b2MinFloat(bodySim.minExtent, extent.minExtent);
+                bodySim.maxExtent = b2MaxFloat(bodySim.maxExtent, extent.maxExtent);
+
+                shapeId = s.nextShapeId;
+            }
+        }
+        /// Get the world position of a body. This is the location of the body origin.
+        public static B2Vec2 b2Body_GetPosition(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2Transform transform = b2GetBodyTransformQuick(world, body);
+            return transform.p;
+        }
+        /// Get the world rotation of a body as a cosine/sine pair (complex number)
+        public static B2Rot b2Body_GetRotation(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2Transform transform = b2GetBodyTransformQuick(world, body);
+            return transform.q;
+        }
+        /// Get the world transform of a body.
+        public static B2Transform b2Body_GetTransform(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            return b2GetBodyTransformQuick(world, body);
+        }
+        /// Get a local point on a body given a world point
+        public static B2Vec2 b2Body_GetLocalPoint(B2BodyId bodyId, B2Vec2 worldPoint)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2Transform transform = b2GetBodyTransformQuick(world, body);
+            return b2InvTransformPoint(transform, worldPoint);
+        }
+        /// Get a world point on a body given a local point
+        public static B2Vec2 b2Body_GetWorldPoint(B2BodyId bodyId, B2Vec2 localPoint)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2Transform transform = b2GetBodyTransformQuick(world, body);
+            return b2TransformPoint(transform, localPoint);
+        }
+
+        /// Get a local vector on a body given a world vector
+        public static B2Vec2 b2Body_GetLocalVector(B2BodyId bodyId, B2Vec2 worldVector)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2Transform transform = b2GetBodyTransformQuick(world, body);
+            return b2InvRotateVector(transform.q, worldVector);
+        }
+
+        /// Get a world vector on a body given a local vector
+        public static B2Vec2 b2Body_GetWorldVector(B2BodyId bodyId, B2Vec2 localVector)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2Transform transform = b2GetBodyTransformQuick(world, body);
+            return b2RotateVector(transform.q, localVector);
+        }
+
+        /// Set the world transform of a body. This acts as a teleport and is fairly expensive.
+        /// @note Generally you should create a body with then intended transform.
+        /// @see b2BodyDef::position and b2BodyDef::rotation
+        public static void b2Body_SetTransform(B2BodyId bodyId, B2Vec2 position, B2Rot rotation)
+        {
+            B2_ASSERT(b2IsValidVec2(position));
+            B2_ASSERT(b2IsValidRotation(rotation));
+            B2_ASSERT(b2Body_IsValid(bodyId));
+            B2World world = b2GetWorld(bodyId.world0);
+            B2_ASSERT(world.locked == false);
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodySim bodySim = b2GetBodySim(world, body);
+
+            bodySim.transform.p = position;
+            bodySim.transform.q = rotation;
+            bodySim.center = b2TransformPoint(bodySim.transform, bodySim.localCenter);
+
+            bodySim.rotation0 = bodySim.transform.q;
+            bodySim.center0 = bodySim.center;
+
+            B2BroadPhase broadPhase = world.broadPhase;
+
+            B2Transform transform = bodySim.transform;
+            float speculativeDistance = B2_SPECULATIVE_DISTANCE;
+
+            int shapeId = body.headShapeId;
+            while (shapeId != B2_NULL_INDEX)
+            {
+                B2Shape shape = b2Array_Get(ref world.shapes, shapeId);
+                B2AABB aabb = b2ComputeShapeAABB(shape, transform);
+                aabb.lowerBound.X -= speculativeDistance;
+                aabb.lowerBound.Y -= speculativeDistance;
+                aabb.upperBound.X += speculativeDistance;
+                aabb.upperBound.Y += speculativeDistance;
+                shape.aabb = aabb;
+
+                if (b2AABB_Contains(shape.fatAABB, aabb) == false)
+                {
+                    float margin = shape.aabbMargin;
+                    B2AABB fatAABB;
+                    fatAABB.lowerBound.X = aabb.lowerBound.X - margin;
+                    fatAABB.lowerBound.Y = aabb.lowerBound.Y - margin;
+                    fatAABB.upperBound.X = aabb.upperBound.X + margin;
+                    fatAABB.upperBound.Y = aabb.upperBound.Y + margin;
+                    shape.fatAABB = fatAABB;
+
+                    // They body could be disabled
+                    if (shape.proxyKey != B2_NULL_INDEX)
+                    {
+                        b2BroadPhase_MoveProxy(broadPhase, shape.proxyKey, fatAABB);
+                    }
+                }
+
+                shapeId = shape.nextShapeId;
+            }
+        }
+        /// Get the linear velocity of a body's center of mass. Usually in meters per second.
+        public static B2Vec2 b2Body_GetLinearVelocity(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodyState state = b2GetBodyState(world, body);
+            if (state != null)
+            {
+                return state.linearVelocity;
+            }
+
+            return b2Vec2_zero;
+        }
+        /// Get the angular velocity of a body in radians per second
+        public static float b2Body_GetAngularVelocity(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodyState state = b2GetBodyState(world, body);
+            if (state != null)
+            {
+                return state.angularVelocity;
+            }
+
+            return 0.0f;
+        }
+        /// Set the linear velocity of a body. Usually in meters per second.
+        public static void b2Body_SetLinearVelocity(B2BodyId bodyId, B2Vec2 linearVelocity)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            if (body.type == B2BodyType.b2_staticBody)
+            {
+                return;
+            }
+
+            if (b2LengthSquared(linearVelocity) > 0.0f)
+            {
+                b2WakeBody(world, body);
+            }
+
+            B2BodyState state = b2GetBodyState(world, body);
+            if (state == null)
+            {
+                return;
+            }
+
+            state.linearVelocity = linearVelocity;
+        }
+
+        /// Set the angular velocity of a body in radians per second
+        public static void b2Body_SetAngularVelocity(B2BodyId bodyId, float angularVelocity)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            if (body.type == B2BodyType.b2_staticBody || 0 != (body.flags & (uint)B2BodyFlags.b2_lockAngularZ))
+            {
+                return;
+            }
+
+            if (angularVelocity != 0.0f)
+            {
+                b2WakeBody(world, body);
+            }
+
+            B2BodyState state = b2GetBodyState(world, body);
+            if (state == null)
+            {
+                return;
+            }
+
+            state.angularVelocity = angularVelocity;
+        }
+
+        /// Set the velocity to reach the given transform after a given time step.
+        /// The result will be close but maybe not exact. This is meant for kinematic bodies.
+        /// The target is not applied if the velocity would be below the sleep threshold and
+        /// the body is currently asleep.
+        /// @param bodyId The body id
+        /// @param target The target transform for the body
+        /// @param timeStep The time step of the next call to b2World_Step
+        /// @param wake Option to wake the body or not
+        public static void b2Body_SetTargetTransform(B2BodyId bodyId, in B2Transform target, float timeStep, bool wake)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            if (body.setIndex == (int)B2SolverSetType.b2_disabledSet)
+            {
+                return;
+            }
+
+            if (body.type == B2BodyType.b2_staticBody || timeStep <= 0.0f)
+            {
+                return;
+            }
+
+            if (body.setIndex != (int)B2SolverSetType.b2_awakeSet && wake == false)
+            {
+                return;
+            }
+
+            B2BodySim sim = b2GetBodySim(world, body);
+
+            // Compute linear velocity
+            B2Vec2 center1 = sim.center;
+            B2Vec2 center2 = b2TransformPoint(target, sim.localCenter);
+            float invTimeStep = 1.0f / timeStep;
+            B2Vec2 linearVelocity = b2MulSV(invTimeStep, b2Sub(center2, center1));
+
+            // Compute angular velocity
+            B2Rot q1 = sim.transform.q;
+            B2Rot q2 = target.q;
+            float deltaAngle = b2RelativeAngle(q1, q2);
+            float angularVelocity = invTimeStep * deltaAngle;
+
+            // Early out if the body is asleep already and the desired movement is small
+            if (body.setIndex != (int)B2SolverSetType.b2_awakeSet)
+            {
+                float maxVelocity = b2Length(linearVelocity) + b2AbsFloat(angularVelocity) * sim.maxExtent;
+
+                // Return if velocity would be sleepy
+                if (maxVelocity < body.sleepThreshold)
+                {
+                    return;
+                }
+
+                // Must wake for state to exist
+                b2WakeBody(world, body);
+            }
+
+            B2_ASSERT(body.setIndex == (int)B2SolverSetType.b2_awakeSet);
+
+            B2BodyState state = b2GetBodyState(world, body);
+            state.linearVelocity = linearVelocity;
+            state.angularVelocity = angularVelocity;
+        }
+
+        /// Get the linear velocity of a local point attached to a body. Usually in meters per second.
+        public static B2Vec2 b2Body_GetLocalPointVelocity(B2BodyId bodyId, B2Vec2 localPoint)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodyState state = b2GetBodyState(world, body);
+            if (state == null)
+            {
+                return b2Vec2_zero;
+            }
+
+            B2SolverSet set = b2Array_Get(ref world.solverSets, body.setIndex);
+            B2BodySim bodySim = b2Array_Get(ref set.bodySims, body.localIndex);
+
+            B2Vec2 r = b2RotateVector(bodySim.transform.q, b2Sub(localPoint, bodySim.localCenter));
+            B2Vec2 v = b2Add(state.linearVelocity, b2CrossSV(state.angularVelocity, r));
+            return v;
+        }
+
+        /// Get the linear velocity of a world point attached to a body. Usually in meters per second.
+        public static B2Vec2 b2Body_GetWorldPointVelocity(B2BodyId bodyId, B2Vec2 worldPoint)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodyState state = b2GetBodyState(world, body);
+            if (state == null)
+            {
+                return b2Vec2_zero;
+            }
+
+            B2SolverSet set = b2Array_Get(ref world.solverSets, body.setIndex);
+            B2BodySim bodySim = b2Array_Get(ref set.bodySims, body.localIndex);
+
+            B2Vec2 r = b2Sub(worldPoint, bodySim.center);
+            B2Vec2 v = b2Add(state.linearVelocity, b2CrossSV(state.angularVelocity, r));
+            return v;
+        }
+
+        /// Apply a force at a world point. If the force is not applied at the center of mass,
+        /// it will generate a torque and affect the angular velocity. This optionally wakes up the body.
+        /// The force is ignored if the body is not awake.
+        /// @param bodyId The body id
+        /// @param force The world force vector, usually in newtons (N)
+        /// @param point The world position of the point of application
+        /// @param wake Option to wake up the body
+        public static void b2Body_ApplyForce(B2BodyId bodyId, B2Vec2 force, B2Vec2 point, bool wake)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            if (body.type != B2BodyType.b2_dynamicBody || body.setIndex == (int)B2SolverSetType.b2_disabledSet)
+            {
+                return;
+            }
+
+            if (wake && body.setIndex >= (int)B2SolverSetType.b2_firstSleepingSet)
+            {
+                b2WakeBody(world, body);
+            }
+
+            if (body.setIndex == (int)B2SolverSetType.b2_awakeSet)
+            {
+                B2BodySim bodySim = b2GetBodySim(world, body);
+                bodySim.force = b2Add(bodySim.force, force);
+                bodySim.torque += b2Cross(b2Sub(point, bodySim.center), force);
+            }
+        }
+
+        /// Apply a force to the center of mass. This optionally wakes up the body.
+        /// The force is ignored if the body is not awake.
+        /// @param bodyId The body id
+        /// @param force the world force vector, usually in newtons (N).
+        /// @param wake also wake up the body
+        public static void b2Body_ApplyForceToCenter(B2BodyId bodyId, B2Vec2 force, bool wake)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            if (body.type != B2BodyType.b2_dynamicBody || body.setIndex == (int)B2SolverSetType.b2_disabledSet)
+            {
+                return;
+            }
+
+            if (wake && body.setIndex >= (int)B2SolverSetType.b2_firstSleepingSet)
+            {
+                b2WakeBody(world, body);
+            }
+
+            if (body.setIndex == (int)B2SolverSetType.b2_awakeSet)
+            {
+                B2BodySim bodySim = b2GetBodySim(world, body);
+                bodySim.force = b2Add(bodySim.force, force);
+            }
+        }
+
+        /// Apply a torque. This affects the angular velocity without affecting the linear velocity.
+        /// This optionally wakes the body. The torque is ignored if the body is not awake.
+        /// @param bodyId The body id
+        /// @param torque about the z-axis (out of the screen), usually in N*m.
+        /// @param wake also wake up the body
+        public static void b2Body_ApplyTorque(B2BodyId bodyId, float torque, bool wake)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            if (body.type != B2BodyType.b2_dynamicBody || body.setIndex == (int)B2SolverSetType.b2_disabledSet)
+            {
+                return;
+            }
+
+            if (wake && body.setIndex >= (int)B2SolverSetType.b2_firstSleepingSet)
+            {
+                b2WakeBody(world, body);
+            }
+
+            if (body.setIndex == (int)B2SolverSetType.b2_awakeSet)
+            {
+                B2BodySim bodySim = b2GetBodySim(world, body);
+                bodySim.torque += torque;
+            }
+        }
+
+        /// Clear the force and torque on this body. Forces and torques are automatically cleared after each world
+        /// step. So this only needs to be called if the application wants to remove the effect of previous
+        /// calls to apply forces and torques before the world step is called.
+        /// @param bodyId The body id
+        public static void b2Body_ClearForces(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodySim bodySim = b2GetBodySim(world, body);
+            bodySim.force = b2Vec2_zero;
+            bodySim.torque = 0.0f;
+        }
+
+
+        /// Apply an impulse at a point. This immediately modifies the velocity.
+        /// It also modifies the angular velocity if the point of application
+        /// is not at the center of mass. This optionally wakes the body.
+        /// The impulse is ignored if the body is not awake.
+        /// @param bodyId The body id
+        /// @param impulse the world impulse vector, usually in N*s or kg*m/s.
+        /// @param point the world position of the point of application.
+        /// @param wake also wake up the body
+        /// @warning This should be used for one-shot impulses. If you need a steady force,
+        /// use a force instead, which will work better with the sub-stepping solver.
+        public static void b2Body_ApplyLinearImpulse(B2BodyId bodyId, B2Vec2 impulse, B2Vec2 point, bool wake)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            if (body.type != B2BodyType.b2_dynamicBody || body.setIndex == (int)B2SolverSetType.b2_disabledSet)
+            {
+                return;
+            }
+
+            if (wake && body.setIndex >= (int)B2SolverSetType.b2_firstSleepingSet)
+            {
+                b2WakeBody(world, body);
+            }
+
+            if (body.setIndex == (int)B2SolverSetType.b2_awakeSet)
+            {
+                int localIndex = body.localIndex;
+                B2SolverSet set = b2Array_Get(ref world.solverSets, (int)B2SolverSetType.b2_awakeSet);
+                B2BodyState state = b2Array_Get(ref set.bodyStates, localIndex);
+                B2BodySim bodySim = b2Array_Get(ref set.bodySims, localIndex);
+                state.linearVelocity = b2MulAdd(state.linearVelocity, bodySim.invMass, impulse);
+                state.angularVelocity += bodySim.invInertia * b2Cross(b2Sub(point, bodySim.center), impulse);
+
+                b2LimitVelocity(state, world.maxLinearSpeed);
+            }
+        }
+
+        /// Apply an impulse to the center of mass. This immediately modifies the velocity.
+        /// The impulse is ignored if the body is not awake. This optionally wakes the body.
+        /// @param bodyId The body id
+        /// @param impulse the world impulse vector, usually in N*s or kg*m/s.
+        /// @param wake also wake up the body
+        /// @warning This should be used for one-shot impulses. If you need a steady force,
+        /// use a force instead, which will work better with the sub-stepping solver.
+        public static void b2Body_ApplyLinearImpulseToCenter(B2BodyId bodyId, B2Vec2 impulse, bool wake)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            if (body.type != B2BodyType.b2_dynamicBody || body.setIndex == (int)B2SolverSetType.b2_disabledSet)
+            {
+                return;
+            }
+
+            if (wake && body.setIndex >= (int)B2SolverSetType.b2_firstSleepingSet)
+            {
+                b2WakeBody(world, body);
+            }
+
+            if (body.setIndex == (int)B2SolverSetType.b2_awakeSet)
+            {
+                int localIndex = body.localIndex;
+                B2SolverSet set = b2Array_Get(ref world.solverSets, (int)B2SolverSetType.b2_awakeSet);
+                B2BodyState state = b2Array_Get(ref set.bodyStates, localIndex);
+                B2BodySim bodySim = b2Array_Get(ref set.bodySims, localIndex);
+                state.linearVelocity = b2MulAdd(state.linearVelocity, bodySim.invMass, impulse);
+
+                b2LimitVelocity(state, world.maxLinearSpeed);
+            }
+        }
+
+        /// Apply an angular impulse. The impulse is ignored if the body is not awake.
+        /// This optionally wakes the body.
+        /// @param bodyId The body id
+        /// @param impulse the angular impulse, usually in units of kg*m*m/s
+        /// @param wake also wake up the body
+        /// @warning This should be used for one-shot impulses. If you need a steady torque,
+        /// use a torque instead, which will work better with the sub-stepping solver.
+        public static void b2Body_ApplyAngularImpulse(B2BodyId bodyId, float impulse, bool wake)
+        {
+            B2_ASSERT(b2Body_IsValid(bodyId));
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            if (body.type != B2BodyType.b2_dynamicBody || body.setIndex == (int)B2SolverSetType.b2_disabledSet)
+            {
+                return;
+            }
+
+            if (wake && body.setIndex >= (int)B2SolverSetType.b2_firstSleepingSet)
+            {
+                // this will not invalidate body pointer
+                b2WakeBody(world, body);
+            }
+
+            if (body.setIndex == (int)B2SolverSetType.b2_awakeSet)
+            {
+                int localIndex = body.localIndex;
+                B2SolverSet set = b2Array_Get(ref world.solverSets, (int)B2SolverSetType.b2_awakeSet);
+                B2BodyState state = b2Array_Get(ref set.bodyStates, localIndex);
+                B2BodySim bodySim = b2Array_Get(ref set.bodySims, localIndex);
+                state.angularVelocity += bodySim.invInertia * impulse;
+            }
+        }
+        /// Get the body type: static, kinematic, or dynamic
+        public static B2BodyType b2Body_GetType(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            return body.type;
+        }
+
+        // This should follow similar steps as you would get destroying and recreating the body, shapes, and joints.
+        // Contacts are difficult to preserve because the broad-phase pairs change, so I just destroy them.
+        // todo with a bit more effort I could support an option to let the body sleep
+        //
+        // Revised steps:
+        // 1 Skip disabled bodies
+        // 2 Destroy all contacts on the body
+        // 3 Wake the body
+        // 4 For all joints attached to the body
+        //  - wake attached bodies
+        //  - remove from island
+        //  - move to static set temporarily
+        // 5 Change the body type and transfer the body
+        // 6 If the body was static
+        //   - create an island for the body
+        //   Else if the body is becoming static
+        //   - remove it from the island
+        // 7 For all joints
+        //  - if either body is non-static
+        //    - link into island
+        //    - transfer to constraint graph
+        // 8 For all shapes
+        //  - Destroy proxy in old tree
+        //  - Create proxy in new tree
+        // Notes:
+        // - the implementation below tries to minimize the number of predicates, so some
+        //   operations may have no effect, such as transferring a joint to the same set
+        /// Change the body type. This is an expensive operation. This automatically updates the mass
+        /// properties regardless of the automatic mass setting.
+        public static void b2Body_SetType(B2BodyId bodyId, B2BodyType type)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            B2BodyType originalType = body.type;
+            if (originalType == type)
+            {
+                return;
+            }
+
+            // Stage 1: skip disabled bodies
+            if (body.setIndex == (int)B2SolverSetType.b2_disabledSet)
+            {
+                // Disabled bodies don't change solver sets or islands when they change type.
+                body.type = type;
+
+                if (type == B2BodyType.b2_dynamicBody)
+                {
+                    body.flags |= (uint)B2BodyFlags.b2_dynamicFlag;
+                }
+                else
+                {
+                    body.flags &= ~(uint)B2BodyFlags.b2_dynamicFlag;
+                }
+
+                b2SyncBodyFlags(world, body);
+
+                // Body type affects the mass properties
+                b2UpdateBodyMassData(world, body);
+                return;
+            }
+
+            // Stage 2: destroy all contacts but don't wake bodies (because we don't need to)
+            bool wakeBodies = false;
+            b2DestroyBodyContacts(world, body, wakeBodies);
+
+            // Stage 3: wake this body (does nothing if body is static), otherwise it will also wake
+            // all bodies in the same sleeping solver set.
+            b2WakeBody(world, body);
+
+            // Stage 4: move joints to temporary storage
+            B2SolverSet staticSet = b2Array_Get(ref world.solverSets, (int)B2SolverSetType.b2_staticSet);
+
+            int jointKey = body.headJointKey;
+            while (jointKey != B2_NULL_INDEX)
+            {
+                int jointId = jointKey >> 1;
+                int edgeIndex = jointKey & 1;
+
+                B2Joint joint = b2Array_Get(ref world.joints, jointId);
+                jointKey = joint.edges[edgeIndex].nextKey;
+
+                // Joint may be disabled by other body
+                if (joint.setIndex == (int)B2SolverSetType.b2_disabledSet)
+                {
+                    continue;
+                }
+
+                // Wake attached bodies. The b2WakeBody call above does not wake bodies
+                // attached to a static body. But it is necessary because the body may have
+                // no joints.
+                B2Body bodyA = b2Array_Get(ref world.bodies, joint.edges[0].bodyId);
+                B2Body bodyB = b2Array_Get(ref world.bodies, joint.edges[1].bodyId);
+                b2WakeBody(world, bodyA);
+                b2WakeBody(world, bodyB);
+
+                // Remove joint from island
+                b2UnlinkJoint(world, joint);
+
+                // It is necessary to transfer all joints to the static set
+                // so they can be added to the constraint graph below and acquire consistent colors.
+                B2SolverSet jointSourceSet = b2Array_Get(ref world.solverSets, joint.setIndex);
+                b2TransferJoint(world, staticSet, jointSourceSet, joint);
+            }
+
+            // Stage 5: change the body type and transfer body
+            body.type = type;
+
+            if (type == B2BodyType.b2_dynamicBody)
+            {
+                body.flags |= (uint)B2BodyFlags.b2_dynamicFlag;
+            }
+            else
+            {
+                body.flags &= ~(uint)B2BodyFlags.b2_dynamicFlag;
+            }
+
+            B2SolverSet awakeSet = b2Array_Get(ref world.solverSets, (int)B2SolverSetType.b2_awakeSet);
+            B2SolverSet sourceSet = b2Array_Get(ref world.solverSets, body.setIndex);
+            B2SolverSet targetSet = type == B2BodyType.b2_staticBody ? staticSet : awakeSet;
+
+            // Transfer body
+            b2TransferBody(world, targetSet, sourceSet, body);
+
+            // Stage 6: update island participation for the body
+            if (originalType == B2BodyType.b2_staticBody)
+            {
+                // Create island for body
+                b2CreateIslandForBody(world, (int)B2SolverSetType.b2_awakeSet, body);
+            }
+            else if (type == B2BodyType.b2_staticBody)
+            {
+                // Remove body from island.
+                b2RemoveBodyFromIsland(world, body);
+            }
+
+            // Stage 7: Transfer joints to the target set
+            jointKey = body.headJointKey;
+            while (jointKey != B2_NULL_INDEX)
+            {
+                int jointId = jointKey >> 1;
+                int edgeIndex = jointKey & 1;
+
+                B2Joint joint = b2Array_Get(ref world.joints, jointId);
+
+                jointKey = joint.edges[edgeIndex].nextKey;
+
+                // Joint may be disabled by other body
+                if (joint.setIndex == (int)B2SolverSetType.b2_disabledSet)
+                {
+                    continue;
+                }
+
+                // All joints were transferred to the static set in an earlier stage
+                B2_ASSERT(joint.setIndex == (int)B2SolverSetType.b2_staticSet);
+
+                B2Body bodyA = b2Array_Get(ref world.bodies, joint.edges[0].bodyId);
+                B2Body bodyB = b2Array_Get(ref world.bodies, joint.edges[1].bodyId);
+                B2_ASSERT(bodyA.setIndex == (int)B2SolverSetType.b2_staticSet || bodyA.setIndex == (int)B2SolverSetType.b2_awakeSet);
+                B2_ASSERT(bodyB.setIndex == (int)B2SolverSetType.b2_staticSet || bodyB.setIndex == (int)B2SolverSetType.b2_awakeSet);
+
+                if (bodyA.type == B2BodyType.b2_dynamicBody || bodyB.type == B2BodyType.b2_dynamicBody)
+                {
+                    b2TransferJoint(world, awakeSet, staticSet, joint);
+                }
+            }
+
+            // Recreate shape proxies in broadphase
+            B2Transform transform = b2GetBodyTransformQuick(world, body);
+            int shapeId = body.headShapeId;
+            while (shapeId != B2_NULL_INDEX)
+            {
+                B2Shape shape = b2Array_Get(ref world.shapes, shapeId);
+                shapeId = shape.nextShapeId;
+                b2DestroyShapeProxy(shape, world.broadPhase);
+                bool forcePairCreation = true;
+                b2CreateShapeProxy(shape, world.broadPhase, type, transform, forcePairCreation);
+            }
+
+            // Relink all joints
+            jointKey = body.headJointKey;
+            while (jointKey != B2_NULL_INDEX)
+            {
+                int jointId = jointKey >> 1;
+                int edgeIndex = jointKey & 1;
+
+                B2Joint joint = b2Array_Get(ref world.joints, jointId);
+                jointKey = joint.edges[edgeIndex].nextKey;
+
+                int otherEdgeIndex = edgeIndex ^ 1;
+                int otherBodyId = joint.edges[otherEdgeIndex].bodyId;
+                B2Body otherBody = b2Array_Get(ref world.bodies, otherBodyId);
+
+                if (otherBody.setIndex == (int)B2SolverSetType.b2_disabledSet)
+                {
+                    continue;
+                }
+
+                if (body.type != B2BodyType.b2_dynamicBody && otherBody.type != B2BodyType.b2_dynamicBody)
+                {
+                    continue;
+                }
+
+                b2LinkJoint(world, joint);
+            }
+
+            b2SyncBodyFlags(world, body);
+
+            // Body type affects the mass
+            b2UpdateBodyMassData(world, body);
+
+            b2ValidateSolverSets(world);
+            b2ValidateIsland(world, body.islandId);
+        }
+
+        /// Set the body name. Up to 31 characters excluding 0 termination.
+        public static void b2Body_SetName(B2BodyId bodyId, string name)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            body.name = b2TruncateBodyName(name);
+        }
+
+        /// Get the body name.
+        public static string b2Body_GetName(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            return body.name;
+        }
+
+        /// Set the user data for a body
+        public static void b2Body_SetUserData(B2BodyId bodyId, B2UserData userData)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            body.userData = userData;
+        }
+
+        /// Get the user data stored in a body
+        public static B2UserData b2Body_GetUserData(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            return body.userData;
+        }
+        /// Get the mass of the body, usually in kilograms
+        public static float b2Body_GetMass(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            return body.mass;
+        }
+        /// Get the rotational inertia of the body, usually in kg*m^2
+        public static float b2Body_GetRotationalInertia(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            return body.inertia;
+        }
+        /// Get the center of mass position of the body in local space
+        public static B2Vec2 b2Body_GetLocalCenterOfMass(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodySim bodySim = b2GetBodySim(world, body);
+            return bodySim.localCenter;
+        }
+        /// Get the center of mass position of the body in world space
+        public static B2Vec2 b2Body_GetWorldCenterOfMass(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodySim bodySim = b2GetBodySim(world, body);
+            return bodySim.center;
+        }
+        /// Override the body's mass properties. Normally this is computed automatically using the
+        /// shape geometry and density. This information is lost if a shape is added or removed or if the
+        /// body type changes.
+        public static void b2Body_SetMassData(B2BodyId bodyId, B2MassData massData)
+        {
+            B2_ASSERT(b2IsValidFloat(massData.mass) && massData.mass >= 0.0f);
+            B2_ASSERT(b2IsValidFloat(massData.rotationalInertia) && massData.rotationalInertia >= 0.0f);
+            B2_ASSERT(b2IsValidVec2(massData.center));
+
+            B2World world = b2GetWorldLocked(bodyId.world0);
+            if (world == null)
+            {
+                return;
+            }
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodySim bodySim = b2GetBodySim(world, body);
+
+            body.mass = massData.mass;
+            body.inertia = massData.rotationalInertia;
+            bodySim.localCenter = massData.center;
+
+            B2Vec2 center = b2TransformPoint(bodySim.transform, massData.center);
+            bodySim.center = center;
+            bodySim.center0 = center;
+
+            bodySim.invMass = body.mass > 0.0f ? 1.0f / body.mass : 0.0f;
+            bodySim.invInertia = body.inertia > 0.0f ? 1.0f / body.inertia : 0.0f;
+        }
+        /// Get the mass data for a body
+        public static B2MassData b2Body_GetMassData(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodySim bodySim = b2GetBodySim(world, body);
+            B2MassData massData = new B2MassData(body.mass, bodySim.localCenter, body.inertia);
+            return massData;
+        }
+
+        /// This updates the mass properties to the sum of the mass properties of the shapes.
+        /// This normally does not need to be called unless you called SetMassData to override
+        /// the mass and you later want to reset the mass.
+        /// You may also use this when automatic mass computation has been disabled.
+        /// You should call this regardless of body type.
+        /// Note that sensor shapes may have mass.
+        public static void b2Body_ApplyMassFromShapes(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorldLocked(bodyId.world0);
+            if (world == null)
+            {
+                return;
+            }
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            b2UpdateBodyMassData(world, body);
+        }
+        /// Adjust the linear damping. Normally this is set in b2BodyDef before creation.
+        public static void b2Body_SetLinearDamping(B2BodyId bodyId, float linearDamping)
+        {
+            B2_ASSERT(b2IsValidFloat(linearDamping) && linearDamping >= 0.0f);
+
+            B2World world = b2GetWorldLocked(bodyId.world0);
+            if (world == null)
+            {
+                return;
+            }
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodySim bodySim = b2GetBodySim(world, body);
+            bodySim.linearDamping = linearDamping;
+        }
+        /// Get the current linear damping.
+        public static float b2Body_GetLinearDamping(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodySim bodySim = b2GetBodySim(world, body);
+            return bodySim.linearDamping;
+        }
+        /// Adjust the angular damping. Normally this is set in b2BodyDef before creation.
+        public static void b2Body_SetAngularDamping(B2BodyId bodyId, float angularDamping)
+        {
+            B2_ASSERT(b2IsValidFloat(angularDamping) && angularDamping >= 0.0f);
+
+            B2World world = b2GetWorldLocked(bodyId.world0);
+            if (world == null)
+            {
+                return;
+            }
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodySim bodySim = b2GetBodySim(world, body);
+            bodySim.angularDamping = angularDamping;
+        }
+        /// Get the current angular damping.
+        public static float b2Body_GetAngularDamping(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodySim bodySim = b2GetBodySim(world, body);
+            return bodySim.angularDamping;
+        }
+        /// Adjust the gravity scale. Normally this is set in b2BodyDef before creation.
+        /// @see b2BodyDef::gravityScale
+        public static void b2Body_SetGravityScale(B2BodyId bodyId, float gravityScale)
+        {
+            B2_ASSERT(b2Body_IsValid(bodyId));
+            B2_ASSERT(b2IsValidFloat(gravityScale));
+
+            B2World world = b2GetWorldLocked(bodyId.world0);
+            if (world == null)
+            {
+                return;
+            }
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodySim bodySim = b2GetBodySim(world, body);
+            bodySim.gravityScale = gravityScale;
+        }
+        /// Get the current gravity scale
+        public static float b2Body_GetGravityScale(B2BodyId bodyId)
+        {
+            B2_ASSERT(b2Body_IsValid(bodyId));
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodySim bodySim = b2GetBodySim(world, body);
+            return bodySim.gravityScale;
+        }
+        /// @return true if this body is awake
+        public static bool b2Body_IsAwake(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            return body.setIndex == (int)B2SolverSetType.b2_awakeSet;
+        }
+        /// Wake a body from sleep. This wakes the entire island the body is touching.
+        /// @warning Putting a body to sleep will put the entire island of bodies touching this body to sleep,
+        /// which can be expensive and possibly unintuitive.
+        public static void b2Body_SetAwake(B2BodyId bodyId, bool awake)
+        {
+            B2World world = b2GetWorldLocked(bodyId.world0);
+            if (world == null)
+            {
+                return;
+            }
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            if (awake && body.setIndex >= (int)B2SolverSetType.b2_firstSleepingSet)
+            {
+                b2WakeBody(world, body);
+            }
+            else if (awake == false && body.setIndex == (int)B2SolverSetType.b2_awakeSet)
+            {
+                B2Island island = b2Array_Get(ref world.islands, body.islandId);
+                if (island.constraintRemoveCount > 0)
+                {
+                    // Must split the island before sleeping. This is expensive.
+                    b2SplitIsland(world, body.islandId);
+                }
+
+                b2TrySleepIsland(world, body.islandId);
+            }
+        }
+        /// Wake bodies touching this body. Works for static bodies.
+        public static void b2Body_WakeTouching(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            int contactKey = body.headContactKey;
+            while (contactKey != B2_NULL_INDEX)
+            {
+                int contactId = contactKey >> 1;
+                int edgeIndex = contactKey & 1;
+
+                B2Contact contact = b2Array_Get(ref world.contacts, contactId);
+                B2Shape shapeA = b2Array_Get(ref world.shapes, contact.shapeIdA);
+                B2Shape shapeB = b2Array_Get(ref world.shapes, contact.shapeIdB);
+
+                if (shapeA.bodyId == bodyId.index1 - 1)
+                {
+                    B2Body otherBody = b2Array_Get(ref world.bodies, shapeB.bodyId);
+                    b2WakeBody(world, otherBody);
+                }
+                else
+                {
+                    B2Body otherBody = b2Array_Get(ref world.bodies, shapeA.bodyId);
+                    b2WakeBody(world, otherBody);
+                }
+
+                contactKey = contact.edges[edgeIndex].nextKey;
+            }
+        }
+        /// Returns true if this body is enabled
+        public static bool b2Body_IsEnabled(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            return body.setIndex != (int)B2SolverSetType.b2_disabledSet;
+        }
+        /// Returns true if sleeping is enabled for this body
+        public static bool b2Body_IsSleepEnabled(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            return (body.flags & (uint)B2BodyFlags.b2_enableSleep) == (uint)B2BodyFlags.b2_enableSleep;
+        }
+        /// Set the sleep threshold, usually in meters per second
+        public static void b2Body_SetSleepThreshold(B2BodyId bodyId, float sleepThreshold)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            body.sleepThreshold = sleepThreshold;
+        }
+        /// Get the sleep threshold, usually in meters per second.
+        public static float b2Body_GetSleepThreshold(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            return body.sleepThreshold;
+        }
+        /// Enable or disable sleeping for this body. If sleeping is disabled the body will wake (and the entire island).
+        public static void b2Body_EnableSleep(B2BodyId bodyId, bool enableSleep)
+        {
+            B2World world = b2GetWorldLocked(bodyId.world0);
+            if (world == null)
+            {
+                return;
+            }
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            bool flag = (body.flags & (uint)B2BodyFlags.b2_enableSleep) == (uint)B2BodyFlags.b2_enableSleep;
+            if (enableSleep == flag)
+            {
+                return;
+            }
+
+            body.flags = enableSleep ? body.flags | (uint)B2BodyFlags.b2_enableSleep : body.flags & ~(uint)B2BodyFlags.b2_enableSleep;
+            b2SyncBodyFlags(world, body);
+
+            if (enableSleep == false)
+            {
+                b2WakeBody(world, body);
+            }
+        }
+
+        // Disabling a body requires a lot of detailed bookkeeping, but it is a valuable feature.
+        // The most challenging aspect is that joints may connect to bodies that are not disabled.
+        /// Disable a body by removing it completely from the simulation. This is expensive.
+        public static void b2Body_Disable(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorldLocked(bodyId.world0);
+            if (world == null)
+            {
+                return;
+            }
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            if (body.setIndex == (int)B2SolverSetType.b2_disabledSet)
+            {
+                return;
+            }
+
+            // Destroy contacts and wake bodies touching this body. This avoid floating bodies.
+            // This is necessary even for static bodies.
+            bool wakeBodies = true;
+            b2DestroyBodyContacts(world, body, wakeBodies);
+
+            // The current solver set of the body
+            B2SolverSet set = b2Array_Get(ref world.solverSets, body.setIndex);
+
+            // Disabled bodies and connected joints are moved to the disabled set
+            B2SolverSet disabledSet = b2Array_Get(ref world.solverSets, (int)B2SolverSetType.b2_disabledSet);
+
+            // Unlink joints and transfer them to the disabled set
+            int jointKey = body.headJointKey;
+            while (jointKey != B2_NULL_INDEX)
+            {
+                int jointId = jointKey >> 1;
+                int edgeIndex = jointKey & 1;
+
+                B2Joint joint = b2Array_Get(ref world.joints, jointId);
+                jointKey = joint.edges[edgeIndex].nextKey;
+
+                // joint may already be disabled by other body
+                if (joint.setIndex == (int)B2SolverSetType.b2_disabledSet)
+                {
+                    continue;
+                }
+
+                B2_ASSERT(joint.setIndex == set.setIndex || set.setIndex == (int)B2SolverSetType.b2_staticSet);
+
+                // Remove joint from island
+                b2UnlinkJoint(world, joint);
+
+                // Transfer joint to disabled set
+                B2SolverSet jointSet = b2Array_Get(ref world.solverSets, joint.setIndex);
+                b2TransferJoint(world, disabledSet, jointSet, joint);
+            }
+
+            // Remove shapes from broad-phase
+            int shapeId = body.headShapeId;
+            while (shapeId != B2_NULL_INDEX)
+            {
+                B2Shape shape = b2Array_Get(ref world.shapes, shapeId);
+                shapeId = shape.nextShapeId;
+                b2DestroyShapeProxy(shape, world.broadPhase);
+            }
+
+            // Disabled bodies are not in an island. If the island becomes empty it will be destroyed.
+            b2RemoveBodyFromIsland(world, body);
+
+            // Transfer body sim
+            b2TransferBody(world, disabledSet, set, body);
+
+            b2ValidateConnectivity(world);
+            b2ValidateSolverSets(world);
+        }
+        /// Enable a body by adding it to the simulation. This is expensive.
+        public static void b2Body_Enable(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorldLocked(bodyId.world0);
+            if (world == null)
+            {
+                return;
+            }
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            if (body.setIndex != (int)B2SolverSetType.b2_disabledSet)
+            {
+                return;
+            }
+
+            B2SolverSet disabledSet = b2Array_Get(ref world.solverSets, (int)B2SolverSetType.b2_disabledSet);
+            int setId = body.type == B2BodyType.b2_staticBody ? (int)B2SolverSetType.b2_staticSet : (int)B2SolverSetType.b2_awakeSet;
+            B2SolverSet targetSet = b2Array_Get(ref world.solverSets, setId);
+
+            b2TransferBody(world, targetSet, disabledSet, body);
+
+            B2Transform transform = b2GetBodyTransformQuick(world, body);
+
+            // Add shapes to broad-phase
+            B2BodyType proxyType = body.type;
+            bool forcePairCreation = true;
+            int shapeId = body.headShapeId;
+            while (shapeId != B2_NULL_INDEX)
+            {
+                B2Shape shape = b2Array_Get(ref world.shapes, shapeId);
+                shapeId = shape.nextShapeId;
+
+                b2CreateShapeProxy(shape, world.broadPhase, proxyType, transform, forcePairCreation);
+            }
+
+            if (setId != (int)B2SolverSetType.b2_staticSet)
+            {
+                b2CreateIslandForBody(world, setId, body);
+            }
+
+            // Transfer joints. If the other body is disabled, don't transfer.
+            // If the other body is sleeping, wake it.
+            int jointKey = body.headJointKey;
+            while (jointKey != B2_NULL_INDEX)
+            {
+                int jointId = jointKey >> 1;
+                int edgeIndex = jointKey & 1;
+
+                B2Joint joint = b2Array_Get(ref world.joints, jointId);
+                B2_ASSERT(joint.setIndex == (int)B2SolverSetType.b2_disabledSet);
+                B2_ASSERT(joint.islandId == B2_NULL_INDEX);
+
+                jointKey = joint.edges[edgeIndex].nextKey;
+
+                B2Body bodyA = b2Array_Get(ref world.bodies, joint.edges[0].bodyId);
+                B2Body bodyB = b2Array_Get(ref world.bodies, joint.edges[1].bodyId);
+
+                if (bodyA.setIndex == (int)B2SolverSetType.b2_disabledSet || bodyB.setIndex == (int)B2SolverSetType.b2_disabledSet)
+                {
+                    // one body is still disabled
+                    continue;
+                }
+
+                // Transfer joint first
+                int jointSetId;
+                if (bodyA.setIndex == (int)B2SolverSetType.b2_staticSet && bodyB.setIndex == (int)B2SolverSetType.b2_staticSet)
+                {
+                    jointSetId = (int)B2SolverSetType.b2_staticSet;
+                }
+                else if (bodyA.setIndex == (int)B2SolverSetType.b2_staticSet)
+                {
+                    jointSetId = bodyB.setIndex;
+                }
+                else
+                {
+                    jointSetId = bodyA.setIndex;
+                }
+
+                B2SolverSet jointSet = b2Array_Get(ref world.solverSets, jointSetId);
+                b2TransferJoint(world, jointSet, disabledSet, joint);
+
+                // Now that the joint is in the correct set, I can link the joint in the island.
+                if (jointSetId != (int)B2SolverSetType.b2_staticSet)
+                {
+                    b2LinkJoint(world, joint);
+                }
+            }
+
+            b2ValidateSolverSets(world);
+        }
+
+        /// Set the motion locks on this body.
+        public static void b2Body_SetMotionLocks(B2BodyId bodyId, B2MotionLocks locks)
+        {
+            B2World world = b2GetWorldLocked(bodyId.world0);
+            if (world == null)
+            {
+                return;
+            }
+
+            uint newFlags = 0;
+            newFlags |= locks.linearX ? (uint)B2BodyFlags.b2_lockLinearX : 0;
+            newFlags |= locks.linearY ? (uint)B2BodyFlags.b2_lockLinearY : 0;
+            newFlags |= locks.angularZ ? (uint)B2BodyFlags.b2_lockAngularZ : 0;
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            if ((body.flags & (uint)B2BodyFlags.b2_allLocks) != newFlags)
+            {
+                body.flags &= ~(uint)B2BodyFlags.b2_allLocks;
+                body.flags |= newFlags;
+
+                b2SyncBodyFlags(world, body);
+
+                B2BodyState state = b2GetBodyState(world, body);
+
+                if (state != null)
+                {
+                    if (locks.linearX)
+                    {
+                        state.linearVelocity.X = 0.0f;
+                    }
+
+                    if (locks.linearY)
+                    {
+                        state.linearVelocity.Y = 0.0f;
+                    }
+
+                    if (locks.angularZ)
+                    {
+                        state.angularVelocity = 0.0f;
+                    }
+                }
+            }
+        }
+
+        /// Get the motion locks for this body.
+        public static B2MotionLocks b2Body_GetMotionLocks(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+
+            B2MotionLocks locks;
+            locks.linearX = 0 != (body.flags & (uint)B2BodyFlags.b2_lockLinearX);
+            locks.linearY = 0 != (body.flags & (uint)B2BodyFlags.b2_lockLinearY);
+            locks.angularZ = 0 != (body.flags & (uint)B2BodyFlags.b2_lockAngularZ);
+            return locks;
+        }
+        /// Set this body to be a bullet. A bullet does continuous collision detection
+        /// against dynamic bodies (but not other bullets).
+        public static void b2Body_SetBullet(B2BodyId bodyId, bool flag)
+        {
+            B2World world = b2GetWorldLocked(bodyId.world0);
+            if (world == null)
+            {
+                return;
+            }
+
+            uint newFlag = flag ? (uint)B2BodyFlags.b2_isBullet : 0;
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            if ((body.flags & (uint)B2BodyFlags.b2_isBullet) == newFlag)
+            {
+                return;
+            }
+
+            body.flags &= ~(uint)B2BodyFlags.b2_isBullet;
+            body.flags |= newFlag;
+
+            b2SyncBodyFlags(world, body);
+        }
+        /// Is this body a bullet?
+        public static bool b2Body_IsBullet(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            B2BodySim bodySim = b2GetBodySim(world, body);
+            return (bodySim.flags & (uint)B2BodyFlags.b2_isBullet) != 0;
+        }
+
+        /// Enable or disable contact recycling for this body. Contact recycling is a performance optimization
+        /// that reuses contact manifolds when bodies move slightly. Disabling it can avoid ghost collisions
+        /// on characters at the cost of higher per-step work. Existing contacts retain their prior setting;
+        /// only contacts created after this call see the new value.
+        /// @see b2BodyDef::enableContactRecycling
+        public static void b2Body_EnableContactRecycling(B2BodyId bodyId, bool flag)
+        {
+            B2World world = b2GetWorldLocked(bodyId.world0);
+            if (world == null)
+            {
+                return;
+            }
+
+            uint newFlag = flag ? (uint)B2BodyFlags.b2_bodyEnableContactRecycling : 0;
+
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            if ((body.flags & (uint)B2BodyFlags.b2_bodyEnableContactRecycling) == newFlag)
+            {
+                return;
+            }
+
+            body.flags &= ~(uint)B2BodyFlags.b2_bodyEnableContactRecycling;
+            body.flags |= newFlag;
+
+            b2SyncBodyFlags(world, body);
+        }
+
+        /// Is contact recycling enabled on this body?
+        public static bool b2Body_IsContactRecyclingEnabled(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            return (body.flags & (uint)B2BodyFlags.b2_bodyEnableContactRecycling) != 0;
+        }
+        /// Enable/disable contact events on all shapes.
+        /// @see b2ShapeDef::enableContactEvents
+        /// @warning changing this at runtime may cause mismatched begin/end touch events
+        public static void b2Body_EnableContactEvents(B2BodyId bodyId, bool flag)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            int shapeId = body.headShapeId;
+            while (shapeId != B2_NULL_INDEX)
+            {
+                B2Shape shape = b2Array_Get(ref world.shapes, shapeId);
+                shape.enableContactEvents = flag;
+                shapeId = shape.nextShapeId;
+            }
+        }
+        /// Enable/disable hit events on all shapes
+        /// @see b2ShapeDef::enableHitEvents
+        public static void b2Body_EnableHitEvents(B2BodyId bodyId, bool flag)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            int shapeId = body.headShapeId;
+            while (shapeId != B2_NULL_INDEX)
+            {
+                B2Shape shape = b2Array_Get(ref world.shapes, shapeId);
+                shape.enableHitEvents = flag;
+                shapeId = shape.nextShapeId;
+            }
+        }
+        /// Get the world that owns this body
+        public static B2WorldId b2Body_GetWorld(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            return new B2WorldId((ushort)(bodyId.world0 + 1), world.generation);
+        }
+        /// Get the number of shapes on this body
+        public static int b2Body_GetShapeCount(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            return body.shapeCount;
+        }
+        /// Get the shape ids for all shapes on this body, up to the provided capacity.
+        /// @returns the number of shape ids stored in the user array
+        public static int b2Body_GetShapes(B2BodyId bodyId, Span<B2ShapeId> shapeArray, int capacity)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            int shapeId = body.headShapeId;
+            int shapeCount = 0;
+            while (shapeId != B2_NULL_INDEX && shapeCount < capacity)
+            {
+                B2Shape shape = b2Array_Get(ref world.shapes, shapeId);
+                B2ShapeId id = new B2ShapeId(shape.id + 1, bodyId.world0, shape.generation);
+                shapeArray[shapeCount] = id;
+                shapeCount += 1;
+
+                shapeId = shape.nextShapeId;
+            }
+
+            return shapeCount;
+        }
+        /// Get the number of joints on this body
+        public static int b2Body_GetJointCount(B2BodyId bodyId)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            return body.jointCount;
+        }
+        /// Get the joint ids for all joints on this body, up to the provided capacity
+        /// @returns the number of joint ids stored in the user array
+        public static int b2Body_GetJoints(B2BodyId bodyId, Span<B2JointId> jointArray, int capacity)
+        {
+            B2World world = b2GetWorld(bodyId.world0);
+            B2Body body = b2GetBodyFullId(world, bodyId);
+            int jointKey = body.headJointKey;
+
+            int jointCount = 0;
+            while (jointKey != B2_NULL_INDEX && jointCount < capacity)
+            {
+                int jointId = jointKey >> 1;
+                int edgeIndex = jointKey & 1;
+
+                B2Joint joint = b2Array_Get(ref world.joints, jointId);
+
+                B2JointId id = new B2JointId(jointId + 1, bodyId.world0, joint.generation);
+                jointArray[jointCount] = id;
+                jointCount += 1;
+
+                jointKey = joint.edges[edgeIndex].nextKey;
+            }
+
+            return jointCount;
+        }
+
+
+        internal static bool b2ShouldBodiesCollide(B2World world, B2Body bodyA, B2Body bodyB)
+        {
+            if (bodyA.type != B2BodyType.b2_dynamicBody && bodyB.type != B2BodyType.b2_dynamicBody)
+            {
+                return false;
+            }
+
+            int jointKey;
+            int otherBodyId;
+            if (bodyA.jointCount < bodyB.jointCount)
+            {
+                jointKey = bodyA.headJointKey;
+                otherBodyId = bodyB.id;
+            }
+            else
+            {
+                jointKey = bodyB.headJointKey;
+                otherBodyId = bodyA.id;
+            }
+
+            while (jointKey != B2_NULL_INDEX)
+            {
+                int jointId = jointKey >> 1;
+                int edgeIndex = jointKey & 1;
+                int otherEdgeIndex = edgeIndex ^ 1;
+
+                B2Joint joint = b2Array_Get(ref world.joints, jointId);
+                if (joint.collideConnected == false && joint.edges[otherEdgeIndex].bodyId == otherBodyId)
+                {
+                    return false;
+                }
+
+                jointKey = joint.edges[edgeIndex].nextKey;
+            }
+
+            return true;
+        }
+    }
+}

@@ -5,7 +5,7 @@
 
 ---
 
-19 game programming patterns from Robert Nystrom's *Game Programming Patterns*, adapted for MonoGame + Arch ECS development. Each pattern includes intent, how it works, game application, and ECS considerations. For concrete C# implementations of overlapping patterns (Observer, Command, State, Flyweight, Service Locator), see [G12 Design Patterns](./G12_design_patterns.md).
+19 game programming patterns from Robert Nystrom's *Game Programming Patterns*, adapted for Arch ECS development. Each pattern includes intent, how it works, game application, and ECS considerations. For concrete C# implementations of overlapping patterns (Observer, Command, State, Flyweight, Service Locator), see [G12 Design Patterns](./G12_design_patterns.md).
 
 ---
 
@@ -47,7 +47,7 @@ These six patterns are drawn from the original Gang of Four catalog but reexamin
 
 **Game Application:** Input remapping is the most immediate application. By storing Command pointers for each button, players can rebind controls at runtime. For turn-based strategy games, commands enable full undo by maintaining a history stack with inverse operations. In multiplayer games, serializing command streams across the network enables deterministic replay. AI systems can emit the same Command objects as the input handler, creating a clean separation between decision-making and action execution.
 
-**MonoGame / ECS Considerations:** In Arch ECS, commands can be modeled as entities with command components, processed by a CommandExecutionSystem each frame. Input systems create command entities rather than modifying game state directly. This naturally supports queuing, prioritization, and undo history through additional components.
+**ECS Considerations:** In Arch ECS, commands can be modeled as entities with command components, processed by a CommandExecutionSystem each frame. Input systems create command entities rather than modifying game state directly. This naturally supports queuing, prioritization, and undo history through additional components.
 
 ---
 
@@ -59,7 +59,7 @@ These six patterns are drawn from the original Gang of Four catalog but reexamin
 
 **Game Application:** A forest scene might contain ten thousand trees, but only five or six distinct tree models. Each tree instance stores only its position, scale, and color variation while sharing references to the underlying mesh and texture data. Terrain systems similarly benefit: a tile map may contain millions of cells, but only a handful of distinct terrain types (grass, water, stone) with shared rendering properties, movement costs, and footstep sounds.
 
-**MonoGame / ECS Considerations:** Arch ECS naturally promotes flyweight thinking. Shared data lives in resource objects or singleton components, while per-entity data resides in lightweight components. MonoGame's content pipeline already shares Texture2D and SpriteFont instances, extending the flyweight concept to asset management.
+**ECS Considerations:** Arch ECS naturally promotes flyweight thinking. Shared data lives in resource objects or singleton components, while per-entity data resides in lightweight components. The engine's content pipeline already shares Texture2D and SpriteFont instances, extending the flyweight concept to asset management.
 
 ---
 
@@ -71,7 +71,7 @@ These six patterns are drawn from the original Gang of Four catalog but reexamin
 
 **Game Application:** Achievement systems are the canonical game example. A physics system detects a character falling off a bridge and notifies all observers. The achievement system unlocks "Fall off a Bridge," the audio system plays a scream, and the UI system shows a notification — all without the physics system knowing any of those systems exist. Health bar updates, score displays, and tutorial triggers all follow this publisher-subscriber model.
 
-**MonoGame / ECS Considerations:** In ECS, observer patterns can be implemented through event components or through Arch's built-in query filters that detect component additions and removals. Systems that need to react to changes can query for entities with newly added or modified marker components. See [G12 Design Patterns](./G12_design_patterns.md) for a full C# implementation with the critical pitfall of unsubscribing on destroy.
+**ECS Considerations:** In ECS, observer patterns can be implemented through event components or through Arch's built-in query filters that detect component additions and removals. Systems that need to react to changes can query for entities with newly added or modified marker components. See [G12 Design Patterns](./G12_design_patterns.md) for a full C# implementation with the critical pitfall of unsubscribing on destroy.
 
 ---
 
@@ -83,7 +83,7 @@ These six patterns are drawn from the original Gang of Four catalog but reexamin
 
 **Game Application:** Monster spawning benefits enormously from prototyping. A designer creates a base "Goblin" prototype with specific stats, visuals, and behaviors. Variants like "Goblin Archer" clone the base and override the weapon component. The spawner doesn't need class-per-monster-type — it just clones the appropriate prototype and customizes it. This pattern also underpins data-driven design where entity definitions live in JSON or XML files.
 
-**MonoGame / ECS Considerations:** Arch ECS supports prototype-like behavior through archetype templates. You can define a set of components representing a prototype entity and clone that component set onto new entities at spawn time, overriding specific values as needed.
+**ECS Considerations:** Arch ECS supports prototype-like behavior through archetype templates. You can define a set of components representing a prototype entity and clone that component set onto new entities at spawn time, overriding specific values as needed.
 
 ---
 
@@ -95,7 +95,7 @@ These six patterns are drawn from the original Gang of Four catalog but reexamin
 
 **Game Application:** File system wrappers and logging services are reasonable Singleton candidates because they genuinely require single-instance semantics. However, game managers, audio systems, and input handlers are often wrongly made Singletons when they would be better served by dependency injection or service location. Every Singleton is effectively a global variable with initialization overhead.
 
-**MonoGame / ECS Considerations:** In ECS, singletons are largely unnecessary. Unique services can be stored as singleton components or resources accessible to any system. Arch ECS provides world-level resource storage that gives systems access to shared state without global variables.
+**ECS Considerations:** In ECS, singletons are largely unnecessary. Unique services can be stored as singleton components or resources accessible to any system. Arch ECS provides world-level resource storage that gives systems access to shared state without global variables.
 
 ---
 
@@ -107,7 +107,7 @@ These six patterns are drawn from the original Gang of Four catalog but reexamin
 
 **Game Application:** Character animation controllers are the most common application. A hero character might have Standing, Running, Jumping, and Ducking states, each handling input differently and defining valid transitions. AI behavior also maps naturally to state machines: Patrol, Chase, Attack, and Flee states with transitions driven by sensory input.
 
-**MonoGame / ECS Considerations:** State components in Arch ECS can be modeled as enum-based components or as tag components that systems query against. State machine logic lives in dedicated systems that process entities with specific state components and apply transitions by swapping components. See [G12 Design Patterns](./G12_design_patterns.md) for a full C# state machine implementation.
+**ECS Considerations:** State components in Arch ECS can be modeled as enum-based components or as tag components that systems query against. State machine logic lives in dedicated systems that process entities with specific state components and apply transitions by swapping components. See [G12 Design Patterns](./G12_design_patterns.md) for a full C# state machine implementation.
 
 ---
 
@@ -123,7 +123,7 @@ These patterns govern the temporal orchestration of a game — how the simulatio
 
 **Game Application:** The most visible application is framebuffer rendering, where the GPU reads from one buffer while the CPU writes the next frame into the other. But double buffering also applies to game state: if entities read each other's state during updates, a double-buffered state array ensures each entity sees the previous frame's consistent state rather than a mix of current and previous values.
 
-**MonoGame / ECS Considerations:** MonoGame handles framebuffer double buffering internally through the graphics device. For game-state double buffering in ECS, you can maintain two component arrays and swap references between frames, or use frame-stamped components to distinguish current from previous state.
+**ECS Considerations:** the engine handles framebuffer double buffering internally through the graphics device. For game-state double buffering in ECS, you can maintain two component arrays and swap references between frames, or use frame-stamped components to distinguish current from previous state.
 
 ---
 
@@ -135,7 +135,7 @@ These patterns govern the temporal orchestration of a game — how the simulatio
 
 **Game Application:** A robust game loop uses a fixed timestep (e.g., 60 updates per second) with an accumulator pattern. Each frame, the elapsed real time is added to the accumulator. The update step runs repeatedly until the accumulator is drained below one timestep. The remaining fractional timestep is used for render interpolation, producing smooth visuals.
 
-**MonoGame / ECS Considerations:** MonoGame provides `Game.Update()` and `Game.Draw()` with built-in fixed timestep support via `IsFixedTimeStep` and `TargetElapsedTime`. See [G15 Game Loop](./G15_game_loop.md) for detailed implementation and optimization.
+**ECS Considerations:** the engine provides `Game.Update()` and `Game.Draw()` with built-in fixed timestep support via `IsFixedTimeStep` and `TargetElapsedTime`. See [G15 Game Loop](./G15_game_loop.md) for detailed implementation and optimization.
 
 ---
 
@@ -147,7 +147,7 @@ These patterns govern the temporal orchestration of a game — how the simulatio
 
 **Game Application:** Every active game object — enemies patrolling, projectiles flying, particles fading, doors opening — receives an update call each frame.
 
-**MonoGame / ECS Considerations:** In Arch ECS, the Update Method is implicit in the system architecture. Each system's query-and-process loop is effectively an update method applied to all entities matching specific component archetypes. Systems execute in a defined order, providing deterministic update sequencing.
+**ECS Considerations:** In Arch ECS, the Update Method is implicit in the system architecture. Each system's query-and-process loop is effectively an update method applied to all entities matching specific component archetypes. Systems execute in a defined order, providing deterministic update sequencing.
 
 ---
 
@@ -163,7 +163,7 @@ These patterns address how game behavior is defined, composed, and extended — 
 
 **Game Application:** Spell systems benefit greatly from bytecode. Each spell is a short bytecode program that manipulates game state: deal damage, apply status effects, spawn particles, play sounds. Designers author spells through a visual editor that compiles to bytecode, enabling thousands of unique abilities without any engine code changes.
 
-**MonoGame / ECS Considerations:** For MonoGame projects, a lightweight bytecode interpreter can be implemented in C# and integrated as an ECS system. Bytecode programs are stored as component data on entities that need scripted behavior, and a BytecodeExecutionSystem processes them each frame.
+**ECS Considerations:** For the engine projects, a lightweight bytecode interpreter can be implemented in C# and integrated as an ECS system. Bytecode programs are stored as component data on entities that need scripted behavior, and a BytecodeExecutionSystem processes them each frame.
 
 ---
 
@@ -175,7 +175,7 @@ These patterns address how game behavior is defined, composed, and extended — 
 
 **Game Application:** A spell system might have a base Spell class with primitives like `dealDamage()`, `applyBuff()`, `spawnEffect()`, and `playSound()`. A FireballSpell combines `dealDamage()` with `spawnEffect("fire")`, while a HealingAura uses `applyBuff()` with `spawnEffect("glow")`. Hundreds of unique spells are possible without expanding the base class API.
 
-**MonoGame / ECS Considerations:** In ECS, subclass sandbox translates to composable behavior components. Instead of class inheritance, different combinations of effect components (DamageComponent, BuffComponent, ParticleComponent) on ability entities achieve similar compositional variety through data rather than code.
+**ECS Considerations:** In ECS, subclass sandbox translates to composable behavior components. Instead of class inheritance, different combinations of effect components (DamageComponent, BuffComponent, ParticleComponent) on ability entities achieve similar compositional variety through data rather than code.
 
 ---
 
@@ -187,7 +187,7 @@ These patterns address how game behavior is defined, composed, and extended — 
 
 **Game Application:** Monster breeds, weapon categories, item types, terrain definitions, and skill trees can all be defined as type objects loaded from data files. A game might ship with 200 monster types, all defined in a JSON configuration file and represented by a single Monster class with 200 Breed instances.
 
-**MonoGame / ECS Considerations:** Arch ECS aligns perfectly with Type Object. Component data on entities effectively serves as the type definition. An entity's archetype (its set of components) defines its type, and component values define its specific properties.
+**ECS Considerations:** Arch ECS aligns perfectly with Type Object. Component data on entities effectively serves as the type definition. An entity's archetype (its set of components) defines its type, and component values define its specific properties.
 
 ---
 
@@ -203,7 +203,7 @@ These patterns address the web of dependencies that emerges as game systems grow
 
 **Game Application:** A character entity might have Position, Sprite, Physics, Health, and Input components. An environmental hazard shares Position, Sprite, and a DamageZone component but has no Health or Input. A particle effect has only Position, Sprite, and Lifetime.
 
-**MonoGame / ECS Considerations:** This is the foundational pattern of Arch ECS and the entire architecture. Arch provides efficient component storage, archetype-based queries, and system scheduling. Every entity is defined purely by its component composition.
+**ECS Considerations:** This is the foundational pattern of Arch ECS and the entire architecture. Arch provides efficient component storage, archetype-based queries, and system scheduling. Every entity is defined purely by its component composition.
 
 ---
 
@@ -215,7 +215,7 @@ These patterns address the web of dependencies that emerges as game systems grow
 
 **Game Application:** Audio systems are the quintessential Event Queue application. Game systems don't call `playSound()` directly — they enqueue a PlaySoundRequest with the sound ID, volume, and position. The audio system pulls from the queue during its update, enabling it to batch similar sounds, limit simultaneous instances, and prioritize critical audio.
 
-**MonoGame / ECS Considerations:** In Arch ECS, event queues can be implemented as component-based message entities or as dedicated ring buffer resources that systems produce into and consume from. The ECS system execution order naturally provides the temporal decoupling.
+**ECS Considerations:** In Arch ECS, event queues can be implemented as component-based message entities or as dedicated ring buffer resources that systems produce into and consume from. The ECS system execution order naturally provides the temporal decoupling.
 
 ---
 
@@ -227,7 +227,7 @@ These patterns address the web of dependencies that emerges as game systems grow
 
 **Game Application:** An AudioService locator might return a full implementation during gameplay but a NullAudioService during testing or when audio is disabled. A LoggingService might return a FileLogger in development and a NullLogger in release builds.
 
-**MonoGame / ECS Considerations:** In ECS, service location is achieved through world-level resources. Systems access shared services by querying the world for resource types. See [G12 Design Patterns](./G12_design_patterns.md) for a C# Service Locator implementation.
+**ECS Considerations:** In ECS, service location is achieved through world-level resources. Systems access shared services by querying the world for resource types. See [G12 Design Patterns](./G12_design_patterns.md) for a C# Service Locator implementation.
 
 ---
 
@@ -243,7 +243,7 @@ These patterns tackle the performance constraints inherent in real-time game sim
 
 **Game Application:** A particle system processing 10,000 particles each frame benefits enormously from contiguous storage. Separating hot data (position, velocity) from cold data (creation timestamp, debug name) ensures the cache lines pulled during hot-path iteration contain only relevant data.
 
-**MonoGame / ECS Considerations:** Arch ECS stores component data in dense, contiguous arrays organized by archetype. This is Data Locality by design. See [G13 C# Performance](./G13_csharp_performance.md) for additional cache-friendly techniques.
+**ECS Considerations:** Arch ECS stores component data in dense, contiguous arrays organized by archetype. This is Data Locality by design. See [G13 C# Performance](./G13_csharp_performance.md) for additional cache-friendly techniques.
 
 ---
 
@@ -255,7 +255,7 @@ These patterns tackle the performance constraints inherent in real-time game sim
 
 **Game Application:** Scene graph transform hierarchies are the classic application. When a parent object moves, all children's world transforms become stale. Rather than immediately recalculating every descendant's world transform, each node is flagged dirty. World transforms are only recalculated when the rendering system needs them.
 
-**MonoGame / ECS Considerations:** In ECS, dirty flags can be implemented as marker components (DirtyTransform) added when source data changes and removed after recalculation. Systems that produce derived data check for the dirty marker before doing expensive work.
+**ECS Considerations:** In ECS, dirty flags can be implemented as marker components (DirtyTransform) added when source data changes and removed after recalculation. Systems that produce derived data check for the dirty marker before doing expensive work.
 
 ---
 
@@ -267,7 +267,7 @@ These patterns tackle the performance constraints inherent in real-time game sim
 
 **Game Application:** A machine gun might fire 20 bullets per second, each living for 2 seconds. Rather than allocating and deallocating 40 Bullet objects continuously, a pool of 50 pre-allocated bullets recycles efficiently. Particle effects, sound effect instances, hit-flash sprites, and floating damage numbers all benefit from pooling.
 
-**MonoGame / ECS Considerations:** Arch ECS can implement pooling at the entity level. Rather than destroying entities, deactivate them by removing active marker components or moving them to a "pool" archetype. Reactivation restores the appropriate components. See [G1 Custom Code Recipes](./G1_custom_code_recipes.md) for the toolkit's ObjectPool implementation.
+**ECS Considerations:** Arch ECS can implement pooling at the entity level. Rather than destroying entities, deactivate them by removing active marker components or moving them to a "pool" archetype. Reactivation restores the appropriate components. See [G1 Custom Code Recipes](./G1_custom_code_recipes.md) for the toolkit's ObjectPool implementation.
 
 ---
 
@@ -285,7 +285,7 @@ Common implementations:
 
 **Game Application:** Collision broad-phase is the most performance-critical application. Before testing exact collision between sprite boundaries, a spatial grid eliminates pairs of objects that are clearly too far apart. AI proximity queries ("find all enemies within 50 units") and rendering culling similarly benefit.
 
-**MonoGame / ECS Considerations:** For 2D MonoGame projects, a uniform grid or spatial hash is typically the best fit due to implementation simplicity and good performance characteristics. The grid cell size should match your typical entity interaction range. See [G1 Custom Code Recipes](./G1_custom_code_recipes.md) for the SpatialHash implementation and [G3 Physics & Collision](./G3_physics_and_collision.md) for integration with collision detection.
+**ECS Considerations:** For 2D the engine projects, a uniform grid or spatial hash is typically the best fit due to implementation simplicity and good performance characteristics. The grid cell size should match your typical entity interaction range. See [G1 Custom Code Recipes](./G1_custom_code_recipes.md) for the SpatialHash implementation and [G3 Physics & Collision](./G3_physics_and_collision.md) for integration with collision detection.
 
 ---
 
@@ -356,7 +356,7 @@ graph TB
 | Type Object | Medium | Low | Medium | When data-driven entity types are needed |
 | Prototype | Low | Low | Low | When entity spawning needs cloning semantics |
 | Subclass Sandbox | Low | Low | Low | When ability variety grows significantly |
-| Double Buffer | Low | Medium | Low | Handled by MonoGame and GPU drivers |
+| Double Buffer | Low | Medium | Low | Handled by the engine and GPU drivers |
 | Bytecode | Low | High | Medium | Only if modding or scripting is a requirement |
 | Singleton | Avoid | Low | Negative | Use Service Locator or ECS resources instead |
 

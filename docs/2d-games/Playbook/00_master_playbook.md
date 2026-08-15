@@ -2,7 +2,7 @@
 
 ## The Master Playbook
 
-**Stack:** MonoGame.Framework.DesktopGL · Arch ECS v2.1.0 · Composed Libraries · C#
+**Stack:** the game framework · Arch ECS v2.1.0 · Composed Libraries · C#
 **Timeline:** ~24 weeks (6 months) from idea to launch
 **Audience:** Solo developers and small teams building 2D games
 
@@ -60,14 +60,14 @@ Launch Day    🚀                        Phase 6: Launch & Beyond
 Before we start: know your tools.
 
 ```
-MonoGame.Framework.DesktopGL     — Base framework (rendering, audio, input, content)
+the game framework     — Base framework (rendering, audio, input, content)
 Arch ECS (v2.1.0)               — Entity Component System for ALL entities
-MonoGame.Extended (v5.3.1)       — Camera, Tiled maps, collision shapes, math
-Gum.MonoGame                     — UI framework
-Apos.Input (v2.5.0)             — Input handling
-FontStashSharp.MonoGame (v1.3.7) — Runtime font rendering
-MonoGame.Aseprite (v6.3.1)      — Sprite animation from .aseprite files
-Aether.Physics2D (v2.2.0)       — Full Box2D-style physics (when needed)
+PixiJS + custom C# utilities (v5.3.1)       — Camera, Tiled maps, collision shapes, math
+the UI framework                     — UI framework
+the input handler (v2.5.0)             — Input handling
+the font rendering library (v1.3.7) — Runtime font rendering
+the Aseprite spritesheet importer (v6.3.1)      — Sprite animation from .aseprite files
+a 2D physics library (v2.2.0)       — Full Box2D-style physics (when needed)
 BrainAI                          — FSM, Behavior Trees, GOAP, pathfinding
 ImGui.NET                        — Debug tooling and overlays
 Coroutine (Ellpeck)              — Unity-style coroutines
@@ -378,7 +378,7 @@ Now you write real code. But you set it up right from the start.
 **Project setup checklist:**
 
 - [ ] Create solution with `dotnet new sln`
-- [ ] Create project with MonoGame DesktopGL template
+- [ ] Create project with the engine DesktopGL template
 - [ ] Install all Tier 1 NuGet packages (see R1)
 - [ ] Set up folder structure (see R3)
 - [ ] Initialize Git repo with proper .gitignore
@@ -454,7 +454,7 @@ Build systems in dependency order. Each step below builds on the previous one.
 
 📚 [G15 — Game Loop](../G/G15_game_loop.md) · [G38 — Scene Management](../G/G38_scene_management.md)
 
-- Fixed timestep game loop (MonoGame default handles this)
+- Fixed timestep game loop (the engine default handles this)
 - Scene manager with at least: `GameplayScene`, `PauseOverlay`
 - Scene transitions (even a simple fade — see [G42 — Screen Transitions](../G/G42_screen_transitions.md))
 
@@ -462,7 +462,7 @@ Build systems in dependency order. Each step below builds on the previous one.
 
 📚 [G7 — Input Handling](../G/G7_input_handling.md)
 
-- Wire up Apos.Input
+- Wire up the input handler
 - Map actions to inputs (Move, Jump, Attack, Interact, Pause)
 - Support keyboard + at least one gamepad from day one
 - Input buffering for action games (G7 covers this)
@@ -493,7 +493,7 @@ Or implement movement appropriate to your perspective:
 
 📚 [G37 — Tilemap Systems](../G/G37_tilemap_systems.md) · [G8 — Content Pipeline](../G/G8_content_pipeline.md)
 
-- Load Tiled (.tmx) maps via MonoGame.Extended
+- Load Tiled (.tmx) maps via a PixiJS Tiled loader
 - Render tile layers (background, midground, foreground)
 - Parse collision layer from Tiled
 - Parse object layer for spawn points, triggers, items
@@ -504,7 +504,7 @@ Or implement movement appropriate to your perspective:
 
 - Tile collision (for most games, AABB vs tilemap is enough)
 - Entity-vs-entity collision detection
-- Decision: SpatialHash (simple) vs Aether.Physics2D (complex)?
+- Decision: SpatialHash (simple) vs a 2D physics library (complex)?
   - **Use SpatialHash** for: platformers, top-down action, most games
   - **Use Aether** for: physics puzzles, Angry Birds-style, anything needing joints/forces
 
@@ -663,7 +663,7 @@ Build systems in this order. Each group can be parallelized, but the groups them
 
 📚 [G31 — Animation & Sprite State Machines](../G/G31_animation_state_machines.md) · [G59 — Skeletal Animation](../G/G59_skeletal_animation.md)
 
-- Aseprite integration via MonoGame.Aseprite
+- Aseprite integration via the Aseprite spritesheet importer
 - Animation state machines (Idle → Run → Jump → Attack → etc.)
 - Directional sprites (for top-down games)
 - Animation events (spawn projectile on frame 5, play sound on frame 3)
@@ -695,7 +695,7 @@ Build systems in this order. Each group can be parallelized, but the groups them
 - Pause menu
 - HUD improvements (from vertical slice prototype to proper layout)
 - Any game-specific UI: inventory screen, map screen, dialogue box
-- Use Gum.MonoGame for layout — it handles scaling and anchoring
+- Use the UI framework for layout — it handles scaling and anchoring
 
 **Audio System (Full)**
 
@@ -704,7 +704,7 @@ Build systems in this order. Each group can be parallelized, but the groups them
 - Music system with crossfading between tracks
 - Sound effect manager with variations (3 footstep sounds, randomly picked)
 - Ambient sound layers
-- Decision: MonoGame built-in audio vs FMOD?
+- Decision: the engine built-in audio vs FMOD?
   - **Built-in:** Fine for most indie games, simpler, no licensing
   - **FMOD:** Better for dynamic music, complex layering, AAA audio design
 
@@ -1314,7 +1314,7 @@ Every document in the toolkit, organized by category:
 | [E5](../E/E5_ai_workflow.md) | AI-Assisted Dev Workflow |
 | [E6](../E/E6_game_design_fundamentals.md) | Game Design Fundamentals |
 | [E7](../E/E7_emergent_puzzle_design.md) | Emergent Puzzle Design |
-| [E8](../E/E8_monogamestudio_postmortem.md) | MonoGameStudio Post-Mortem |
+| [E8](../E/E8_studio_postmortem.md) | the engine studio Post-Mortem |
 | [E9](../E/E9_solo_dev_playbook.md) | Solo Dev Playbook |
 
 ### Guide Docs
@@ -1418,7 +1418,7 @@ Every document in the toolkit, organized by category:
 
 # Appendix D: Recommended Reading Order for New Developers
 
-If you're new to MonoGame, ECS, or game dev in general, read these docs first:
+If you're new to the engine, ECS, or game dev in general, read these docs first:
 
 1. [E1 — Architecture Overview](../E/E1_architecture_overview.md) — *Why* the stack is structured this way
 2. [E6 — Game Design Fundamentals](../E/E6_game_design_fundamentals.md) — Design thinking before code
@@ -1477,4 +1477,4 @@ Because everyone thinks they're the exception.
 
 ---
 
-*This playbook is part of the [Universal 2D Engine Toolkit](../INDEX.md) — 76 documents covering every aspect of 2D game development with MonoGame + Arch ECS.*
+*This playbook is part of the [Universal 2D Engine Toolkit](../INDEX.md) — 76 documents covering every aspect of 2D game development with Arch ECS.*

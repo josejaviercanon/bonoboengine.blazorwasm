@@ -1,9 +1,9 @@
 # G11 — Programming Principles
-> **Category:** Guide · **Related:** [G12 Design Patterns](./G12_design_patterns.md) · [E1 Architecture Overview](../../monogame-arch/architecture/E1_architecture_overview.md) · [E5 AI Workflow](../ai-workflow/E5_ai_workflow.md)
+> **Category:** Guide · **Related:** [G12 Design Patterns](./G12_design_patterns.md) · [E1 Architecture Overview](../../game-entity-component-system/architecture/E1_architecture_overview.md) · [E5 AI Workflow](../ai-workflow/E5_ai_workflow.md)
 
 ---
 
-Foundational principles applied to game development with MonoGame + Arch ECS.
+Foundational principles applied to game development with Arch ECS.
 
 ---
 

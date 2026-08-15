@@ -4,7 +4,7 @@
 
 > **Category:** Guide · **Related:** [G23 Particles](./G23_particles.md) · [G27 Shaders & Visual Effects](./G27_shaders_and_effects.md) · [G10 Custom Game Systems](./G10_custom_game_systems.md) · [G39 2D Lighting](./G39_2d_lighting.md) · [G22 Parallax & Depth Layers](./G22_parallax_depth_layers.md)
 
-Weather transforms a flat 2D world into a living place. Rain hammering rooftops, fog creeping through a swamp, lightning splitting the sky — these aren't cosmetic. They shape mood, guide the player's attention, and create gameplay opportunities. This guide builds a complete weather system on MonoGame + Arch ECS, from architecture through every major weather type, with full code.
+Weather transforms a flat 2D world into a living place. Rain hammering rooftops, fog creeping through a swamp, lightning splitting the sky — these aren't cosmetic. They shape mood, guide the player's attention, and create gameplay opportunities. This guide builds a complete weather system on Arch ECS, from architecture through every major weather type, with full code.
 
 ---
 

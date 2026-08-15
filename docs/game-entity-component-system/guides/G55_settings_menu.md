@@ -333,7 +333,7 @@ float4 PS(float2 uv : TEXCOORD0) : COLOR0
 
 ## 5 — Input Rebinding
 
-Integrates with **Apos.Input** for the actual input queries, but rebinding state is stored in `GameSettings.KeyBindings`.
+Integrates with **the input handler** for the actual input queries, but rebinding state is stored in `GameSettings.KeyBindings`.
 
 ### 5.1 Rebinding Flow
 
@@ -739,7 +739,7 @@ public static class PlatformDefaults
             s.VSync = true;
         }
 
-        // Mobile defaults (if targeting Android/iOS via MonoGame)
+        // Mobile defaults (if targeting Android/iOS via the engine)
         if (OperatingSystem.IsAndroid() || OperatingSystem.IsIOS())
         {
             s.FullscreenMode = 1; // true fullscreen

@@ -1,9 +1,9 @@
 # G35 — Accessibility
 > **Category:** Guide · **Related:** [G5 UI Framework](./G5_ui_framework.md) · [G7 Input Handling](./G7_input_handling.md) · [G27 Shaders & Visual Effects](./G27_shaders_and_effects.md) · [G6 Audio](./G6_audio.md)
 
-> **Stack:** MonoGame · Arch ECS · Gum UI
+> **Stack:** the engine · Arch ECS · Blazor + Tailwind UI
 
-Making your game accessible isn't charity — it's good design. Around 15–20% of players have some form of disability. This guide covers practical patterns for implementing accessibility in a MonoGame 2D game.
+Making your game accessible isn't charity — it's good design. Around 15–20% of players have some form of disability. This guide covers practical patterns for implementing accessibility in a the engine 2D game.
 
 ---
 
@@ -94,7 +94,7 @@ public class TextScaleSettings
 }
 ```
 
-With Gum UI, bind your text elements to a scale factor and ensure containers reflow. Test at 200% — if your UI breaks, your layout isn't flexible enough.
+With Blazor + Tailwind UI, bind your text elements to a scale factor and ensure containers reflow. Test at 200% — if your UI breaks, your layout isn't flexible enough.
 
 ---
 
@@ -292,7 +292,7 @@ float adjustedSpeed = baseSpeed * settings.GameSpeed;
 
 ### Scalable UI with Gum
 
-Gum layouts should use percentage-based positioning and relative font sizes. Bind the `UIScale` factor to Gum's global scale property so all text and containers resize uniformly.
+Blazor/Tailwind layouts should use percentage-based positioning and relative font sizes. Bind the `UIScale` factor to Blazor/Tailwind's global scale property so all text and containers resize uniformly.
 
 ---
 

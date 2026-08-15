@@ -1,6 +1,6 @@
 # 16 — Performance Budget Template
 
-> **Summary:** A practical guide to setting and tracking performance budgets for your 2D MonoGame game. Plan for 60fps on modest hardware so you never hit "it works on my machine" surprises late in development.
+> **Summary:** A practical guide to setting and tracking performance budgets for your 2D the engine game. Plan for 60fps on modest hardware so you never hit "it works on my machine" surprises late in development.
 >
 > **See also:** [G33 — Profiling & Optimization](../G/G33_profiling_optimization.md) for deep-dive techniques referenced throughout this document.
 
@@ -98,7 +98,7 @@ At 60fps, you have **16.67 milliseconds** per frame. Every frame. No exceptions.
 │  │  ████████████████░░░ │  UI, text, effects     │
 │  └─────────────────────┘                        │
 │  ┌─────────────────────┐                        │
-│  │  Framework ≤ 2.0ms  │  MonoGame overhead,     │
+│  │  Framework ≤ 2.0ms  │  the engine overhead,     │
 │  │  ████░░░░░░░░░░░░░░ │  present, swap, input  │
 │  └─────────────────────┘                        │
 │  ┌─────────────────────┐                        │
@@ -116,7 +116,7 @@ At 60fps, you have **16.67 milliseconds** per frame. Every frame. No exceptions.
 |-------|--------|-----------|
 | **Update** | ≤ 4ms | ECS iteration + physics + AI. If your game logic takes more than 4ms, you have too many systems or too-complex queries. |
 | **Draw** | ≤ 8ms | Rendering dominates in 2D. SpriteBatch calls, particle rendering, UI draws. This is your largest slice. |
-| **Framework** | ≤ 2ms | MonoGame's `Game.Tick`, input polling, audio mixing, `GraphicsDevice.Present`. You don't control this directly. |
+| **Framework** | ≤ 2ms | the engine's `Game.Tick`, input polling, audio mixing, `GraphicsDevice.Present`. You don't control this directly. |
 | **Headroom** | ≤ 2.67ms | .NET GC pauses average 1–3ms for Gen0 collections. OS scheduling jitter adds more. Without headroom, any GC pause drops a frame. |
 
 ### Sub-Budgets Within Update (4ms total)
@@ -192,9 +192,9 @@ Not everything needs to update every frame. AI can run every 3rd frame. Off-scre
 
 A **draw call** is a command sent from your CPU to the GPU: "draw these triangles with this texture and these settings." Each one has overhead — not from the GPU doing work, but from the CPU preparing and submitting the command.
 
-### MonoGame's SpriteBatch
+### The engine's SpriteBatch
 
-MonoGame's `SpriteBatch` batches multiple `Draw` calls into a single GPU draw call *as long as* the texture and render state don't change. Every time the texture changes, SpriteBatch flushes — that's a new draw call.
+the engine's `SpriteBatch` batches multiple `Draw` calls into a single GPU draw call *as long as* the texture and render state don't change. Every time the texture changes, SpriteBatch flushes — that's a new draw call.
 
 ```csharp
 // This is ONE draw call (same texture atlas)

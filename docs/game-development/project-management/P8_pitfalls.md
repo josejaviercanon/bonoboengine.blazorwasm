@@ -107,7 +107,7 @@ Every mistake here has been made thousands of times by solo and small-team devel
 
 **The fix:** Use an existing engine or framework. Godot, Unity, Love2D, Raylib, SDL — pick one and make a game with it. If you genuinely need custom tech (you probably don't), build *only* what you need, *when* you need it. The engine exists to serve the game, not the other way around.
 
-📄 **See:** [R1 — Library & Tool Stack](../../monogame-arch/reference/R1_library_stack.md)
+📄 **See:** [R1 — Library & Tool Stack](../../game-entity-component-system/reference/R1_library_stack.md)
 
 ---
 
@@ -133,7 +133,7 @@ Every mistake here has been made thousands of times by solo and small-team devel
 
 **The fix:** Profile first, optimize second. Don't guess where the bottleneck is — measure it. Most 2D games will never hit a performance wall with naive implementations. If your game runs at 60fps, stop optimizing. When you *do* hit a problem, your profiler will tell you exactly where. Fix that one thing.
 
-📄 **See:** [G33 — Profiling & Optimization](../../monogame-arch/guides/G33_profiling_optimization.md)
+📄 **See:** [G33 — Profiling & Optimization](../../game-entity-component-system/guides/G33_profiling_optimization.md)
 
 ---
 
@@ -145,7 +145,7 @@ Every mistake here has been made thousands of times by solo and small-team devel
 
 **The fix:** Use Git. Commit early, commit often, write real messages. "Add double-jump mechanic" is a commit message. "Fixed stuff" is not. Learn branching for experiments — it's a safety net that lets you try wild ideas without nuking your working game. Back up to a remote (GitHub, GitLab, even a USB drive).
 
-📄 **See:** [G44 — Version Control](../../monogame-arch/guides/G44_version_control.md)
+📄 **See:** [G44 — Version Control](../../game-entity-component-system/guides/G44_version_control.md)
 
 ---
 
@@ -169,7 +169,7 @@ Every mistake here has been made thousands of times by solo and small-team devel
 
 **The fix:** Understand the game loop. Use delta time correctly. Separate your update logic from your render logic. For physics, use a fixed timestep with accumulator. This is non-negotiable — it's not an optimization, it's correctness.
 
-📄 **See:** [G15 — The Game Loop](../../monogame-arch/guides/G15_game_loop.md)
+📄 **See:** [G15 — The Game Loop](../../game-entity-component-system/guides/G15_game_loop.md)
 
 ---
 
@@ -181,7 +181,7 @@ Every mistake here has been made thousands of times by solo and small-team devel
 
 **The fix:** Use libraries. Use well-tested, well-documented libraries for everything that isn't your core game mechanic. JSON parsing, pathfinding, physics, UI, networking — someone has already solved these problems better than you will in a weekend.
 
-📄 **See:** [R1 — Library & Tool Stack](../../monogame-arch/reference/R1_library_stack.md)
+📄 **See:** [R1 — Library & Tool Stack](../../game-entity-component-system/reference/R1_library_stack.md)
 
 ---
 
@@ -220,7 +220,7 @@ Pick one. Be consistent. When a class exceeds ~300 lines, it's probably doing to
 
 **The fix:** Abstract platform differences behind interfaces. Input, file I/O, audio, rendering — each should have a clean API that doesn't leak platform details. Most engines/frameworks already do this. If you're using raw SDL or similar, create thin wrappers early. The cost is trivial; the payoff is huge when you deploy to a second platform.
 
-📄 **See:** [G32 — Deployment & Platform Builds](../../monogame-arch/guides/G32_deployment_platform_builds.md)
+📄 **See:** [G32 — Deployment & Platform Builds](../../game-entity-component-system/guides/G32_deployment_platform_builds.md)
 
 ---
 
@@ -391,7 +391,7 @@ Good placeholders communicate intent. They let you and your playtesters evaluate
 
 You don't have to make the game playable by everyone. But the low-hanging fruit is embarrassingly easy to implement and meaningfully expands your audience.
 
-📄 **See:** [G35 — Accessibility](../../monogame-arch/guides/G35_accessibility.md)
+📄 **See:** [G35 — Accessibility](../../game-entity-component-system/guides/G35_accessibility.md)
 
 ---
 
@@ -459,12 +459,12 @@ Keep it short. One page is fine. Read it before starting your next project. You'
 |-------|-----------------|
 | Design Documents | [Playbook 02](02_design_document.md) |
 | Milestones & Scheduling | [Playbook 03](03_milestones.md) |
-| Game Loop & Delta Time | [G15](../../monogame-arch/guides/G15_game_loop.md) |
-| Deployment & Platforms | [G32](../../monogame-arch/guides/G32_deployment_platform_builds.md) |
-| Profiling & Optimization | [G33](../../monogame-arch/guides/G33_profiling_optimization.md) |
-| Accessibility | [G35](../../monogame-arch/guides/G35_accessibility.md) |
-| Version Control | [G44](../../monogame-arch/guides/G44_version_control.md) |
-| Library & Tool Stack | [R1](../../monogame-arch/reference/R1_library_stack.md) |
+| Game Loop & Delta Time | [G15](../../game-entity-component-system/guides/G15_game_loop.md) |
+| Deployment & Platforms | [G32](../../game-entity-component-system/guides/G32_deployment_platform_builds.md) |
+| Profiling & Optimization | [G33](../../game-entity-component-system/guides/G33_profiling_optimization.md) |
+| Accessibility | [G35](../../game-entity-component-system/guides/G35_accessibility.md) |
+| Version Control | [G44](../../game-entity-component-system/guides/G44_version_control.md) |
+| Library & Tool Stack | [R1](../../game-entity-component-system/reference/R1_library_stack.md) |
 
 ---
 

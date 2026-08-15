@@ -1111,9 +1111,9 @@ What kind of UI do you need?
 
 ## Related Engine Guides
 
-- **MonoGame:** [G5 UI Framework (Gum)](../../monogame-arch/guides/G5_ui_framework.md) — retained-mode UI with Gum.MonoGame
-- **MonoGame:** [G55 Settings Menu](../../monogame-arch/guides/G55_settings_menu.md) — practical settings screen implementation
-- **MonoGame:** [G61 Tutorial & Onboarding](../../monogame-arch/guides/G61_tutorial_onboarding.md) — tutorial UI patterns
+- **This engine:** [G5 UI Framework (Gum)](../../game-entity-component-system/guides/G5_ui_framework.md) — retained-mode UI with the UI framework
+- **This engine:** [G55 Settings Menu](../../game-entity-component-system/guides/G55_settings_menu.md) — practical settings screen implementation
+- **This engine:** [G61 Tutorial & Onboarding](../../game-entity-component-system/guides/G61_tutorial_onboarding.md) — tutorial UI patterns
 - **Stitch Prototyping:** [G_stitch_ui_workflow](../game-design/G_stitch_ui_workflow.md) — AI-assisted UI design pipeline
 - **Core Theory:** [input-handling-theory](./input-handling-theory.md) — input fundamentals for UI navigation
 - **Core Theory:** [animation-theory](./animation-theory.md) — animation principles for UI motion
@@ -1121,4 +1121,4 @@ What kind of UI do you need?
 
 ---
 
-*All pseudocode is engine-agnostic. See engine-specific modules for implementations using Godot Control nodes, MonoGame Gum, Unity UI Toolkit, or Bevy bevy_ui.*
+*All pseudocode is engine-agnostic. See engine-specific modules for implementations using Godot Control nodes, the engine Gum, Unity UI Toolkit, or Bevy bevy_ui.*

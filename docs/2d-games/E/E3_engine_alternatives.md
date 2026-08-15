@@ -5,7 +5,7 @@
 
 ## Why This Document Exists
 
-After dropping Nez ([E2](./E2_nez_dropped.md)), the natural question was: should we adopt another MonoGame-based framework or engine instead of building a composed stack? Several alternatives exist in the MonoGame ecosystem, each with real strengths. This document records what was evaluated, the criteria used, and why "composed libraries" won.
+After dropping Nez ([E2](./E2_nez_dropped.md)), the natural question was: should we adopt another native C# game-runtime-based framework or engine instead of building a composed stack? Several alternatives exist in the native C# game ecosystem, each with real strengths. This document records what was evaluated, the criteria used, and why "composed libraries" won.
 
 ---
 
@@ -15,7 +15,7 @@ Every alternative was measured against these priorities, in order:
 
 1. **Architectural flexibility** — Can the game's architecture evolve without fighting the framework?
 2. **ECS support** — Does it work with Arch ECS, or does it impose its own entity model?
-3. **Active maintenance** — Is it being updated for modern .NET and MonoGame versions?
+3. **Active maintenance** — Is it being updated for modern .NET versions?
 4. **Swappability** — If a piece dies, can you replace just that piece?
 5. **Community & docs** — Can you get help when stuck?
 6. **Learning curve** — How fast can a solo dev become productive?
@@ -26,7 +26,7 @@ Every alternative was measured against these priorities, in order:
 
 ### What it is
 
-[Murder](https://github.com/isadorasophia/murder) is a full 2D game engine built on MonoGame by Isadora White (Celeste, Earthblade). It's the most ambitious MonoGame-based engine — a complete editor with ECS, pixel-art rendering pipeline, dialogue system, save/load, and a custom ImGui-based editor.
+[Murder](https://github.com/isadorasophia/murder) is a full 2D game engine built on a native C# game runtime by Isadora White (Celeste, Earthblade). It's the most ambitious native C# game-runtime-based engine — a complete editor with ECS, pixel-art rendering pipeline, dialogue system, save/load, and a custom ImGui-based editor.
 
 ### Strengths
 
@@ -54,7 +54,7 @@ Every alternative was measured against these priorities, in order:
 
 ### What it is
 
-[FlatRedBall](https://flatredball.com/) is one of the oldest MonoGame/XNA frameworks, dating back to 2006. It includes a visual editor (Glue), code generation, collision, animation, and a full project management system. It has shipped commercial games and has extensive documentation.
+[FlatRedBall](https://flatredball.com/) is one of the oldest native C# (XNA-derived) frameworks, dating back to 2006. It includes a visual editor (Glue), code generation, collision, animation, and a full project management system. It has shipped commercial games and has extensive documentation.
 
 ### Strengths
 
@@ -62,7 +62,7 @@ Every alternative was measured against these priorities, in order:
 - **Glue editor** — visual scene editing, code generation, project management
 - **Collision system** — sophisticated collision with shapes, relationships, and performance optimization
 - **Documentation** — tutorials, API docs, video series, active community
-- **Active maintenance** — still updated for modern MonoGame versions
+- **Active maintenance** — still updated for modern .NET versions
 
 ### Why it didn't fit
 
@@ -82,7 +82,7 @@ Every alternative was measured against these priorities, in order:
 
 ### What it is
 
-[Monofoxe](https://github.com/Martenfur/Monofoxe) is a lightweight MonoGame framework that adds scene management, entity-component system, resource management, cameras, and tilemaps. It aims to be the "missing layer" between raw MonoGame and a full engine.
+[Monofoxe](https://github.com/Martenfur/Monofoxe) is a lightweight native C# game framework that adds scene management, entity-component system, resource management, cameras, and tilemaps. It aims to be the "missing layer" between raw native runtime and a full engine.
 
 ### Strengths
 
@@ -101,7 +101,7 @@ Every alternative was measured against these priorities, in order:
 | **Feature overlap** | The features Monofoxe adds (scene management, cameras, tilemaps) are exactly the things the toolkit already handles through composed libraries + ~1,000 lines of custom code. |
 | **Still a framework** | Even though it's lighter, adopting Monofoxe still means adopting its scene/entity lifecycle. The "lightweight framework" is still a framework. |
 
-**Verdict:** Monofoxe is the closest to the "right idea" — add a thin layer over MonoGame. But its EC model conflicts with Arch ECS, and the features it provides are small enough to write yourself. The toolkit's custom glue code ([G1](../G/G1_custom_code_recipes.md)) covers the same ground in ~1,000 lines you fully control.
+**Verdict:** Monofoxe is the closest to the "right idea" — add a thin layer over a native runtime. But its EC model conflicts with Arch ECS, and the features it provides are small enough to write yourself. The toolkit's custom glue code ([G1](../G/G1_custom_code_recipes.md)) covers the same ground in ~1,000 lines you fully control.
 
 ---
 
@@ -109,7 +109,7 @@ Every alternative was measured against these priorities, in order:
 
 ### MLEM
 
-[MLEM](https://mlem.ellpeck.de/) is a set of MonoGame extension libraries (MLEM, MLEM.Ui, MLEM.Data, MLEM.Extended) by Ellpeck (same author as the Coroutine package).
+[MLEM](https://mlem.ellpeck.de/) is a set of native C# game extension libraries (MLEM, MLEM.Ui, MLEM.Data, MLEM.Extended) by Ellpeck (same author as the Coroutine package).
 
 - **Strengths:** Proper library approach (not a framework), good text formatting, non-XNB content loading, UI system, NuGet packages
 - **Why partially adopted:** MLEM.Data's content loading is useful for text-heavy games. It's listed in [R1](../R/R1_library_stack.md) as Tier 2.
@@ -119,24 +119,24 @@ MLEM is actually a good example of the library composition philosophy done right
 
 ### Noppes Engine
 
-A smaller MonoGame framework focused on 2D pixel art games.
+A smaller native C# game framework focused on 2D pixel art games.
 
 - **Why not adopted:** Minimal community, limited documentation, narrow focus. Not enough presence to evaluate long-term viability. The risk/reward ratio didn't justify investigation.
 
-### Raw MonoGame (no libraries)
+### Raw native runtime (no libraries)
 
-The purist approach: use MonoGame.Framework.DesktopGL directly and write everything from scratch.
+The purist approach: use a native C# game runtime directly and write everything from scratch.
 
 - **Strengths:** Total control, zero dependencies, educational
-- **Why not adopted:** The amount of boilerplate is staggering. A solo developer writing their own ECS, physics engine, UI framework, input system, font rendering, and sprite loading from scratch would spend months before writing any game logic. The composed library approach gets 90% of the benefit of raw MonoGame (you understand and control everything) with 10% of the effort.
+- **Why not adopted:** The amount of boilerplate is staggering. A solo developer writing their own ECS, physics engine, UI framework, input system, font rendering, and sprite loading from scratch would spend months before writing any game logic. The composed library approach gets 90% of the benefit of raw native runtime (you understand and control everything) with 10% of the effort.
 
-The toolkit does use "raw MonoGame" for the ~1,000 lines of custom glue code. The key insight is knowing **which** things to write yourself (scene manager, render layers, tweens) and which to get from a library (ECS, physics, UI, fonts).
+The toolkit does use "raw native runtime" for the ~1,000 lines of custom glue code. The key insight is knowing **which** things to write yourself (scene manager, render layers, tweens) and which to get from a library (ECS, physics, UI, fonts).
 
 ---
 
 ## Decision Matrix
 
-| Criteria | Murder | FlatRedBall | Monofoxe | MLEM | Raw MonoGame | **Composed Stack** |
+| Criteria | Murder | FlatRedBall | Monofoxe | MLEM | Raw native runtime | **Composed Stack** |
 |---|---|---|---|---|---|---|
 | **Arch ECS compatible** | ❌ (Bang) | ❌ (inheritance) | ❌ (own EC) | ✅ (no entity model) | ✅ | ✅ |
 | **Swappable parts** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
@@ -166,10 +166,10 @@ The composed library approach is the only option that:
 
 ### The "no editor" tradeoff
 
-The biggest thing you give up is a visual editor. Murder and FlatRedBall both have editors; the composed stack doesn't (unless you build one — see [G29](../G/G29_game_editor.md) and [E8](./E8_monogamestudio_postmortem.md) for how that went). For many 2D games, Tiled + Aseprite + ImGui debug overlays cover 90% of what an editor provides. The remaining 10% is rarely worth the framework lock-in.
+The biggest thing you give up is a visual editor. Murder and FlatRedBall both have editors; the composed stack doesn't (unless you build one — see [G29](../G/G29_game_editor.md) and [E8](./E8_studio_postmortem.md) for how that went). For many 2D games, Tiled + Aseprite + ImGui debug overlays cover 90% of what an editor provides. The remaining 10% is rarely worth the framework lock-in.
 
 ### The meta-lesson
 
-The MonoGame ecosystem is full of talented developers building frameworks and engines. Every one of them made reasonable decisions for their use case. The issue isn't that these tools are bad — it's that adopting any one of them means adopting **all** of its decisions. For a solo developer who wants to control their architecture and use Arch ECS as the foundation, the composed library approach is the only path that doesn't compromise.
+The native C# game ecosystem is full of talented developers building frameworks and engines. Every one of them made reasonable decisions for their use case. The issue isn't that these tools are bad — it's that adopting any one of them means adopting **all** of its decisions. For a solo developer who wants to control their architecture and use Arch ECS as the foundation, the composed library approach is the only path that doesn't compromise.
 
 The stack described in [E1](./E1_architecture_overview.md) and [R1](../R/R1_library_stack.md) is the result of evaluating all of these alternatives and choosing the parts that work best — from multiple sources, independently swappable, unified by Arch ECS.

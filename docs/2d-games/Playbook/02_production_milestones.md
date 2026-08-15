@@ -1,6 +1,6 @@
 # 03 — Production Milestones
 
-A milestone-based production guide for solo and small-team 2D game development using MonoGame + Arch ECS. Each milestone has a clear definition of done, actionable checklists, time estimates, and red flags to watch for.
+A milestone-based production guide for solo and small-team 2D game development using Arch ECS. Each milestone has a clear definition of done, actionable checklists, time estimates, and red flags to watch for.
 
 ---
 
@@ -54,7 +54,7 @@ Prototype → Vertical Slice → Alpha → Beta → Release Candidate → Gold
 
 - The core mechanic works and feels good
 - The game is worth building (you'd play this)
-- The technical approach is viable with MonoGame + Arch ECS
+- The technical approach is viable with Arch ECS
 - The scope is achievable for your team size and timeline
 
 ### What You Are NOT Building

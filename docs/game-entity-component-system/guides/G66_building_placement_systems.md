@@ -2,7 +2,7 @@
 
 > **Category:** Guide · **Related:** [G37 Tilemap Systems](./G37_tilemap_systems.md) · [G65 Economy & Shop Systems](./G65_economy_shop_systems.md) · [G10 Custom Game Systems §1 Inventory](./G10_custom_game_systems.md) · [G5 UI Framework](./G5_ui_framework.md) · [G3 Physics & Collision](./G3_physics_and_collision.md) · [G4 AI Systems](./G4_ai_systems.md) · [G40 Pathfinding](./G40_pathfinding.md)
 
-> Complete implementation guide for building, placement, and construction systems in MonoGame + Arch ECS. Covers grid-based and free-form placement, ghost previews, validity checking, building upgrades, construction queues, and destruction. Used by survival games (base building), strategy/RTS (structures & production buildings), tower defense (tower placement), and sandbox games. All systems are composable — use the pieces your genre needs.
+> Complete implementation guide for building, placement, and construction systems in Arch ECS. Covers grid-based and free-form placement, ghost previews, validity checking, building upgrades, construction queues, and destruction. Used by survival games (base building), strategy/RTS (structures & production buildings), tower defense (tower placement), and sandbox games. All systems are composable — use the pieces your genre needs.
 
 ---
 

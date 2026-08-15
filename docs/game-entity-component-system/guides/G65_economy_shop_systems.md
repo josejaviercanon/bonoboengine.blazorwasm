@@ -2,7 +2,7 @@
 
 > **Category:** Guide · **Related:** [G10 Custom Game Systems §1 Inventory](./G10_custom_game_systems.md) · [G5 UI Framework](./G5_ui_framework.md) · [G64 Combat & Damage Systems](./G64_combat_damage_systems.md) · [G37 Tilemap Systems](./G37_tilemap_systems.md) · [G4 AI Systems](./G4_ai_systems.md)
 
-> Complete implementation guide for currency, shops, transactions, and economic balancing in MonoGame + Arch ECS. Covers both tower-defense economies (earn-and-spend loops) and survival economies (gather-craft-trade loops). All systems are composable — use the pieces your genre needs.
+> Complete implementation guide for currency, shops, transactions, and economic balancing in Arch ECS. Covers both tower-defense economies (earn-and-spend loops) and survival economies (gather-craft-trade loops). All systems are composable — use the pieces your genre needs.
 
 ---
 

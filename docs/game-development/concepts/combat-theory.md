@@ -1,6 +1,6 @@
 # Combat & Damage Systems — Theory & Concepts
 
-This document covers engine-agnostic combat system design theory. For engine-specific implementations, see [G64 Combat & Damage Systems (MonoGame)](../../monogame-arch/guides/G64_combat_damage_systems.md) or the relevant engine module.
+This document covers engine-agnostic combat system design theory. For engine-specific implementations, see [G64 Combat & Damage Systems (the engine)](../../game-entity-component-system/guides/G64_combat_damage_systems.md) or the relevant engine module.
 
 ---
 
@@ -972,8 +972,8 @@ Is combat real-time or turn-based?
 
 ## Cross-References
 
-- [G64 Combat & Damage Systems (MonoGame)](../../monogame-arch/guides/G64_combat_damage_systems.md) — Full C# implementation with Arch ECS
-- [G4 AI Systems (MonoGame)](../../monogame-arch/guides/G4_AI_systems.md) — Enemy AI behaviors that drive combat
+- [G64 Combat & Damage Systems (the engine)](../../game-entity-component-system/guides/G64_combat_damage_systems.md) — Full C# implementation with Arch ECS
+- [G4 AI Systems (the engine)](../../game-entity-component-system/guides/G4_AI_systems.md) — Enemy AI behaviors that drive combat
 - [Physics & Collision Theory](./physics-theory.md) — Collision detection foundations
 - [Camera Theory](./camera-theory.md) — Screen shake and hit stop camera integration
 - [Animation Theory](./animation-theory.md) — Frame data and attack animation synchronization

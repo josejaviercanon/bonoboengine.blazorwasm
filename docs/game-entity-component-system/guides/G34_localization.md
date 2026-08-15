@@ -3,9 +3,9 @@
 
 > **Category:** Guide · **Related:** [G5 UI Framework](./G5_ui_framework.md) · [G8 Content Pipeline](./G8_content_pipeline.md) · [G26 Resource Loading & Caching](./G26_resource_loading_caching.md)
 
-> **Stack:** MonoGame · Arch ECS · FontStashSharp · Gum UI
+> **Stack:** the engine · Arch ECS · the font rendering library · Blazor + Tailwind UI
 
-Localization is the difference between a game that sells in one market and a game that sells globally. This guide covers practical i18n patterns for a MonoGame 2D game — from string externalization to RTL layout.
+Localization is the difference between a game that sells in one market and a game that sells globally. This guide covers practical i18n patterns for a the engine 2D game — from string externalization to RTL layout.
 
 ---
 
@@ -178,9 +178,9 @@ This lets translators edit JSON and see results without restarting the game.
 
 ## Font Support
 
-### FontStashSharp for Unicode
+### the font rendering library for Unicode
 
-MonoGame's built-in `SpriteFont` can't handle CJK, Arabic, or large Unicode ranges efficiently. Use **FontStashSharp**:
+the engine's built-in `SpriteFont` can't handle CJK, Arabic, or large Unicode ranges efficiently. Use **the font rendering library**:
 
 ```csharp
 // Load a font system with fallback chain
@@ -234,7 +234,7 @@ The same string in different languages can vary dramatically:
 | Russian | Начать игру | +10% |
 | Chinese | 开始游戏 | –60% |
 
-**Design rule:** Never hardcode text container sizes. Use Gum's auto-sizing or measure text at runtime:
+**Design rule:** Never hardcode text container sizes. Use Blazor/Tailwind's auto-sizing or measure text at runtime:
 
 ```csharp
 Vector2 textSize = font.MeasureString(localizedText);
@@ -351,7 +351,7 @@ Arabic and Hebrew read right-to-left. This affects both text rendering and UI la
 
 ### Text Rendering
 
-FontStashSharp doesn't handle RTL shaping natively. Options:
+the font rendering library doesn't handle RTL shaping natively. Options:
 
 1. **HarfBuzzSharp** — C# bindings for the HarfBuzz text shaping engine. Handles Arabic ligatures, RTL reordering, and bidirectional text.
 2. **Pre-shaped text** — Run text through a shaping pass before rendering.
@@ -539,7 +539,7 @@ For a robust solution, implement ICU MessageFormat or use a library like `Messag
 ## Checklist
 
 - [ ] All player-visible strings externalized to JSON (zero hardcoded strings)
-- [ ] FontStashSharp with Noto font fallback chain for CJK/Arabic/Cyrillic
+- [ ] the font rendering library with Noto font fallback chain for CJK/Arabic/Cyrillic
 - [ ] UI containers auto-size to fit translated text
 - [ ] No text baked into sprites (or localized sprite variants exist)
 - [ ] Dates/numbers formatted with `CultureInfo`
@@ -553,7 +553,7 @@ For a robust solution, implement ICU MessageFormat or use a library like `Messag
 
 ## Further Reading
 
-- [FontStashSharp](https://github.com/FontStashSharp/FontStashSharp) — Runtime font rendering for MonoGame
+- [the font rendering library](https://github.com/the font rendering library/the font rendering library) — Runtime font rendering for the engine
 - [HarfBuzzSharp](https://github.com/nickvdyck/harfbuzz-sharp) — Text shaping for complex scripts
 - [ICU MessageFormat](https://unicode-org.github.io/icu/userguide/format_parse/messages/) — Pluralization and gender rules
 - [Noto Fonts](https://fonts.google.com/noto) — Free Unicode coverage

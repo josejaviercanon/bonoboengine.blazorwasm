@@ -5,7 +5,7 @@
 // ============================================================================
 
 using Microsoft.Xna.Framework;
-using MonoGame.Extended.Tiled;
+using Tiled;
 
 namespace U2DToolkit.Examples.Tilemap;
 

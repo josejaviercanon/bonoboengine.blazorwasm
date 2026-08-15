@@ -1,6 +1,6 @@
 # 17 — Release Build Pipeline
 
-A step-by-step guide for building, testing, signing, and uploading release builds of your MonoGame DesktopGL game. This covers everything from `dotnet publish` to getting your game on Steam and itch.io.
+A step-by-step guide for building, testing, signing, and uploading release builds of your the engine DesktopGL game. This covers everything from `dotnet publish` to getting your game on Steam and itch.io.
 
 > **Related docs:**
 > - [G32 — Deployment & Platform Builds](../G/G32_deployment_platform_builds.md)
@@ -89,7 +89,7 @@ Single-file bundles your entire app into one executable. Players see one `.exe` 
 
 Trimming removes unused .NET framework code, reducing file size by 20-50%. But it can break things.
 
-**Safe for MonoGame:** General trimming works fine for most game code.
+**Safe for the engine:** General trimming works fine for most game code.
 
 **Watch out for:**
 - Reflection-heavy code (JSON serializers, plugin systems)
@@ -101,7 +101,7 @@ If trimming breaks something, add trim roots:
 ```xml
 <ItemGroup>
   <TrimmerRootAssembly Include="YourGame" />
-  <TrimmerRootAssembly Include="MonoGame.Framework" />
+  <TrimmerRootAssembly Include="the game framework" />
 </ItemGroup>
 ```
 
@@ -348,7 +348,7 @@ PROTON_LOG=1 %command%
 ### Common Linux Issues
 
 **Missing `libSDL2`**
-MonoGame DesktopGL needs SDL2. On most distros it's pre-installed, but if not:
+the engine DesktopGL needs SDL2. On most distros it's pre-installed, but if not:
 
 ```bash
 # Ubuntu/Debian
@@ -366,7 +366,7 @@ Linux file systems are case-sensitive. `Content/Textures/Player.png` ≠ `Conten
 **Fix:** Be consistent with casing everywhere. Lowercase everything is simplest.
 
 **Missing OpenAL**
-MonoGame uses OpenAL for audio:
+the engine uses OpenAL for audio:
 
 ```bash
 sudo apt install libopenal1
@@ -787,9 +787,9 @@ butler status yourusername/yourgame
 
 ## 7. Content Pipeline Build
 
-### How MonoGame Content Works in Release
+### How the engine Content Works in Release
 
-The MonoGame Content Builder (MGCB) compiles raw assets (`.png`, `.wav`, `.fx`) into optimized `.xnb` files. These built assets go in your `Content/` folder.
+The the engine Content Builder (MGCB) compiles raw assets (`.png`, `.wav`, `.fx`) into optimized `.xnb` files. These built assets go in your `Content/` folder.
 
 ### Ensuring Content is Included
 
@@ -797,7 +797,7 @@ Your `.csproj` should reference the content project:
 
 ```xml
 <ItemGroup>
-  <MonoGameContentReference Include="Content\Content.mgcb" />
+  <ContentReference Include="Content\Content.mgcb" />
 </ItemGroup>
 ```
 
@@ -829,7 +829,7 @@ mgcb-editor Content/Content.mgcb  # GUI
 The content wasn't copied to the output. Check your `.csproj`:
 
 ```xml
-<MonoGameContentReference Include="Content\Content.mgcb" />
+<ContentReference Include="Content\Content.mgcb" />
 ```
 
 **"Could not load asset" for specific files**
@@ -843,7 +843,7 @@ The content wasn't copied to the output. Check your `.csproj`:
 - Platform mismatch: Build content for `DesktopGL`, not `Windows`
 
 **Effect (.fx) compilation failures on non-Windows**
-MonoGame's effect compiler has platform-specific quirks. If effects fail on Linux/macOS CI:
+the engine's effect compiler has platform-specific quirks. If effects fail on Linux/macOS CI:
 - Pre-build effects on Windows and commit the `.xnb` files
 - Or use the `mgfxc` tool with Wine on Linux
 

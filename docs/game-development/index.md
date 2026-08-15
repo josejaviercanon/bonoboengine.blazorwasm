@@ -2,7 +2,7 @@
 
 Engine-agnostic game development knowledge, curated from the full 2D engine toolkit. Use this tree for game-design, production, and workflow guidance that applies regardless of engine.
 
-> **Related:** `docs/2d-games/` is the complete vendored "Universal 2D Engine Toolkit" — 137 files covering the full MonoGame + Arch ECS stack (reference guides, implementation guides, playbook, examples). When you need MonoGame-specific APIs, deeper system implementations, or working code examples, use `docs/2d-games/`. When you need engine-agnostic theory, game design, or project management, use this tree.
+> **Related:** `docs/2d-games/` is the complete vendored "Universal 2D Engine Toolkit" — 137 files covering the full Arch ECS stack (reference guides, implementation guides, playbook, examples). When you need the engine-specific APIs, deeper system implementations, or working code examples, use `docs/2d-games/`. When you need engine-agnostic theory, game design, or project management, use this tree.
 
 ## Categories
 
@@ -19,5 +19,5 @@ Engine-agnostic game development knowledge, curated from the full 2D engine tool
 
 - `docs/index.md` — this repository's architecture source of truth
 - `docs/ai-agents/codebase-truth.md` — verified API facts for this codebase
-- `docs/2d-games/index.md` — the complete MonoGame + Arch ECS knowledge base
+- `docs/2d-games/index.md` — the complete Arch ECS knowledge base
 - `docs/adr/` — architecture decision records

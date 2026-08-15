@@ -351,7 +351,7 @@ Design principle: **branch freely, merge deliberately**. Major story beats (act 
 
 ## 5 — Yarn Spinner / Ink Integration
 
-### Yarn Spinner with MonoGame
+### Yarn Spinner with the engine
 
 Yarn Spinner uses `.yarn` text files with a simple syntax. Install the C# runtime (`YarnSpinner` NuGet) and wire it up:
 

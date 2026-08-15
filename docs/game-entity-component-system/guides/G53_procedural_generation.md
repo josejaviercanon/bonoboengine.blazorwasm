@@ -4,7 +4,7 @@
 
 > **Category:** Guide · **Related:** [G37 Tilemap Systems](./G37_tilemap_systems.md) · [G14 Data Structures](./G14_data_structures.md) · [G40 Pathfinding](./G40_pathfinding.md) · [E7 Emergent Puzzle Design](../../core/game-design/E7_emergent_puzzle_design.md) · [G10 Custom Game Systems](./G10_custom_game_systems.md)
 
-Procedural generation turns algorithms into content — dungeons, terrain, loot, enemy encounters. This guide covers the core techniques, all wired into MonoGame + Arch ECS, with deterministic seeding so every run is reproducible.
+Procedural generation turns algorithms into content — dungeons, terrain, loot, enemy encounters. This guide covers the core techniques, all wired into Arch ECS, with deterministic seeding so every run is reproducible.
 
 ---
 

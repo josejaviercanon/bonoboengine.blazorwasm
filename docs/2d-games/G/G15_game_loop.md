@@ -7,9 +7,9 @@
 
 Games must run physics and logic at a fixed timestep (typically 50-60 Hz) regardless of frame rate. Variable timesteps cause non-deterministic physics — the same inputs produce different results across machines.
 
-### MonoGame Integration
+### The engine Integration
 
-In MonoGame, `IsFixedTimeStep = true` makes the framework call `Update()` at a regular interval controlled by `TargetElapsedTime`. The game's `Update()` then uses an accumulator to run logic at a fixed 60Hz rate, independent of the framework's tick rate:
+In the engine, `IsFixedTimeStep = true` makes the framework call `Update()` at a regular interval controlled by `TargetElapsedTime`. The game's `Update()` then uses an accumulator to run logic at a fixed 60Hz rate, independent of the framework's tick rate:
 
 ```csharp
 /// <summary>Fixed logic timestep: game simulation always runs at 60Hz.</summary>
@@ -32,7 +32,7 @@ protected override void Update(GameTime gameTime)
 
 This decouples logic rate from display rate. When `TargetElapsedTime` matches `FixedLogicDt` (both 1/60), each `Update()` call runs exactly one logic tick. When `TargetElapsedTime` is 1/120 (ProMotion), each `Update()` runs zero or one logic tick — but `Draw()` still runs at 120fps for smooth visuals.
 
-**Cap maximum accumulated time** to prevent "spiral of death" where slow frames cause more simulation steps, causing slower frames. In practice, MonoGame's `IsFixedTimeStep` already handles this by capping to `MaxElapsedTime`.
+**Cap maximum accumulated time** to prevent "spiral of death" where slow frames cause more simulation steps, causing slower frames. In practice, the engine's `IsFixedTimeStep` already handles this by capping to `MaxElapsedTime`.
 
 ### Interpolation (Optional)
 
@@ -71,9 +71,9 @@ Thermal throttling is the constraint most developers miss. GPU frequency drops 3
 
 ## iOS Game Lifecycle
 
-MonoGame's game loop on iOS is driven by `CADisplayLink`, not a blocking `while` loop. This creates two initialization hazards:
+the engine's game loop on iOS is driven by `CADisplayLink`, not a blocking `while` loop. This creates two initialization hazards:
 
-**1. Display link NRE:** MonoGame 3.8.4's `Game()` constructor starts the display link before `_platform` is assigned → `NullReferenceException` in `Game.get_IsActive()`. Fix: defer game creation via `NSRunLoop.Main.InvokeOnMainThread()`.
+**1. Display link NRE:** the engine 3.8.4's `Game()` constructor starts the display link before `_platform` is assigned → `NullReferenceException` in `Game.get_IsActive()`. Fix: defer game creation via `NSRunLoop.Main.InvokeOnMainThread()`.
 
 **2. Non-blocking `Game.Run()`:** On iOS, `Run()` starts the display link and returns immediately (unlike Desktop where it blocks until exit). The game instance must be stored as a class field to prevent GC collection.
 
@@ -129,7 +129,7 @@ public Action? PlatformTargetFpsChanged { get; set; }
 
 ### iOS: CADisplayLink Reflection
 
-MonoGame 3.8.4 uses the deprecated `CADisplayLink.FrameInterval` API which caps at 60Hz on ProMotion displays. The fix is reflection to patch MonoGame's own display link with `PreferredFrameRateRange`:
+the engine 3.8.4 uses the deprecated `CADisplayLink.FrameInterval` API which caps at 60Hz on ProMotion displays. The fix is reflection to patch the engine's own display link with `PreferredFrameRateRange`:
 
 ```csharp
 private static void SetDisplayLinkFrameRate(Game game, int targetFps)
@@ -138,7 +138,7 @@ private static void SetDisplayLinkFrameRate(Game game, int targetFps)
     {
         BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance;
 
-        // MonoGame 3.8.4: Game.Platform is an internal field
+        // the engine 3.8.4: Game.Platform is an internal field
         FieldInfo? platformField = typeof(Game).GetField("Platform", flags);
         object? platform = platformField?.GetValue(game);
         if (platform == null) return;
@@ -156,20 +156,20 @@ private static void SetDisplayLinkFrameRate(Game game, int targetFps)
     }
     catch
     {
-        // Reflection failed — MonoGame internals may have changed.
+        // Reflection failed — the engine internals may have changed.
     }
 }
 ```
 
 **Required setup:**
 - **Info.plist:** Add `<key>CADisableMinimumFrameDurationOnPhone</key><true/>` (required for iPhone ProMotion; iPad works without it)
-- **iOS .csproj:** Add `<TrimmerRootAssembly Include="MonoGame.Framework" />` to preserve MonoGame fields from the IL trimmer
+- **iOS .csproj:** Add `<TrimmerRootAssembly Include="the game framework" />` to preserve the engine fields from the IL trimmer
 - **`CAFrameRateRange`** in .NET iOS has no 3-argument constructor — use object initializer syntax
-- **MonoGame 3.8.4 field names:** `Game.Platform` (not `Game._platform`), `iOSGamePlatform._displayLink`
+- **the engine 3.8.4 field names:** `Game.Platform` (not `Game._platform`), `iOSGamePlatform._displayLink`
 
 ### Desktop: Sleep-Based Limiting
 
-On desktop, `SynchronizeWithVerticalRetrace = false` with `IsFixedTimeStep = true` uses sleep-based frame limiting. MonoGame's game loop sleeps until the next target tick. No platform-specific hooks needed — `TargetElapsedTime` alone controls the rate.
+On desktop, `SynchronizeWithVerticalRetrace = false` with `IsFixedTimeStep = true` uses sleep-based frame limiting. The engine's game loop sleeps until the next target tick. No platform-specific hooks needed — `TargetElapsedTime` alone controls the rate.
 
 ---
 

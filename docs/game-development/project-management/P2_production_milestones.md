@@ -1,6 +1,6 @@
 # 03 — Production Milestones
 
-A milestone-based production guide for solo and small-team 2D game development using MonoGame + Arch ECS. Each milestone has a clear definition of done, actionable checklists, time estimates, and red flags to watch for.
+A milestone-based production guide for solo and small-team 2D game development using Arch ECS. Each milestone has a clear definition of done, actionable checklists, time estimates, and red flags to watch for.
 
 ---
 
@@ -54,7 +54,7 @@ Prototype → Vertical Slice → Alpha → Beta → Release Candidate → Gold
 
 - The core mechanic works and feels good
 - The game is worth building (you'd play this)
-- The technical approach is viable with MonoGame + Arch ECS
+- The technical approach is viable with Arch ECS
 - The scope is achievable for your team size and timeline
 
 ### What You Are NOT Building
@@ -89,7 +89,7 @@ At this stage your Arch ECS setup should be minimal:
 - A few systems (Movement, Rendering, Input, basic Collision)
 - No concern for architecture purity — this is throwaway code
 
-See [Game Loop fundamentals](../../monogame-arch/guides/G15_game_loop.md) for structuring your update/draw cycle, but don't over-engineer it yet.
+See [Game Loop fundamentals](../../game-entity-component-system/guides/G15_game_loop.md) for structuring your update/draw cycle, but don't over-engineer it yet.
 
 ### 🚩 Red Flags
 
@@ -161,7 +161,7 @@ This is your most important data point: **if one slice took X weeks, and you hav
 - **Playtesters don't understand what to do.** Your onboarding/tutorialization needs work before you build more content.
 - **You keep saying "I'll polish that later."** This IS the polish milestone. If you can't polish one slice, you can't polish thirty.
 - **The art style keeps changing.** Lock it down. Iteration is fine; indecision is not.
-- **Frame rate is already struggling.** Performance problems compound with content. Address now. See [Profiling & Optimization](../../monogame-arch/guides/G33_profiling_optimization.md).
+- **Frame rate is already struggling.** Performance problems compound with content. Address now. See [Profiling & Optimization](../../game-entity-component-system/guides/G33_profiling_optimization.md).
 
 ---
 
@@ -182,7 +182,7 @@ A playtester can start the game, play through every level/area (even with placeh
 - [ ] World/query patterns established and consistent across systems
 - [ ] No major architectural refactors remaining
 
-See [ECS patterns and architecture guidance](../../monogame-arch/guides/G15_game_loop.md) for ensuring your Arch ECS setup is solid.
+See [ECS patterns and architecture guidance](../../game-entity-component-system/guides/G15_game_loop.md) for ensuring your Arch ECS setup is solid.
 
 **Scene & Flow**
 - [ ] All scene types implemented and transitionable
@@ -190,7 +190,7 @@ See [ECS patterns and architecture guidance](../../monogame-arch/guides/G15_game
 - [ ] Scene transitions smooth (fade, wipe, or cut — whatever your style)
 - [ ] Level select or progression system functional
 
-See [Scene Management](../../monogame-arch/guides/G38_scene_management.md) for scene lifecycle patterns.
+See [Scene Management](../../game-entity-component-system/guides/G38_scene_management.md) for scene lifecycle patterns.
 
 **Gameplay Systems**
 - [ ] Core gameplay loop complete and tunable
@@ -201,7 +201,7 @@ See [Scene Management](../../monogame-arch/guides/G38_scene_management.md) for s
 - [ ] Collision and physics systems finalized
 - [ ] AI/behavior systems working for all entity types
 
-See [Game Loop](../../monogame-arch/guides/G15_game_loop.md) for loop structure and timing.
+See [Game Loop](../../game-entity-component-system/guides/G15_game_loop.md) for loop structure and timing.
 
 **Input**
 - [ ] Keyboard + mouse support complete
@@ -210,7 +210,7 @@ See [Game Loop](../../monogame-arch/guides/G15_game_loop.md) for loop structure 
 - [ ] Input rebinding functional (if planned)
 - [ ] All input edge cases handled (disconnect, multi-device)
 
-See [Input Handling](../../monogame-arch/guides/G7_input_handling.md) for input architecture patterns.
+See [Input Handling](../../game-entity-component-system/guides/G7_input_handling.md) for input architecture patterns.
 
 **Persistence**
 - [ ] Save system functional — game state serializes and deserializes
@@ -294,7 +294,7 @@ This is the hardest rule in game development. You will want to add one more thin
 - [ ] GPU draw calls and batch counts within budget
 - [ ] Profiled all heavy scenes — no performance cliffs
 
-See [Profiling & Optimization](../../monogame-arch/guides/G33_profiling_optimization.md) for detailed performance guidance.
+See [Profiling & Optimization](../../game-entity-component-system/guides/G33_profiling_optimization.md) for detailed performance guidance.
 
 **Accessibility**
 - [ ] Remappable controls
@@ -305,7 +305,7 @@ See [Profiling & Optimization](../../monogame-arch/guides/G33_profiling_optimiza
 - [ ] Photosensitivity review (flashing lights, strobes)
 - [ ] Subtitles for any voiced content
 
-See [Accessibility](../../monogame-arch/guides/G35_accessibility.md) for a comprehensive accessibility checklist.
+See [Accessibility](../../game-entity-component-system/guides/G35_accessibility.md) for a comprehensive accessibility checklist.
 
 **Localization**
 - [ ] All player-facing strings externalized (no hardcoded text)
@@ -314,7 +314,7 @@ See [Accessibility](../../monogame-arch/guides/G35_accessibility.md) for a compr
 - [ ] UI layout accommodates longer translated strings
 - [ ] Localization pipeline tested with at least one additional language (if shipping localized)
 
-See [Localization](../../monogame-arch/guides/G34_localization.md) for localization architecture and workflow.
+See [Localization](../../game-entity-component-system/guides/G34_localization.md) for localization architecture and workflow.
 
 **Bug Fixing**
 - [ ] All known crash bugs fixed
@@ -366,7 +366,7 @@ The game passes all platform requirements, runs correctly on all target platform
 - [ ] Console builds pass certification requirements (if applicable)
 - [ ] All platform-specific features work (Steam overlay, achievements, etc.)
 
-See [Deployment & Platform Builds](../../monogame-arch/guides/G32_deployment_platform_builds.md) for build pipeline and platform-specific guidance.
+See [Deployment & Platform Builds](../../game-entity-component-system/guides/G32_deployment_platform_builds.md) for build pipeline and platform-specific guidance.
 
 **Store Submission**
 - [ ] Store page created with final screenshots and description
@@ -379,7 +379,7 @@ See [Deployment & Platform Builds](../../monogame-arch/guides/G32_deployment_pla
 - [ ] Pricing set
 - [ ] Launch date confirmed
 
-See [Publishing & Distribution](../../monogame-arch/guides/G36_publishing_distribution.md) for store requirements and submission guidance.
+See [Publishing & Distribution](../../game-entity-component-system/guides/G36_publishing_distribution.md) for store requirements and submission guidance.
 
 **Final QA**
 - [ ] Full playthrough with fresh save — no shortcuts, no debug tools
@@ -589,4 +589,4 @@ Cutting features hurts. You imagined this game with those features. Here's what 
 
 ---
 
-*Cross-references: [Game Loop](../../monogame-arch/guides/G15_game_loop.md) · [Scene Management](../../monogame-arch/guides/G38_scene_management.md) · [Input Handling](../../monogame-arch/guides/G7_input_handling.md) · [Profiling & Optimization](../../monogame-arch/guides/G33_profiling_optimization.md) · [Accessibility](../../monogame-arch/guides/G35_accessibility.md) · [Localization](../../monogame-arch/guides/G34_localization.md) · [Deployment & Platform Builds](../../monogame-arch/guides/G32_deployment_platform_builds.md) · [Publishing & Distribution](../../monogame-arch/guides/G36_publishing_distribution.md)*
+*Cross-references: [Game Loop](../../game-entity-component-system/guides/G15_game_loop.md) · [Scene Management](../../game-entity-component-system/guides/G38_scene_management.md) · [Input Handling](../../game-entity-component-system/guides/G7_input_handling.md) · [Profiling & Optimization](../../game-entity-component-system/guides/G33_profiling_optimization.md) · [Accessibility](../../game-entity-component-system/guides/G35_accessibility.md) · [Localization](../../game-entity-component-system/guides/G34_localization.md) · [Deployment & Platform Builds](../../game-entity-component-system/guides/G32_deployment_platform_builds.md) · [Publishing & Distribution](../../game-entity-component-system/guides/G36_publishing_distribution.md)*

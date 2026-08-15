@@ -420,7 +420,7 @@ Only render entity dots on the minimap for entities in currently visible tiles.
 
 ## Related Engine Guides
 
-- **MonoGame:** [G54 Fog of War](../../monogame-arch/guides/G54_fog_of_war.md) — Full ECS implementation with render targets, blur shaders, and entity ghost rendering
-- **MonoGame:** [G39 2D Lighting](../../monogame-arch/guides/G39_2d_lighting.md) — Complementary lighting systems (deferred, normal maps) that interact with visibility
-- **MonoGame:** [G40 Pathfinding](../../monogame-arch/guides/G40_pathfinding.md) — AI pathfinding that respects fog (last-known position, search behavior)
-- **MonoGame:** [G58 Minimap](../../monogame-arch/guides/G58_minimap.md) — Minimap rendering with fog overlay integration
+- **This engine:** [G54 Fog of War](../../game-entity-component-system/guides/G54_fog_of_war.md) — Full ECS implementation with render targets, blur shaders, and entity ghost rendering
+- **This engine:** [G39 2D Lighting](../../game-entity-component-system/guides/G39_2d_lighting.md) — Complementary lighting systems (deferred, normal maps) that interact with visibility
+- **This engine:** [G40 Pathfinding](../../game-entity-component-system/guides/G40_pathfinding.md) — AI pathfinding that respects fog (last-known position, search behavior)
+- **This engine:** [G58 Minimap](../../game-entity-component-system/guides/G58_minimap.md) — Minimap rendering with fog overlay integration

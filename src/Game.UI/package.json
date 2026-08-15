@@ -21,6 +21,12 @@
   },
   "homepage": "https://github.com/josejaviercanon/bonoboengine.blazorwasm#readme",
   "dependencies": {
+    "@pixi/sound": "^6.0.1",
+    "@pixi/tilemap": "^5.0.2",
+    "@pixi/ui": "^2.3.2",
+    "@spd789562/particle-emitter": "^1.0.2",
+    "pixi-filters": "^6.1.5",
+    "pixi-viewport": "^6.0.3",
     "pixi.js": "^8.19.0"
   },
   "devDependencies": {

@@ -56,10 +56,10 @@ The curse of knowledge isn't a deficiency. It's a structural reality. You cannot
 
 Things you will never find on your own:
 
-- **Onboarding failures** — Players don't read your tutorial text. They button-mash past it. They try jumping before you've told them how. (See [G61 — Tutorial & Onboarding](../../monogame-arch/guides/G61_tutorial_onboarding.md))
+- **Onboarding failures** — Players don't read your tutorial text. They button-mash past it. They try jumping before you've told them how. (See [G61 — Tutorial & Onboarding](../../game-entity-component-system/guides/G61_tutorial_onboarding.md))
 - **Invisible affordances** — That ledge you meant to be climbable? Nobody tried. It doesn't *look* climbable to someone who doesn't know.
 - **Fun you assumed** — The core loop that's "obviously" fun might actually be tedious. Or the thing you thought was a throwaway feature might be the most enjoyable part.
-- **Accessibility gaps** — Color-coded mechanics, audio-dependent cues, small text, fast timers. You won't notice what you can see/hear/react to. (See [G35 — Accessibility](../../monogame-arch/guides/G35_accessibility.md))
+- **Accessibility gaps** — Color-coded mechanics, audio-dependent cues, small text, fast timers. You won't notice what you can see/hear/react to. (See [G35 — Accessibility](../../game-entity-component-system/guides/G35_accessibility.md))
 
 ---
 
@@ -151,7 +151,7 @@ Ask yourself:
 - Is there at least one moment of agency (a choice, an action, a reaction)?
 - Would a player on itch.io still be playing, or would they have closed the tab?
 
-If the first 30 seconds are a logo screen, a title crawl, and a text box — you have a problem. Players in 2D browser games and indie titles decide *fast*. (See [G30 — Game Feel Tooling](../../monogame-arch/guides/G30_game_feel_tooling.md) for making those first moments impactful.)
+If the first 30 seconds are a logo screen, a title crawl, and a text box — you have a problem. Players in 2D browser games and indie titles decide *fast*. (See [G30 — Game Feel Tooling](../../game-entity-component-system/guides/G30_game_feel_tooling.md) for making those first moments impactful.)
 
 ### The First 5 Minutes Test
 
@@ -159,14 +159,14 @@ Play the first 5 minutes as if you've never seen the game. Try to:
 
 - **Ignore your own knowledge** — Pretend you don't know the controls. Read every prompt as if it's new. Does the game teach you, or does it assume you know?
 - **Note every assumption** — "The player will know to press down to enter the door." Will they? Really?
-- **Check the learning curve** — Are the first 5 minutes all tutorials and no play? Or all play and no teaching? (See [G61 — Tutorial & Onboarding](../../monogame-arch/guides/G61_tutorial_onboarding.md))
+- **Check the learning curve** — Are the first 5 minutes all tutorials and no play? Or all play and no teaching? (See [G61 — Tutorial & Onboarding](../../game-entity-component-system/guides/G61_tutorial_onboarding.md))
 
 ### System Isolation Testing
 
 Don't just play the game start-to-finish every time. Test specific systems in isolation:
 
 - **Combat only** — Does a single encounter feel good? Is feedback clear? Do hits feel impactful?
-- **Movement only** — Run, jump, dash through an empty level. Does it feel *good* to move? (See [G30 — Game Feel Tooling](../../monogame-arch/guides/G30_game_feel_tooling.md))
+- **Movement only** — Run, jump, dash through an empty level. Does it feel *good* to move? (See [G30 — Game Feel Tooling](../../game-entity-component-system/guides/G30_game_feel_tooling.md))
 - **Menu/UI flow** — Navigate every menu. Open inventory, close it, open map, close it. Is it snappy? Can you get lost?
 - **Economy/progression** — Skip to mid-game. Are numbers making sense? Is progression rewarding or grindy?
 - **Edge cases** — What happens if you dash into a wall? Jump off the map? Open the menu during a cutscene? Pause during a boss attack?
@@ -446,7 +446,7 @@ Don't skip the hypothesis step. "Players didn't find the key, so I'll add a gian
 
 Not all feedback demands action. Ignore (or deprioritize) when:
 
-- **It conflicts with your core vision.** If your game is intentionally hard and someone says "make it easier" — that's not your player. (But consider offering difficulty options — see [G35 — Accessibility](../../monogame-arch/guides/G35_accessibility.md).)
+- **It conflicts with your core vision.** If your game is intentionally hard and someone says "make it easier" — that's not your player. (But consider offering difficulty options — see [G35 — Accessibility](../../game-entity-component-system/guides/G35_accessibility.md).)
 - **It's a preference, not a problem.** "I prefer pixel art to vector art" isn't actionable feedback.
 - **It's from a non-representative tester.** Your FPS-only friend struggling with your turn-based RPG is expected.
 - **It would require a fundamental redesign.** Late-stage "you should make this an open world" feedback isn't useful. File it for the sequel.
@@ -554,7 +554,7 @@ Your hardcore platformer fan friends will give you very different feedback than 
 
 ### ❌ Not Testing on Target Hardware
 
-Your game runs great on your dev machine with an RTX 4080 and 32GB RAM. Does it run on a 5-year-old laptop? A Steam Deck? A phone? Test on the minimum spec you're targeting. Performance is game feel. (See [G30 — Game Feel Tooling](../../monogame-arch/guides/G30_game_feel_tooling.md))
+Your game runs great on your dev machine with an RTX 4080 and 32GB RAM. Does it run on a 5-year-old laptop? A Steam Deck? A phone? Test on the minimum spec you're targeting. Performance is game feel. (See [G30 — Game Feel Tooling](../../game-entity-component-system/guides/G30_game_feel_tooling.md))
 
 ### ❌ Asking "Is It Fun?"
 
@@ -875,9 +875,9 @@ After the Session:
 
 ## Related Docs
 
-- [G30 — Game Feel Tooling](../../monogame-arch/guides/G30_game_feel_tooling.md) — Make your controls feel good *before* testing, so feedback is about design, not jank.
-- [G61 — Tutorial & Onboarding](../../monogame-arch/guides/G61_tutorial_onboarding.md) — Structure your onboarding so testers can actually play without verbal instructions.
-- [G35 — Accessibility](../../monogame-arch/guides/G35_accessibility.md) — Accessibility testing should be part of every playtest round.
+- [G30 — Game Feel Tooling](../../game-entity-component-system/guides/G30_game_feel_tooling.md) — Make your controls feel good *before* testing, so feedback is about design, not jank.
+- [G61 — Tutorial & Onboarding](../../game-entity-component-system/guides/G61_tutorial_onboarding.md) — Structure your onboarding so testers can actually play without verbal instructions.
+- [G35 — Accessibility](../../game-entity-component-system/guides/G35_accessibility.md) — Accessibility testing should be part of every playtest round.
 
 ---
 

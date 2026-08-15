@@ -6,9 +6,9 @@ hide:
 
 # Universal 2D Engine Toolkit
 
-**Build games, not frameworks.** A complete knowledge base for building 2D games with MonoGame + Arch ECS + composed libraries in C#.
+**Build games, not frameworks.** A complete knowledge base for building 2D games with Arch ECS + PixiJS + composed libraries in C# — the Bonobo engine stack.
 
-> **Related:** `docs/game-development/` is the curated, engine-agnostic subset of this toolkit (theory, game design, project management, AI workflow). Use it when guidance does not depend on the MonoGame stack; use this tree when you need the full MonoGame-flavored stack, reference docs, or working examples.
+> **Related:** `docs/game-development/` is the curated, engine-agnostic subset of this toolkit (theory, game design, project management, AI workflow). Use it when guidance should stay engine-agnostic; use this tree when you need the Bonobo-aligned stack, reference docs, or working examples.
 
 <div class="grid cards" markdown>
 
@@ -51,16 +51,13 @@ hide:
 ## The Stack
 
 ```
-MonoGame.Framework.DesktopGL     — Rendering, audio, input, content pipeline
-Arch ECS (v2.1.0)               — Entity Component System for all game objects
-MonoGame.Extended (v5.3.1)       — Camera, Tiled maps, collision shapes, math
-Gum.MonoGame                     — UI framework with visual editor
-Apos.Input (v2.5.0)             — Unified input handling
-FontStashSharp.MonoGame (v1.3.7) — Runtime font rendering
-MonoGame.Aseprite (v6.3.1)      — Sprite animation from .aseprite files
-Aether.Physics2D (v2.2.0)       — Box2D-style physics
-BrainAI                          — FSM, Behavior Trees, GOAP, pathfinding
-ImGui.NET                        — Debug UI and tooling
+.NET 10 (C# 14)                  — Simulation runtime + hosts
+Arch ECS (vendored source)       — Entity Component System for all game objects
+PixiJS v8 (WebGL/WebGPU)         — 2D rendering, sprites, filters, text
+Blazor + Tailwind CSS v4         — UI components, HUD, menus
+System.Text.Json (source gen)    — AOT-safe serialization / delta frames
+Vite + TypeScript                 — Asset pipeline → wwwroot/dist
+Game.Web / Game.Maui             — Blazor Web App + MAUI Hybrid hosts
 ```
 
 ## How to Navigate
@@ -90,7 +87,7 @@ This documentation follows the [Diátaxis framework](https://diataxis.fr/):
 
 This entire knowledge base — 93 docs, 63 guides, 30+ interactive demos, and working code examples — is free and will stay free. No paywalls, no gated content, no email signup walls.
 
-If it saved you time, helped you learn something, or kept you from banging your head against a MonoGame problem for another hour, consider dropping a small tip:
+If it saved you time, helped you learn something, or kept you from banging your head against an engine problem for another hour, consider dropping a small tip:
 
 [:material-heart: Support on GitHub Sponsors](https://github.com/sponsors/sbenson2){ .md-button .md-button--primary }
 

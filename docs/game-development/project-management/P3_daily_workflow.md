@@ -359,7 +359,7 @@ git tag -a v0.2-combat -m "Melee combat working"
 git tag -a demo-1 -m "First playable demo"
 ```
 
-> 📘 For a deeper dive on version control setup and best practices, see [G44 — Version Control](../../monogame-arch/guides/G44_version_control.md).
+> 📘 For a deeper dive on version control setup and best practices, see [G44 — Version Control](../../game-entity-component-system/guides/G44_version_control.md).
 
 ---
 
@@ -402,7 +402,7 @@ Every few days, **don't play for 24 hours**, then sit down and play from the sta
 
 This is the closest a solo dev gets to outside playtesting. Do it at least weekly.
 
-> 📘 For tools and techniques to measure and improve game feel, see [G30 — Game Feel & Tooling](../../monogame-arch/guides/G30_game_feel_tooling.md).
+> 📘 For tools and techniques to measure and improve game feel, see [G30 — Game Feel & Tooling](../../game-entity-component-system/guides/G30_game_feel_tooling.md).
 
 ---
 
@@ -529,9 +529,9 @@ AI tools produce dramatically better output when given project context upfront. 
 
 **RULES.md** — hard constraints AI must follow:
 ```markdown
-- Target: .NET 8, C# 12, MonoGame 3.8.2
-- Never use deprecated MonoGame.Extended APIs
-- All physics through Aether.Physics2D fixture-level properties
+- Target: .NET 8, C# 12, the engine 3.8.2
+- Never use deprecated APIs
+- All physics through a 2D physics library fixture-level properties
 - Integer health values only (no floating point HP)
 - Maximum 16 active entities in object pool per type
 ```
@@ -1028,7 +1028,7 @@ Use ImGui (or your engine's equivalent) to build real-time debug panels:
 
 Toggle these with a key (F1–F4 are common). Keep them available in every build, not just debug builds.
 
-> 📘 For detailed debugging setup and ImGui integration, see [G16 — Debugging](../../monogame-arch/guides/G16_debugging.md).
+> 📘 For detailed debugging setup and ImGui integration, see [G16 — Debugging](../../game-entity-component-system/guides/G16_debugging.md).
 
 ### Logging Strategy
 
@@ -1102,8 +1102,8 @@ Red flags:
 - Load times getting longer as you add content
 - GC pauses (if using a managed language)
 
-> 📘 For profiling tools and optimization techniques, see [G33 — Profiling & Optimization](../../monogame-arch/guides/G33_profiling_optimization.md).
-> 📘 For testing strategies and automation, see [G17 — Testing](../../monogame-arch/guides/G17_testing.md).
+> 📘 For profiling tools and optimization techniques, see [G33 — Profiling & Optimization](../../game-entity-component-system/guides/G33_profiling_optimization.md).
+> 📘 For testing strategies and automation, see [G17 — Testing](../../game-entity-component-system/guides/G17_testing.md).
 
 ---
 
@@ -1261,10 +1261,10 @@ Assumes a small-scope 2D game (platformer, roguelike, or similar). Multiply by 2
 - [P4 Playtesting](./P4_playtesting.md) — structured playtesting with external testers
 - [P8 Common Pitfalls](./P8_pitfalls.md) — the 20 most common solo dev mistakes
 - [P11 Polish Checklist](./P11_polish_checklist.md) — comprehensive polish and pre-launch checklist
-- [G16 Debugging](../../monogame-arch/guides/G16_debugging.md) — ImGui integration, debug overlays, logging
-- [G17 Testing](../../monogame-arch/guides/G17_testing.md) — unit testing, integration testing, BenchmarkDotNet
-- [G33 Profiling & Optimization](../../monogame-arch/guides/G33_profiling_optimization.md) — performance profiling workflow
-- [G44 Version Control](../../monogame-arch/guides/G44_version_control.md) — Git strategies for game projects
+- [G16 Debugging](../../game-entity-component-system/guides/G16_debugging.md) — ImGui integration, debug overlays, logging
+- [G17 Testing](../../game-entity-component-system/guides/G17_testing.md) — unit testing, integration testing, BenchmarkDotNet
+- [G33 Profiling & Optimization](../../game-entity-component-system/guides/G33_profiling_optimization.md) — performance profiling workflow
+- [G44 Version Control](../../game-entity-component-system/guides/G44_version_control.md) — Git strategies for game projects
 
 ---
 

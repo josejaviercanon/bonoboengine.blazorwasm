@@ -7,7 +7,7 @@
 
 ## Overview
 
-Water simulation in 2D games uses a **spring-based column model** — a row of vertical springs whose heights ripple in response to disturbances. This guide covers the full pipeline: spring physics, rendering, splash effects, buoyancy, shaders, tile-based water, currents, underwater mechanics, and hazard variants (lava/acid). All code targets **MonoGame.Framework.DesktopGL** with **Arch ECS v2.1.0**.
+Water simulation in 2D games uses a **spring-based column model** — a row of vertical springs whose heights ripple in response to disturbances. This guide covers the full pipeline: spring physics, rendering, splash effects, buoyancy, shaders, tile-based water, currents, underwater mechanics, and hazard variants (lava/acid). All code targets **the game framework** with **Arch ECS v2.1.0**.
 
 ---
 

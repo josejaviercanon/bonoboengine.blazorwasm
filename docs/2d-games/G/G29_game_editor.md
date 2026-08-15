@@ -1,9 +1,9 @@
 # G29 — Game Editor
 > **Category:** Guide · **Related:** [G16 Debugging](./G16_debugging.md) · [G30 Game Feel Tooling](./G30_game_feel_tooling.md) · [E1 Architecture Overview](../E/E1_architecture_overview.md)
 
-# Replicating Godot's 2D editor in MonoGame/C#
+# Replicating Godot's 2D editor in C#
 
-**ImGui.NET with docking is the proven path to building a Godot-class 2D editor on MonoGame + Arch ECS, requiring roughly 10–12 weeks for a minimum viable editor and 20–24 weeks for a productive one.** Godot's editor comprises approximately 15 major subsystems — from dockable panels and a reflection-driven inspector to a full tilemap editor and animation timeline — most of which have viable C# implementation strategies using existing libraries. The Murder Engine (built on FNA + ImGui + ECS) demonstrates this approach works in production. This document catalogs every significant Godot 2D editor feature and maps it to a concrete MonoGame/C# implementation path with complexity estimates.
+**ImGui.NET with docking is the proven path to building a Godot-class 2D editor on Arch ECS, requiring roughly 10–12 weeks for a minimum viable editor and 20–24 weeks for a productive one.** Godot's editor comprises approximately 15 major subsystems — from dockable panels and a reflection-driven inspector to a full tilemap editor and animation timeline — most of which have viable C# implementation strategies using existing libraries. The Murder Engine (built on FNA + ImGui + ECS) demonstrates this approach works in production. This document catalogs every significant Godot 2D editor feature and maps it to a concrete C# implementation path with complexity estimates.
 
 ---
 
@@ -58,13 +58,13 @@ The `EditorPlugin` class (requiring the `@tool` annotation) provides an extensiv
 
 ---
 
-## Part 2: The MonoGame/C# implementation roadmap
+## Part 2: The C# implementation roadmap
 
 ### ImGui.NET with docking is the clear winner for editor UI
 
 After evaluating five UI framework options, **ImGui.NET with the docking branch** emerges as the only practical choice for a solo developer. The docking branch provides drag-and-dock windows, tab groups, split nodes, floating windows, `DockSpace`/`DockBuilder` APIs for programmatic layout, multi-viewport support (dragging windows to separate OS windows), and automatic layout persistence via `imgui.ini`. ImGui.NET wraps all of this fully.
 
-The alternatives each have deal-breaking limitations. **Avalonia UI** offers professional native-desktop feel and the excellent Dock library by wieslawsoltes, but MonoGame integration is community-driven and immature — frame capture via `WriteableBitmap` adds latency, input forwarding between frameworks is complex, and the learning curve (XAML + MVVM + Avalonia internals) is steep. Templates exist (vilten/Avalonia-Monogame-Dock-Template) but are described as "first draft." **Myra** provides useful widgets (PropertyGrid, TreeView, FileDialog) but lacks IDE-style docking entirely — only SplitPane and TabControl. **Gum** excels at game UI layout but "docking" means child-element positioning (like WPF DockPanel), not panel management. WinForms/WPF options are Windows-only.
+The alternatives each have deal-breaking limitations. **Avalonia UI** offers professional native-desktop feel and the excellent Dock library by wieslawsoltes, but the engine integration is community-driven and immature — frame capture via `WriteableBitmap` adds latency, input forwarding between frameworks is complex, and the learning curve (XAML + MVVM + Avalonia internals) is steep. Templates exist (vilten/Avalonia-dock-template) but are described as "first draft." **Myra** provides useful widgets (PropertyGrid, TreeView, FileDialog) but lacks IDE-style docking entirely — only SplitPane and TabControl. **Gum** excels at game UI layout but "docking" means child-element positioning (like WPF DockPanel), not panel management. WinForms/WPF options are Windows-only.
 
 The **Murder Engine** (github.com/isadorasophia/murder, ~1.5K stars) proves this approach at production scale: a pixel-art ECS game engine on FNA with ImGui for its full editor — map editor, entity composition, animation editing, dialogue system, hot reload. Editor code lives in a separate C# project that references the game, cleanly separable from release builds. This is the single most relevant reference implementation.
 
@@ -100,7 +100,7 @@ Custom attributes control display: `[Range(min, max)]`, `[Tooltip("...")]`, `[He
 
 ### 2D gizmos are simpler than they appear
 
-2D transform gizmos avoid the ray-plane intersection complexity of 3D. The **move gizmo** draws X/Y axis arrows and a center square at the entity position, scaled inversely with camera zoom (`gizmoScale = baseSize / camera.Zoom`) for constant screen size. Hit testing checks mouse proximity to arrow bounding boxes. On drag, compute world-space delta and apply to `LocalTransform`, with optional grid snapping via `Math.Round(value / gridSize) * gridSize`. **Rotation** draws a circle; compute angle delta between consecutive mouse positions relative to the entity center. **Scale** draws corner handles; compute scale factor from distance ratios. Multi-selection transforms relative to a computed pivot point (center of selection bounds). MonoGame.Extended's `OrthographicCamera` provides the essential `ScreenToWorld`/`WorldToScreen` conversions. Estimated effort: **2–3 weeks** for move/rotate/scale, **+1 week** for multi-selection.
+2D transform gizmos avoid the ray-plane intersection complexity of 3D. The **move gizmo** draws X/Y axis arrows and a center square at the entity position, scaled inversely with camera zoom (`gizmoScale = baseSize / camera.Zoom`) for constant screen size. Hit testing checks mouse proximity to arrow bounding boxes. On drag, compute world-space delta and apply to `LocalTransform`, with optional grid snapping via `Math.Round(value / gridSize) * gridSize`. **Rotation** draws a circle; compute angle delta between consecutive mouse positions relative to the entity center. **Scale** draws corner handles; compute scale factor from distance ratios. Multi-selection transforms relative to a computed pivot point (center of selection bounds). PixiJS / custom C# utilities `OrthographicCamera` provides the essential `ScreenToWorld`/`WorldToScreen` conversions. Estimated effort: **2–3 weeks** for move/rotate/scale, **+1 week** for multi-selection.
 
 ### Tilemap editor: the highest-value tool
 
@@ -110,7 +110,7 @@ For 2D game development, a tilemap editor arguably provides **more value per dev
 
 **Painting tools**: Brush (single tile or brush-size area), Line (Bresenham's algorithm between two points), Rectangle (fill region), Bucket Fill (4-connected flood fill), and Eraser. After each paint operation, recompute auto-tile bitmasks for affected tiles and their neighbors.
 
-**Editor UI**: An ImGui panel showing the tileset as a grid of selectable tiles (rendered as textured quads), layer management with visibility/lock toggles, and tool selection buttons. The tilemap data structure is a simple 2D array per layer, stored as tile indices. MonoGame.Extended's `TiledMapRenderer` handles loading Tiled (.tmx) maps for import but provides no editing API — custom data structures are required. Estimated effort: **3–4 weeks** for painting + 4-bit auto-tiling + layers.
+**Editor UI**: An ImGui panel showing the tileset as a grid of selectable tiles (rendered as textured quads), layer management with visibility/lock toggles, and tool selection buttons. The tilemap data structure is a simple 2D array per layer, stored as tile indices. PixiJS / custom C# utilities `TiledMapRenderer` handles loading Tiled (.tmx) maps for import but provides no editing API — custom data structures are required. Estimated effort: **3–4 weeks** for painting + 4-bit auto-tiling + layers.
 
 ### Animation timeline demands the most development time
 
@@ -118,7 +118,7 @@ The animation system is the **highest-complexity feature** in Godot's editor. A 
 
 ### Asset pipeline: bypass MGCB in the editor
 
-MonoGame's Content Pipeline (MGCB) requires pre-compilation to .xnb format with no hot-reload support — unsuitable for editor iteration speed. The recommended approach uses **raw file loading in editor mode**: `Texture2D.FromFile(GraphicsDevice, path)` for images, `SoundEffect.FromStream()` for audio, and `System.Text.Json` for data files. Add `FileSystemWatcher`-based change detection (the **MonoGame.Reload** NuGet package wraps this) and reload assets on modification. Store asset references as relative paths resolved at load time. Reserve MGCB for final game builds where platform-specific compression and optimization matter. Estimated effort: **1–2 weeks**.
+the engine's Content Pipeline (MGCB) requires pre-compilation to .xnb format with no hot-reload support — unsuitable for editor iteration speed. The recommended approach uses **raw file loading in editor mode**: `Texture2D.FromFile(GraphicsDevice, path)` for images, `SoundEffect.FromStream()` for audio, and `System.Text.Json` for data files. Add `FileSystemWatcher`-based change detection (the **the hot-reload tooling** NuGet package wraps this) and reload assets on modification. Store asset references as relative paths resolved at load time. Reserve MGCB for final game builds where platform-specific compression and optimization matter. Estimated effort: **1–2 weeks**.
 
 ### Scene serialization with JSON and GUIDs
 
@@ -128,9 +128,9 @@ JSON is the pragmatic format choice — human-readable, diff-friendly for versio
 
 ## The feature-to-implementation mapping
 
-Every significant Godot feature maps to a concrete MonoGame/C# strategy. The following table covers the full scope:
+Every significant Godot feature maps to a concrete C# strategy. The following table covers the full scope:
 
-| Godot Feature | MonoGame Implementation | Key Library | Effort | Priority |
+| Godot Feature | the engine Implementation | Key Library | Effort | Priority |
 |---|---|---|---|---|
 | Dockable panel system | ImGui docking branch: `DockSpaceOverViewport()`, `DockBuilder` API | ImGui.NET | 1 week | P0 |
 | Inspector (property editor) | Reflection-based component inspector with custom attributes | ImGui.NET + System.Reflection | 2–3 weeks | P0 |
@@ -142,8 +142,8 @@ Every significant Godot feature maps to a concrete MonoGame/C# strategy. The fol
 | Node hierarchy + transforms | `Parent`/`Children`/`LocalTransform`/`WorldTransform` components, propagation system | Arch.Relationships | 2 weeks | P0 |
 | Scene composition (instancing) | "Prefab" = scene JSON file; instantiate by deserializing and adding to world | Arch.Persistence + System.Text.Json | 2 weeks | P2 |
 | Scene inheritance | Base scene JSON + override JSON merged at load time | Custom | 3 weeks | P3 |
-| 2D viewport (pan/zoom/grid) | `OrthographicCamera` from MonoGame.Extended, custom grid renderer | MonoGame.Extended | 1 week | P0 |
-| Transform gizmos (move/rotate/scale) | Custom gizmo renderer with hit testing, constant screen-size scaling | Custom + MonoGame.Extended | 3–4 weeks | P0 |
+| 2D viewport (pan/zoom/grid) | the camera from PixiJS, custom grid renderer | PixiJS + custom C# utilities | 1 week | P0 |
+| Transform gizmos (move/rotate/scale) | Custom gizmo renderer with hit testing, constant screen-size scaling | Custom + PixiJS + custom C# utilities | 3–4 weeks | P0 |
 | Grid snapping | `Math.Round(value / gridSize) * gridSize` | Built-in | 0.5 weeks | P1 |
 | TileMap editor | Custom tilemap data + ImGui palette + painting tools + bitmask auto-tiling | Custom | 3–4 weeks | P1 |
 | Sprite/texture region editor | ImGui image display with rect selection overlay | ImGui.NET | 1 week | P2 |
@@ -155,13 +155,13 @@ Every significant Godot feature maps to a concrete MonoGame/C# strategy. The fol
 | Light2D system | Custom 2D lighting (shadow map or SDF approach); editor shows light radius | Custom | 4+ weeks | P3 |
 | Navigation2D | NavMesh generation (Clipper library for polygon ops), visual polygon editing | Clipper2 + BrainAI | 3–4 weeks | P2 |
 | Path2D/curve editing | Bezier curve editor with control point handles in viewport | Custom | 2 weeks | P2 |
-| Camera2D (limits/smoothing) | MonoGame.Extended camera + custom limit/smoothing logic; editor visualizes bounds | MonoGame.Extended | 1 week | P1 |
-| Project settings/input mapping | JSON config file + ImGui settings window; input mapping via Apos.Input | Apos.Input + System.Text.Json | 1–2 weeks | P1 |
+| Camera2D (limits/smoothing) | PixiJS camera + custom limit/smoothing logic; editor visualizes bounds | PixiJS + custom C# utilities | 1 week | P1 |
+| Project settings/input mapping | JSON config file + ImGui settings window; input mapping via the input handler | the input handler + System.Text.Json | 1–2 weeks | P1 |
 | Play/stop from editor | Toggle between edit mode (ECS systems paused, gizmos active) and play mode | Custom | 0.5 weeks | P0 |
 | Remote inspection | In-process — editor overlay reads live ECS state directly | ImGui.NET | 0 weeks (built-in) | — |
 | Plugin/addon system | C# interface + assembly loading; expose editor APIs via service locator | System.Reflection + Custom | 4+ weeks | P3 |
 | Undo/redo | Command pattern: `ICommand { Execute(), Undo() }` with stack | Custom | 2 weeks | P1 |
-| Asset hot-reload | `FileSystemWatcher` + `Texture2D.FromFile()` reload on change | MonoGame.Reload | 1–2 weeks | P2 |
+| Asset hot-reload | `FileSystemWatcher` + `Texture2D.FromFile()` reload on change | the hot-reload tooling | 1–2 weeks | P2 |
 | Scene serialization | JSON with GUIDs, asset path references, format versioning | System.Text.Json + Arch.Persistence | 2–3 weeks | P0 |
 
 ---
@@ -196,17 +196,17 @@ The **tilemap editor** and **property inspector** deliver the highest value-per-
 
 ## Conclusion: the 80/20 path forward
 
-Godot's editor encompasses roughly **200 person-years of development** across 15+ major subsystems. Replicating it fully is neither possible nor necessary for a solo developer. The critical insight is that **80% of the productivity value comes from 5 features**: dockable panel layout (ImGui docking, 1 week), property inspector (reflection + ImGui, 2–3 weeks), scene hierarchy (ImGui tree, 1 week), 2D viewport with gizmos (MonoGame.Extended camera + custom gizmos, 3–4 weeks), and scene serialization (JSON + Arch.Persistence, 2–3 weeks). These five features total roughly 10–12 weeks and transform a code-only workflow into a visual one.
+Godot's editor encompasses roughly **200 person-years of development** across 15+ major subsystems. Replicating it fully is neither possible nor necessary for a solo developer. The critical insight is that **80% of the productivity value comes from 5 features**: dockable panel layout (ImGui docking, 1 week), property inspector (reflection + ImGui, 2–3 weeks), scene hierarchy (ImGui tree, 1 week), 2D viewport with gizmos (PixiJS camera + custom gizmos, 3–4 weeks), and scene serialization (JSON + Arch.Persistence, 2–3 weeks). These five features total roughly 10–12 weeks and transform a code-only workflow into a visual one.
 
-The technology stack — **MonoGame + Arch ECS + ImGui.NET (docking branch) + MonoGame.Extended + Arch.Persistence + System.Text.Json** — is proven by Murder Engine and provides every building block needed. Arch.Relationships handles entity hierarchy, Arch.Persistence handles world serialization, MonoGame.Extended provides the 2D camera, and ImGui.NET provides the entire editor UI layer with production-ready docking. The remaining user libraries (Gum for game UI, BrainAI for AI/pathfinding, Apos.Input for input, FontStashSharp for text) stay in the game layer and need no editor-specific integration beyond inspector support.
+The technology stack — **Arch ECS + ImGui.NET (docking branch) + PixiJS + custom C# + Arch.Persistence + System.Text.Json** — is proven by Murder Engine and provides every building block needed. Arch.Relationships handles entity hierarchy, Arch.Persistence handles world serialization, PixiJS + custom C# utilities provides the 2D camera, and ImGui.NET provides the entire editor UI layer with production-ready docking. The remaining user libraries (Gum for game UI, BrainAI for AI/pathfinding, the input handler for input, the font rendering library for text) stay in the game layer and need no editor-specific integration beyond inspector support.
 
 Start with Phase 1. Ship a game using the MVP editor. Add Phase 2 features driven by pain points encountered during actual game development. Defer Phase 3 indefinitely unless a specific feature becomes a clear bottleneck. The goal is making games, not making engines.
 
 ---
 
-## Implementation Notes from MonoGameStudio
+## Implementation Notes from the engine studio
 
-> These notes come from building MonoGameStudio — a 134-file 2D game editor (v0.1–v0.9) using MonoGame + Arch ECS + Hexa.NET.ImGui. The editor was built, the knowledge captured, and the source deleted. See [E8 — MonoGameStudio Post-Mortem](../E/E8_monogamestudio_postmortem.md) for the full story.
+> These notes come from building the engine studio — a 134-file 2D game editor (v0.1–v0.9) using Arch ECS + Hexa.NET.ImGui. The editor was built, the knowledge captured, and the source deleted. See [E8 — the engine studio Post-Mortem](../E/E8_studio_postmortem.md) for the full story.
 
 ### Hexa.NET.ImGui specifics (not ImGui.NET)
 
@@ -232,7 +232,7 @@ Start with Phase 1. Ship a game using the MVP editor. Add Phase 2 features drive
 
 **Signature type**: `entity.GetComponentTypes()` returns `Arch.Core.Signature` — iterate with `foreach`, not array indexing.
 
-**Namespace clashes**: Arch.Core has its own `ComponentRegistry` — use a `using` alias: `using ComponentRegistry = MonoGameStudio.Core.Serialization.ComponentRegistry;`. Similarly, `Arch.Core.World` clashes with any custom `World` namespace — fully qualify `Arch.Core.World` in serialization files.
+**Namespace clashes**: Arch.Core has its own `ComponentRegistry` — use a `using` alias: `using ComponentRegistry = the engine studio.Core.Serialization.ComponentRegistry;`. Similarly, `Arch.Core.World` clashes with any custom `World` namespace — fully qualify `Arch.Core.World` in serialization files.
 
 ### OpenGL Y-flip for RenderTarget2D in ImGui
 
@@ -309,7 +309,7 @@ For user-defined components from game project assemblies, `ExternalComponentLoad
 
 ### macOS native integration
 
-macOS platform integration uses direct Objective-C interop (`objc_msgSend`) via P/Invoke in `ObjCRuntime.cs` — no third-party binding libraries needed. This approach works with MonoGame's SDL2 window handle:
+macOS platform integration uses direct Objective-C interop (`objc_msgSend`) via P/Invoke in `ObjCRuntime.cs` — no third-party binding libraries needed. This approach works with the engine's SDL2 window handle:
 
 - **File dialogs**: `NSOpenPanel`/`NSSavePanel` via `ObjCRuntime` calls — wrapped behind `IFileDialogService` with a `FallbackFileDialogService` for non-macOS
 - **Menu bar**: Native `NSMenu` construction for File/Edit/View/Help with keyboard shortcut equivalents

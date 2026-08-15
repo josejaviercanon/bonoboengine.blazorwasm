@@ -1,5 +1,5 @@
 # E4 — Solo Project Management
-> **Category:** Explanation · **Related:** [E5 AI Workflow](../ai-workflow/E5_ai_workflow.md) · [E9 Solo Dev Playbook](./E9_solo_dev_playbook.md) · [R3 Project Structure](../../monogame-arch/reference/R3_project_structure.md) · [E6 Game Design Fundamentals](../game-design/E6_game_design_fundamentals.md) · [E8 MonoGameStudio Post-Mortem](../../monogame-arch/architecture/E8_monogamestudio_postmortem.md)
+> **Category:** Explanation · **Related:** [E5 AI Workflow](../ai-workflow/E5_ai_workflow.md) · [E9 Solo Dev Playbook](./E9_solo_dev_playbook.md) · [R3 Project Structure](../../game-entity-component-system/reference/R3_project_structure.md) · [E6 Game Design Fundamentals](../game-design/E6_game_design_fundamentals.md) · [E8 the engine studio Post-Mortem](../../game-entity-component-system/architecture/E8_studio_postmortem.md)
 
 ---
 
@@ -711,7 +711,7 @@ Studying Stardew Valley, Hollow Knight, Celeste, Undertale, Vampire Survivors, B
 
 ### Pattern 5: Known Tech Stack
 
-**Stardew Valley was built on C#/XNA transitioning to MonoGame** — the exact tech stack in this toolkit. Balatro used LÖVE (Lua). Vampire Survivors used a custom engine. Celeste used C#/FNA. None used cutting-edge engines or frameworks. They used what they already knew. Learning a new engine AND making a game simultaneously is two projects, not one.
+**Stardew Valley was built on C#/XNA transitioning to the engine** — the exact tech stack in this toolkit. Balatro used LÖVE (Lua). Vampire Survivors used a custom engine. Celeste used C#/FNA. None used cutting-edge engines or frameworks. They used what they already knew. Learning a new engine AND making a game simultaneously is two projects, not one.
 
 ### The Critical Social Milestone
 

@@ -53,7 +53,7 @@ namespace U2DToolkit.Examples.Core;
 /// </remarks>
 public sealed class GameServices
 {
-    /// <summary>The MonoGame graphics device for rendering.</summary>
+    /// <summary>The the engine graphics device for rendering.</summary>
     public GraphicsDevice GraphicsDevice { get; init; } = null!;
 
     /// <summary>

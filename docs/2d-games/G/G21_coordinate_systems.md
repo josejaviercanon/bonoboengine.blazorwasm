@@ -48,9 +48,9 @@ If you're not using a virtual resolution system (rendering directly at display r
 
 ---
 
-## MonoGame's Coordinate System
+## The engine's Coordinate System
 
-MonoGame uses a **top-left origin with Y-axis pointing down**:
+the engine uses a **top-left origin with Y-axis pointing down**:
 
 ```
 (0,0) ─────────────── X+
@@ -140,7 +140,7 @@ Matrix viewMatrix =
     * Matrix.CreateTranslation(viewportCenter.X, viewportCenter.Y, 0f);
 ```
 
-When passed to `SpriteBatch.Begin(transformMatrix: viewMatrix)`, MonoGame transforms every drawn sprite from world coordinates to viewport coordinates automatically.
+When passed to `SpriteBatch.Begin(transformMatrix: viewMatrix)`, the engine transforms every drawn sprite from world coordinates to viewport coordinates automatically.
 
 ### The Scale Matrix (Virtual Resolution)
 

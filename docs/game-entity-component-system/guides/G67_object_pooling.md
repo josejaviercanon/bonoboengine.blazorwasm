@@ -2,7 +2,7 @@
 
 > **Category:** Guide · **Related:** [G64 Combat & Damage §9](./G64_combat_damage_systems.md) · [G23 Particles](./G23_particles.md) · [G6 Audio](./G6_audio.md) · [P12 Performance Budget](./P12_performance_budget.md) · [G4 AI Systems](./G4_ai_systems.md) · [G10 Custom Game Systems](./G10_custom_game_systems.md)
 
-> A complete implementation guide for object pooling and entity recycling in MonoGame + Arch ECS. Covers generic pools, ECS entity recycling, struct pools, audio/VFX/spawn pooling, warm-up strategies, diagnostics, and genre-specific patterns. Everything is composable — use the pieces your game needs.
+> A complete implementation guide for object pooling and entity recycling in Arch ECS. Covers generic pools, ECS entity recycling, struct pools, audio/VFX/spawn pooling, warm-up strategies, diagnostics, and genre-specific patterns. Everything is composable — use the pieces your game needs.
 
 ---
 
@@ -2424,7 +2424,7 @@ public sealed class AdaptivePool<T> where T : class
 
 ## 13 — Thread Safety
 
-MonoGame games are typically single-threaded (game loop on one thread). But if you use background threads for asset loading, pathfinding, or networking, you may need thread-safe pools.
+the engine games are typically single-threaded (game loop on one thread). But if you use background threads for asset loading, pathfinding, or networking, you may need thread-safe pools.
 
 ### Thread-Safe Object Pool
 

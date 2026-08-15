@@ -1,11 +1,11 @@
 # G6 — Audio
 > **Category:** Guide · **Related:** [R1 Library Stack](../R/R1_library_stack.md) · [C1 Genre Reference](../C/C1_genre_reference.md)
 
-> MonoGame built-in audio and FMOD via FmodForFoxes — setup, integration, and advanced features.
+> The engine built-in audio and FMOD via FmodForFoxes — setup, integration, and advanced features.
 
 ---
 
-### 1 MonoGame Built-in Audio
+### 1 the engine Built-in Audio
 
 ```csharp
 // Loading

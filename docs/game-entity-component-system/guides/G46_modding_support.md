@@ -1024,7 +1024,7 @@ Workshop mods are mounted the same way as local mods — the `ModLoader` just ch
 
 ## Practical Example — Complete Minimal Mod System
 
-Pulling everything together into a working system that integrates with your MonoGame + Arch ECS game loop.
+Pulling everything together into a working system that integrates with your Arch ECS game loop.
 
 ### Integration Point
 

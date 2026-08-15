@@ -22,7 +22,7 @@ The **safe area** is the region of the screen guaranteed to be fully visible and
 
 iOS provides safe area insets through UIKit. These are the distances from each screen edge to the safe area boundary, in UIKit points (not pixels).
 
-### Getting Insets in MonoGame
+### Getting Insets in the engine
 
 ```csharp
 #if IOS
@@ -245,12 +245,12 @@ Desktop (16:9):   ████████████████████
 
 ---
 
-## Gum UI and Safe Areas
+## Blazor + Tailwind UI and Safe Areas
 
-If using Gum.MonoGame for UI, configure layout containers to respect safe area margins:
+If using the UI framework for UI, configure layout containers to respect safe area margins:
 
 ```csharp
-// When setting up Gum layout, apply safe area as margin on the root container
+// When setting up Blazor/Tailwind layout, apply safe area as margin on the root container
 var (top, bottom, left, right) = GetVirtualSafeInsets(virtualRes);
 
 rootContainer.Margin = new Margin(
@@ -261,7 +261,7 @@ rootContainer.Margin = new Margin(
 );
 ```
 
-Gum's anchor system handles responsive layout within the constrained container — elements anchored to edges will respect the safe area automatically.
+Tailwind's responsive layout handles responsive layout within the constrained container — elements anchored to edges will respect the safe area automatically.
 
 ---
 
@@ -348,4 +348,4 @@ public void DrawSafeAreaDebug(SpriteBatch spriteBatch, Texture2D pixel,
 - [G19 Display, Resolution & Viewports](./G19_display_resolution_viewports.md) — virtual resolution setup
 - [G21 Coordinate Systems & Transforms](./G21_coordinate_systems.md) — coordinate conversion for insets
 - [G24 Window & Display Management](./G24_window_display_management.md) — window config, iOS fullscreen
-- [G5 UI Framework](./G5_ui_framework.md) — Gum layout system
+- [G5 UI Framework](./G5_ui_framework.md) — Blazor/Tailwind layout system

@@ -1,0 +1,213 @@
+AI
+==========
+BrainAI includes several different options for setting up AI ranging from a super simple transitionless finite state machine (FSM) to extendable behavior trees to ultra-flexible Utility Based AI. 
+You can mix and match them as you see fit.
+For better understanding check ai tests section.
+
+State Machine
+==========
+The next step up is `StateMachine` which implements the "states as objects" pattern. 
+`StateMachine` uses separate classes for each state so it is a better choice for more complex systems.
+
+We start to get into the concept of a **context** with `StateMachine`. 
+In coding, the context is just the class used to satisfy a generic constraint. 
+In a `List<string>` the *string* would be the context class, the class that the list operates on. 
+With all of the rest of the AI solutions you get to specify the context class. 
+It could be your Enemy class, Player class or a helper object that contains any information relevant to your AI (such as the Player, a list of Enemies, navigation information, etc).
+
+Here is a simple example showing the usage (with the State subclasses omitted for brevity):
+
+```csharp
+// define a state machine that will work with an object of type MinerState as the focus with an initial state of MineState
+public class MinerStateMachine : StateMachine<MinerState>
+{
+    public MinerStateMachine() : base(new MinerState(), new MineState())
+    {
+        // we can now add any additional states
+        this.AddState(new SleepState());
+        this.AddState(new DrinkState());
+    }
+}
+
+// create defined state machine.
+var machine = new MinerStateMachine();
+
+// this method typically called in a loop
+machine.Tick();
+
+// change state
+machine.changeState<SleepState>();
+```
+
+
+
+Behavior Trees
+==========
+The de facto standard for composing AI for the last decade. 
+Behavior trees are composed of a tree of nodes. 
+Nodes can make decisions and perform actions based on the state of the world. 
+BrainAI includes a `BehaviorTreeBuilder` class that provides a fluent API for setting up a behavior tree. 
+The `BehaviorTreeBuilder` is a great way to reduce the barrier of entry to using behavior trees and get up and running quickly.
+
+
+## Composites
+Composites are parent nodes in a behavior tree. They house 1 or more children and execute them in different ways.
+
+- **SequenceComposite<T>:** returns failure as soon as one of its children returns failure. If a child returns success it will sequentially run the next child in the next tick of the tree.
+- **SelectorComposite<T>:** returns success as soon as one of its child tasks return success. If a child task returns failure then it will sequentially run the next child in the next tick.
+- **ParallelComposite<T>:** runs each child until a child returns failure. It differs from `Sequence` only in that it runs all children every tick
+- **ParallelSelectorComposite<T>:** like a `Selector` except it will run all children every tick
+
+
+## Conditionals
+Conditionals are binary success/failure nodes. They are identified by the IConditional interface. They check some condition of your game world and either return success or failure. These are inherently game specific so BrainAI only provides a single generic Conditional out of the box and a helper Conditional that wraps an Action so you can avoid having to make a separate class for each Conditional.
+
+- **ExecuteActionConditional<T>:** wraps a Func and executes it as the Conditional. Useful for prototyping and to avoid creating separate classes for simple Conditionals.
+
+
+## Decorators
+Decorators are wrapper tasks that have a single child. They can modify the behavior of the child task in various ways such as inverting the result, running it until failure, etc.
+
+- **AlwaysFailDecorator<T>:** always returns failure regardless of the child result
+- **AlwaysSucceedDecorator<T>:** always returns success regardless of the child result
+- **ConditionalDecorator<T>:** wraps a Conditional and will only run its child if a condition is met
+- **InverterDecorator<T>:** inverts the result of its child
+- **RepeaterDecorator<T>:** repeats its child task a specified number of times
+- **UntilFailDecorator<T>:** keeps executing its child task until it returns failure
+- **UntilSuccessDecorator<T>:** keeps executing its child task until it returns success
+
+
+## Actions
+Actions are the leaf nodes of the behavior tree. This is where stuff happens such as playing an animation, triggering an event, etc.
+
+- **ExecuteAction<T>:** wraps a Func and executes it as its action. Useful for prototyping and to avoid creating separate classes for simple Actions.
+- **WaitAction<T>:** waits a specified amount of time
+- **LogAction<T>:** logs a string to the console. Useful for debugging.
+- **BehaviorTreeReference<T>:** runs another BehaviorTree<T>
+
+
+
+Goal Oriented Action Planning (GOAP)
+==========
+GOAP differs quite a bit from the other AI solutions. 
+With GOAP, you provide the planner with a list of the actions that the AI can perform, the current world state and the desired world state (goal state). 
+GOAP will then attempt to find a series of actions that will get the AI to the goal state.
+
+GOAP was made popular by the old FPS F.E.A.R. 
+The AI in F.E.A.R. consisted of a GOAP and a state machine with just 3 states: GoTo, Animate, UseSmartObject. 
+Jeff Orkin's [web page](http://alumni.media.mit.edu/~jorkin/goap.html) is a treasure trove of great information.
+
+
+## ActionPlanner
+The brains of the operation. 
+You give the ActionPlanner all of your Actions, the current world state and your goal state and it will give you back the best possible plan to achieve the goal state.
+
+
+## Action/ActionT
+Actions define a list of pre conditions that they require and a list of post conditions that will occur when the Action is performed. 
+ActionT is just a subclass of Action with a handy context object of type T.
+
+
+## Agent
+Agent is a helper class that encapsulates an AI agent. 
+It keeps a list of available Actions and a reference to the ActionPlanner. 
+Agent is abstract and requires you to define the `GetWorldState` and `GetGoalState` methods. 
+With those in place getting a plan is as simple as calling `agent.Plan()`.
+
+
+
+Utility Based AI
+==========
+Utility Theory for games. 
+The most complex of the AI solutions. 
+Best used in very dynamic environments where its scoring system works best. 
+Utility based AI are more appropriate in situations where there are a large number of potentially competing actions the AI can take such as in a RTS. 
+A great overview of utility AI is [available here](http://www.gdcvault.com/play/1012410/Improving-AI-Decision-Modeling-Through).
+
+
+## Reasoner
+Selects the best Action from a list of Actions and its Appraisals attached to the Reasoner. The root of a utility AI.
+
+- **FirstScoreReasoner<T>:** Selects first action which score more than specified threshold
+- **HighestScoreReasoner<T>:** Selects action with maximum score
+- **LowestScoreReasoner<T>:** Selects action with minimum score
+- **Reasoner<T>:** Base class for custom implementations
+
+## Appraisal
+Appraisals calculate and return a score which is used by the Reasoner to determine the action.
+
+- **IAppraisal<T>:** Base interface for custom implementations
+- **ActionAppraisal<T>:** Func wrapper for use as an Appraisal without having to create a subclass.
+- **FirstAppraisal<T>:** Returns first score that is above then threshold.
+- **FixedAppraisal<T>:** Always returns a fixed score.
+- **MaxAppraisal<T>:**  Return max score of child appraisals. For binary child appraisals (that returns 1 or 0) can be used as boolean 'OR' operator.
+- **MultiAppraisal<T>:** Scores by multiplying the score of all child Appraisals. For binary child appraisals (that returns 1 or 0) can be used as boolean 'AND' operator if threshold is set to 0.
+- **SumAppraisal<T>:** Scores if all child Appraisals score above the threshold. If threshold not specified - float.MinValue is used.
+
+Additionaly there are a few helper Appraisals for binary operations. As an input those Appraisals take child's appraisals score and comparing them to 0 - treat it as false, other values treated as true:
+
+- **AndAppraisal** - return true(1) if all child appraisal scores treated as true, othervise false(0)
+- **OrAppraisal** - return true(1) if any child appraisal scores treated as true, othervise false(0)
+- **NotAppraisal** - return true(1) if child appraisal score treated as false, othervise false(0)
+
+## Action
+The action that the AI executes when a specific consideration is selected.
+
+- **ActionAction<T>:** Func wrapper for use as an Appraisal without having to create a subclass.
+- **CompositeAction<T>:** Executes multiple sub actions at a moment.
+- **ReasonerAction<T>:** Exectes another reasoner with subset of considerations.
+- **NoAction<T>:** Empty implementation. Do nothing.
+
+## Intents
+To execute lower level actions (like move to the point, or wait for attack animation) that is not eally related to decision making intents can be used.
+
+Example usecase:
+UtilityAI decide to move to specific point. But the move itself may take time, and during this time no other decisions should be made (unless something more urgent happens).
+
+Each low level action should implement **IIntent**
+There are a few common intents:
+- **CompositeIntent:** Executes multiple sub intents. Returns true when all sub intents returns true at least once. NOTE: it has its own inner state to not execute finished sub intents.
+- **ActionIntent:** Func wrapper for use as an Appraisal without having to create a subclass.
+
+To simplify integration with UtilityAI a few classes can be used:
+
+- **SetIntentAction:** an action that sets specified IIntent to IIntentContainer.
+- **HasIntentAppraisal:** checks that containser has Intent set, if yes - score is returned, othervise 0.
+- **UseIntentAction** an action that executes specified IIntent. Intent is cleared on Exit or when IIntent.Execute return true (finished).
+
+To use those classes the Context should implement **IIntentContainer<T>** 
+
+Example usage:
+
+``` csharp
+var reasoner = new FirstScoreReasoner<Unit>(1);
+// Intent phase. If there is an intent to act - intent will be executed.
+reasoner.Add(new HasIntentAppraisal<Unit>(2), new UseIntentAction<Unit>());
+// Decision phase. If there is no intent (previous one is finished, or not yet set) - find target to attack or move.
+reasoner.Add(new CanAttackAppraisal(), new SetIntentAction<Unit, AttackOpponentIntent>((context) => new AttackIntent(context.opponent)));
+reasoner.Add(new CantAttackAppraisal(), new SetIntentAction<Unit, MoveIntent>((context) => new MoveIntent(context.opponent.Position)));
+```
+
+And MoveIntent can be like:
+
+``` csharp
+public class MoveIntent : IIntent<Unit>
+{
+    public void Enter(Unit unit)
+    {
+        unit.StartMoveAnimation();
+    }
+
+    public bool Execute(Unit unit)
+    {
+        // Recalculate unit position. It is done every tick.
+        unit.Position = unit.CalculateNewPosition();
+        // Finish move intent when unit at a target position.
+        return unit.Position == unit.MoveTarget;
+    }
+
+    public void Exit(Unit unit)
+    {
+    }
+}
+```

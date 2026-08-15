@@ -1,5 +1,5 @@
 # E5 — AI-Assisted Development Workflow
-> **Category:** Explanation · **Related:** [E4 Project Management](./E4_project_management.md) · [E9 Solo Dev Playbook](./E9_solo_dev_playbook.md) · [R3 Project Structure](../R/R3_project_structure.md) · [G11 Programming Principles](../G/G11_programming_principles.md) · [E8 MonoGameStudio Post-Mortem](./E8_monogamestudio_postmortem.md)
+> **Category:** Explanation · **Related:** [E4 Project Management](./E4_project_management.md) · [E9 Solo Dev Playbook](./E9_solo_dev_playbook.md) · [R3 Project Structure](../R/R3_project_structure.md) · [G11 Programming Principles](../G/G11_programming_principles.md) · [E8 the engine studio Post-Mortem](./E8_studio_postmortem.md)
 
 ---
 
@@ -15,14 +15,14 @@ Realistic expectations matter: developers who tracked their productivity with AI
 
 Arch ECS architecture is one of the most AI-compatible patterns in game development. Components are pure data structs. Systems are pure logic functions. Each unit is self-contained, testable in isolation, and follows predictable query-iterate-transform patterns — exactly what LLMs handle best.
 
-The highest-value AI tasks for MonoGame/Arch ECS:
+The highest-value AI tasks for Arch ECS:
 
 - **Component struct generation** — describe a game design concept, get C# record structs
 - **System scaffolding** — boilerplate for querying specific component archetypes
 - **Unit test generation** — ECS systems' pure-function nature makes them highly testable
 - **Documentation generation** — start a comment and receive comprehensive XML docs
 
-The critical caveat: **MonoGame has a smaller community than Unity or Unreal**, meaning less training data for AI models. Expect more errors with MonoGame-specific APIs. Paste Arch ECS's README and key interface definitions into your LLM context — this single step dramatically improves output quality for niche frameworks.
+The critical caveat: **this stack (Arch ECS + PixiJS + Blazor) has a smaller community than Unity or Unreal**, meaning less training data for AI models. Expect more errors with stack-specific APIs. Paste Arch ECS's README and key interface definitions into your LLM context — this single step dramatically improves output quality for niche frameworks.
 
 ---
 
@@ -55,10 +55,10 @@ Create a CONTEXT.md file in your project root. Feed it to AI with every prompt:
 
 ```markdown
 # Project: FireStarter
-## Architecture: MonoGame + Arch ECS + Composed Libraries
+## Architecture: Arch ECS + PixiJS + Blazor + Composed Libraries
 ## Patterns: Service Locator for ambient services, DI for game logic
 ## Arch owns: ALL entities (player, NPCs, enemies, particles, simulation)
-## Key Libraries: Apos.Input, Gum.MonoGame, FontStashSharp, BrainAI
+## Key Libraries: Arch ECS (vendored), PixiJS v8, Blazor + Tailwind, System.Text.Json
 ## Custom Code: Scene manager, render layers, SpatialHash, tweens
 ## Coding conventions: C# 12, nullable enabled, readonly structs for data
 ```

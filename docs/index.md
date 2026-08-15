@@ -170,9 +170,10 @@ The architectural stack uses specialized, lightweight libraries designed for max
 
 When working with an MCP-capable AI agent:
 
-- **`docs/2d-games`** (137 files) and **`docs/game-development`** — structured game design patterns, structural gamedev guides, and documentation contexts mapping out MonoGame + Arch ECS cross-over ecosystems. It ensures the agent does not stray from professional game loop conventions.
-  - `docs/2d-games` is the complete vendored "Universal 2D Engine Toolkit" (MonoGame-flavored stack).
+- **`docs/2d-games`** and **`docs/game-development`** — structured game design patterns, structural gamedev guides, and documentation contexts aligned with this engine's stack (Arch ECS simulation + PixiJS presentation + Blazor/Tailwind UI). They keep the agent anchored to professional game-loop conventions.
+  - `docs/2d-games` is the "Universal 2D Engine Toolkit" reference, aligned to the Bonobo stack: architecture/reference docs reflect Arch ECS + PixiJS v8 + Tailwind + Blazor + System.Text.Json; concept guides are engine-agnostic.
   - `docs/game-development` is the curated, engine-agnostic subset (concepts, programming, game design, project management, AI workflow).
+  - `docs/game-entity-component-system/` mirrors the toolkit reorganized into `guides/` + `reference/` and carries the Bonobo-specific ECS rules (`bonobo-ECS-rules.md`).
 - **`net-microsoft-documentation` MCP server:** connects to Microsoft Learn via streamable HTTP, letting agents search documentation, fetch complete articles, and search code samples — trusted, up-to-date Microsoft knowledge ([source](https://learn.microsoft.com/en-us/training/support/mcp)).
 
 ## AI Agent Guidelines & System Instructions

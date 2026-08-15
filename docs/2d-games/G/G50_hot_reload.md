@@ -261,7 +261,7 @@ public sealed class TextureHotLoader
 
 ## Shader Hot Reload
 
-Shaders are the trickiest asset to hot-reload because MonoGame requires compiled `.xnb` effect files. The approach: watch `.fx` source files, invoke MGCB to recompile, then reload the resulting `.xnb`.
+Shaders are the trickiest asset to hot-reload because the engine requires compiled `.xnb` effect files. The approach: watch `.fx` source files, invoke MGCB to recompile, then reload the resulting `.xnb`.
 
 ```csharp
 public sealed class ShaderHotLoader

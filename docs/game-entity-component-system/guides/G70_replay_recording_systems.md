@@ -2,7 +2,7 @@
 
 > **Category:** Guide · **Related:** [G7 Input Handling](./G7_input_handling.md) · [G15 Game Loop](./G15_game_loop.md) · [G9 Networking](./G9_networking.md) · [G69 Save/Load Serialization](./G69_save_load_serialization.md) · [G67 Object Pooling](./G67_object_pooling.md) · [G64 Combat & Damage Systems](./G64_combat_damage_systems.md) · [G20 Camera Systems](./G20_camera_systems.md)
 
-> A complete implementation guide for replay, recording, and playback systems in MonoGame + Arch ECS. Covers input recording, deterministic replay, ghost trails, killcams, spectator modes, demo files, and replay UI. Everything is composable — use the recording approach your game needs.
+> A complete implementation guide for replay, recording, and playback systems in Arch ECS. Covers input recording, deterministic replay, ghost trails, killcams, spectator modes, demo files, and replay UI. Everything is composable — use the recording approach your game needs.
 
 ---
 
