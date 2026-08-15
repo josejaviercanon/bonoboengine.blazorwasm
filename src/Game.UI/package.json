@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/josejaviercanon/bonoboengine.blazorwasm#readme",
   "dependencies": {
+    "@dimforge/rapier2d": "^0.20.0",
     "@pixi/sound": "^6.0.1",
     "@pixi/tilemap": "^5.0.2",
     "@pixi/ui": "^2.3.2",

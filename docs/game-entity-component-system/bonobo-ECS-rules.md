@@ -15,6 +15,7 @@ Engine-specific rules for the Bonobo engine: an authoritative C# simulation back
 - **ECS:** Arch — vendored as **source** under `src/Arch/` (core, systems, event bus, persistence, relationships, AOT source generator). **Not** a NuGet package. Linked into `Game.Engine` via `ProjectReference`.
 - **Source generators:** `src/Arch.Generators/` — a `netstandard2.0` Roslyn analyzer pack that links Arch's `Arch.Systems.SourceGenerator` + `Arch.AOT.SourceGenerator` + `Arch.EventBus` sources. Referenced from `Game.Engine` as an analyzer (`OutputItemType="Analyzer"`).
 - **Presentation:** PixiJS v8 — rendered client-side; bundled by Vite + TypeScript in `src/Game.UI/Frontend/`, output to `src/Game.UI/wwwroot/dist`.
+- **Physics (target, vendored-not-referenced):** `src/Box2D.NET` (authoritative gameplay physics, runs in the C# ECS loop, zero-interop raycasts/AABB) and `src/BrainAI` (pathfinding/AI). Neither is referenced by `Game.Engine.csproj` yet. Rapier (`@dimforge/rapier2d`) is optional JS-side presentation physics only — see ADR-002/ADR-005.
 - **UI:** Blazor components + Tailwind CSS v4 (in `src/Game.UI`, the shared Razor Class Library).
 - **Hosts:** `src/Game.Web` (Blazor Web App, static SSR) and `src/Game.Maui` (.NET MAUI Blazor Hybrid, Android default; iOS/MacCatalyst/Windows conditional).
 - **Serialization:** System.Text.Json with source generators (AOT-friendly, allocation-free). Planned.
@@ -288,6 +289,69 @@ The Bonobo engine has **no** `Initialize/LoadContent/Update/Draw` lifecycle. It 
 - Rendering is entirely client-side (PixiJS); the C# side never issues draw calls.
 
 ---
+
+## Skeletal Animation & Presentation-Physics ECS Rules (Target)
+
+These shapes are **target/planned** (current `src/Game.Engine/ECS/Components.cs` has only `Position`, `Velocity`, `SpriteColor`, `RenderId`). They codify ADR-003/ADR-004/ADR-005 so future implementation stays aligned.
+
+### glTF → ECS: data-oriented, not entity-per-node
+
+- glTF (`.glb`) is the **input asset format**, not the ECS architecture (ADR-004). Do **not** create one ECS entity per glTF node.
+- A skeletal character is **one** entity carrying contiguous-array components:
+
+```csharp
+[Component]
+public struct SkeletonComponent
+{
+    public int JointCount;
+    public int[] ParentIndices;          // -1 for root; e.g. [-1, 0, 1, 1, 3, 4, …]
+    public float[] LocalTransforms;      // stride-packed: tx, ty, rot, sx, sy per joint
+    public float[] GlobalTransforms;     // computed by TransformSystem
+    public float[] InverseBindMatrices; // from glTF skin
+    public int[] JointEntities;         // optional entity handles per joint
+}
+
+[Component]
+public struct AnimationPlayerComponent
+{
+    public int CurrentClip;
+    public float CurrentTime;
+    public float PlaybackSpeed;
+    public bool Loop;
+    public AnimationState State;        // Bonobo-native state machine; NOT glTF
+}
+```
+
+- `ParentIndices` is cache-friendly; iterate joints as arrays, not as a sea of independent entities.
+
+### Animation state belongs to the ECS, not glTF
+
+- glTF stores clips/samplers/channels + interpolation modes (LINEAR/STEP/CUBICSPLINE); the **engine** decides `CurrentClip`, `Time`, `Speed`, `Loop`, `BlendTarget`, `BlendWeight`.
+- Runtime flow: `.glb → Import → AnimationClip → AnimationPlayerComponent → AnimationSystem (sample channels at t) → TransformSystem (global joint matrices) → SkinningSystem (joint palette) → PixiJS/GPU`.
+
+### Render snapshot (replaces per-entity event push)
+
+- State leaves the engine as a **batched render snapshot**, not `EntityMovedEvent` per entity (ADR-003):
+
+```csharp
+public readonly record struct TransformSnapshot(
+    int EntityId, float X, float Y, float Rotation,
+    float VelocityX, float VelocityY, float AngularVelocity, long Tick);
+```
+
+- The client interpolates: `P_render = P_prev + (P_curr - P_prev) * α`. Target transfer = pinned unmanaged `RenderTransform[]` + `IntPtr` + JS `Float32Array` view over the WASM heap (no per-frame JSON).
+
+### Presentation physics is entity-selective
+
+```csharp
+[Component]
+public struct PresentationPhysicsComponent
+{
+    public PresentationPhysicsMode Mode; // Interpolate | Spring | Rapier2D | CustomGpu
+}
+```
+
+- `Enemy`/`Player` → `Interpolate`; `Camera` → `Spring`; `Cape`/`Debris`/`Ragdoll` → `Rapier2D`; `Particles` → `CustomGpu`. Presentation physics lives in PixiJS; the C# ECS is ignorant of cosmetic coordinates (ADR-005).
 
 ## Integration with Core Rules
 

@@ -14,7 +14,7 @@ Isolate the **Simulation Layer (C#)** from the **Presentation Layer (PixiJS / Ta
   system. Knows nothing about graphics, browsers, or UI.
 - `Game.UI` — shared Razor Class Library: Blazor component shell + IJSRuntime bridge that
   maps C# state-change events to PixiJS sprites; Tailwind for HUD/menus.
-- `Game.Web` — Blazor Web App host (Interactive Server rendering).
+- `Game.Web` — Blazor Web App host (**static SSR only** + SSE `/api/ecs/stream`; no Interactive Server).
 - `Game.Maui` — .NET MAUI Blazor Hybrid host (Android default; iOS, Mac Catalyst, Windows
   when OS/workloads allow).
 - Future: ASP.NET Core server host running the exact same engine, verifying client commands
@@ -22,10 +22,7 @@ Isolate the **Simulation Layer (C#)** from the **Presentation Layer (PixiJS / Ta
 
 ## The Performance Gold Rule
 
-**Never poll C# from JS, never serialize the whole state tree per frame.** Use a
-**push-based delta event** approach: the engine fires lightweight C# events per tick
-(e.g. `OnEntityMoved(id, x, y)`), Blazor forwards flat payloads via `IJSRuntime`, and
-PixiJS updates only what changed.
+**Never poll C# from JS, never serialize the whole state tree per frame, never move simulation back-and-forth through JS interop every frame.** Cross the C#↔JS boundary only via **batched render snapshots** (ADR-003): the engine emits a `TransformSnapshot` (pos + velocity + rotation + tick); the client interpolates `P_render = P_prev + (P_curr − P_prev) × α` at display Hz. C# is the sole authority; PixiJS is a pure mirror that may run optional presentation physics (Rapier) for visual dynamics only. See `docs/architecture/topology.md` and ADR-001…ADR-006.
 
 ## Scope (MVP)
 

@@ -1,9 +1,12 @@
 # Active Context
 
-## Current Focus (2026-08-13)
+## Current Focus (2026-08-15)
 
-Documentation overhaul for agentic development, plus the scaffold baseline. The project is at **scaffold stage** — solution structure, hosts, and the
-PixiJS hello-world pipeline exist; the engine itself is not yet implemented.
+Architecture-topology adoption + agentic-doc alignment. Past scaffold now: Arch ECS sim
+(`EcsSimulation` 60 Hz) + static-SSR SSE bridge + PixiJS bootstrap are implemented. The
+topology doc (ADR-001…ADR-006, `docs/architecture/topology.md`) now defines the **target**
+runtime layers: interpolation, Box2D.NET authoritative physics, optional Rapier
+presentation physics, shared-memory `HEAPF32` render bridge, glTF/skeletal pipeline.
 
 ## Recent Changes
 
@@ -17,17 +20,24 @@ PixiJS hello-world pipeline exist; the engine itself is not yet implemented.
   - Repaired broken markdown in `docs/index.md` (source of truth) and synced `README.md` to match.
   - Deleted empty `docs/game/`; added cross-links between `docs/2d-games` and `docs/game-development` (new `index.md`).
   - Populated `openspec/config.yaml` with repo context; created `docs/adr/` infrastructure (README + template).
+  - Adopted the topology doc: recorded ADR-001…ADR-006; added `docs/architecture/topology.md`
+    (Implemented vs Target); embedded the topology blueprint in `docs/index.md`; added
+    AGENTS.md architectural guardrails; extended `bonobo-ECS-rules.md` (skeletal/
+    presentation-physics target shapes); reconciled `docs/2d-skeletal-animations/index.md`
+    (two-pipeline + glTF-as-input rule); added verified facts to `codebase-truth.md`
+    (Box2D.NET/BrainAI vendored-unreferenced, Rapier not installed, SSE bridge).
 
 ## Next Steps
 
-1. Replace `Game.Engine/Class1.cs` with the real core: `GameSimulation`, command records
-   (`MoveCommand`, …), event records (`EntityMovedEvent`, …) per `docs/index.md` Step 1.
-2. Introduce Arch ECS into `Game.Engine` (struct components, systems, command buffers).
-3. Wire the Blazor→PixiJS delta bridge in `Game.UI` (subscribe to engine events, forward
-   via `IJSRuntime`) — replace hello-world text with sprite management.
-4. Decide on `System.Text.Json` source-generator context for save/delta payloads.
-5. Fix `npx tsc --noEmit` (add Node type definitions for `vite.config.ts`).
-6. Add a test project for `Game.Engine` (none exist yet).
+1. Extend `SpriteState` → `TransformSnapshot` (velocity/rotation/tick) + add a JS
+   interpolation layer (prev/curr/α) — first render-bridge evolution task (ADR-003).
+2. Wire `src/Box2D.NET` into `Game.Engine.csproj` as authoritative ECS-loop physics (ADR-002).
+3. Install `@dimforge/rapier2d` only when presentation physics is actually needed; add
+   `PresentationPhysicsComponent` modes (ADR-005).
+4. glTF importer + skeletal ECS components (`SkeletonComponent`, `AnimationPlayerComponent`)
+   per ADR-004 / `docs/2d-skeletal-animations/index.md`.
+5. Target: pinned shared-memory `HEAPF32` zero-copy transfer (ADR-003).
+6. Add `ProcessCommand` + command/event records; add a `Game.Engine` test project.
 
 ## Open Questions / Watch Items
 

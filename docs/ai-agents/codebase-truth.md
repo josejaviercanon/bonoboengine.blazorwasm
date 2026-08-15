@@ -32,6 +32,20 @@ Every fact below was verified against `.csproj`, `package.json`, `vite.config.ts
 
 `.NET 10` static-web-asset precompression breaks on the Vite IIFE bundle. The csproj hooks `DiscoverPrecompressedAssetsDependsOn` and the `ExcludeViteBundleFromCompression` target removes any static web asset named `game-bundle.iife.js` before compression. Do not remove this target.
 
+## Vendored libraries (unreferenced)
+
+- `src/Box2D.NET/Box2D.NET.csproj` — vendored C# 2D physics. **Not referenced** by `Game.Engine.csproj` (which refs only `Arch` + `Arch.Generators`). Target authoritative physics per ADR-002.
+- `src/BrainAI/BrainAI.csproj` — vendored C# pathfinding/AI (with `AI/`, `InfluenceMap/`, `Pathfinding/`, `Simulations/` READMEs). **Not referenced** by `Game.Engine.csproj`.
+- `src/Temp/` — upstream samples/demos, **not** part of the solution/build: `Box2D.NET.Samples`, `Box2D.NET.Shared`, `BrainAI.Demo` (Godot `.tscn`/`project.godot`), `ECS-example`, and the source topology doc `Architectural Topology C# ECS Engine in .NET MAUI Hybrid Blazor WebAssembly.md`.
+
+## Frontend dependencies (`src/Game.UI/package.json`)
+
+Dependencies (all present): `pixi.js` ^8.19.0, `@pixi/ui` ^2.3.2, `@pixi/sound` ^6.0.1, `@pixi/tilemap` ^5.0.2, `pixi-viewport` ^6.0.3, `pixi-filters` ^6.1.5, `@spd789562/particle-emitter` ^1.0.2. **Not installed:** `@dimforge/rapier2d` (optional presentation physics, target per ADR-002/ADR-005).
+
+## Render bridge (current)
+
+- `GET /api/ecs/stream` SSE (`text/event-stream`) pushes `event: sprite-move` with batched `SpriteState[]` JSON (`Id, X, Y, R, G, B`) — **no velocity/rotation/tick**. Throttled to one signal per second (`EcsSimulation.SignalIntervalSeconds = 1.0`). Target: `TransformSnapshot` with kinematic data + pinned shared-memory `HEAPF32` transfer (ADR-003). No shared-memory/zero-copy path exists yet.
+
 ## Hosts
 
 - `Game.Web/Program.cs`: **static SSR only** — no Interactive Server, no SignalR circuit, no reconnect modal. `AddRazorComponents()`; `AddSingleton<EcsSimulation>()` (60 Hz Arch ECS sim, batched render signals); `UseStatusCodePagesWithReExecute("/not-found")`; `UseHttpsRedirection`; `UseAntiforgery()` (**required** — Razor Components endpoints carry antiforgery metadata even for static SSR); `MapStaticAssets()`; `MapRazorComponents<App>().AddAdditionalAssemblies(typeof(GameView).Assembly)`. **`GET /api/ecs/stream`** — SSE (`text/event-stream`), subscribes `EcsSimulation.OnRenderSignal`, pushes `event: sprite-move` with batched `SpriteState[]` JSON, unsubscribes on client abort. Endpoint lives on the raw ASP.NET Core pipeline, not Blazor.

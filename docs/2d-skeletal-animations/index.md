@@ -2,6 +2,25 @@
 
 Integrating a Blender-to-glTF 2.0 asset pipeline into a .NET Blazor WebAssembly (WASM) Entity Component System (ECS) engine rendering via PixiJS requires mapping open 3D asset specifications to data-oriented C# structures and JavaScript rendering buffers.
 
+## Two Pipelines & the glTF-as-Input Rule
+
+This document refines the Bonobo skeletal-animation architecture (see `docs/adr/ADR-004` and `docs/architecture/topology.md`). The key rule:
+
+- **glTF (`.glb`) is the asset contract, not the ECS architecture.** Authoring and runtime are two **independent** pipelines that communicate only through the `.glb` asset:
+
+```
+Pipeline A — Authoring (offline):   AI Agent + Blender bpy → armature + animations → .glb
+Pipeline B — Runtime:               .glb → glTF Importer (C#) → ECS → AnimationSystem
+                                          → TransformSystem → SkinningSystem → PixiJS/GPU
+```
+
+- `AI + Blender = Content Pipeline`, **not** `Game Runtime`. The AI authoring agent does **not** live inside the game runtime.
+- **Don't create one ECS entity per glTF node.** A character is one entity with contiguous-array `SkeletonComponent` (`ParentIndices[]`, `LocalTransforms[]`, `GlobalTransforms[]`, `InverseBindMatrices[]`) for cache-friendly iteration.
+- **The animation state machine belongs to the ECS (Bonobo-native), not glTF.** glTF stores clips/samplers/channels/interpolation modes (LINEAR/STEP/CUBICSPLINE); the engine decides `CurrentClip`, `Time`, `Speed`, `Loop`, `BlendTarget`, `BlendWeight`.
+- Both pipelines are independently swappable (Blender ↔ another tool; runtime ↔ another renderer) because they share only the asset contract.
+
+The Pipeline Architecture Overview below predates this rule and uses a per-node entity mapping (`SkinComponent` joint `Entity` IDs, `PixiRenderNodeComponent`); treat that as one valid concrete mapping, while the ADR-004 contiguous-array representation is the preferred data-oriented target.
+
 ## Pipeline Architecture Overview
 
 ```

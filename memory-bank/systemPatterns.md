@@ -16,7 +16,7 @@
         └───────┬───────────────────┬───────────┘
           src/Game.Web        src/Game.Maui
      (Blazor Web App,      (MAUI Blazor Hybrid,
-      Interactive Server)   Android/iOS/MacCat/Win)
+      Static SSR + SSE)   Android/iOS/MacCat/Win)
 ```
 
 ## Dependency Rules
@@ -35,15 +35,34 @@
 
 ## Rendering Pattern
 
-- PixiJS sits idle until C# pushes a delta; Blazor forwards flat payloads via
-  `IJSRuntime.InvokeVoidAsync`. ❌ No per-frame polling, ❌ no full-state JSON per frame.
+- **Current bridge (static SSR):** C# emits a batched `EcsRenderSignal`; the web host pushes it to PixiJS via the `GET /api/ecs/stream` SSE endpoint (`event: sprite-move`, `SpriteState[]` JSON, 1 s throttle) — no `IJSRuntime` on the web host (no interactivity). ❌ No per-frame polling, ❌ no full-state JSON per frame.
+- **Target bridge (ADR-003):** batched `TransformSnapshot` (pos + velocity + rotation + tick) → pinned shared-memory `HEAPF32` `Float32Array` view; client interpolates `P_render = P_prev + (P_curr − P_prev) × α`.
 - JS entry: `Frontend/game.ts` exports `initGame(containerId)`, also exposed as
   `window.initGame`; `GameView.razor` calls it in `OnAfterRenderAsync(firstRender)`.
 - Vite builds an **IIFE** bundle (`game-bundle.iife.js`) into `wwwroot/dist` for direct
   browser execution. `game.ts` waits ~50ms for layout, then falls back to 100vw/100vh if
   the container measures 0px (BlazorWebView timing quirk).
 
-## ECS Rules (planned, from `docs/index.md`)
+## Three-Layer Runtime Topology (ADR-001…ADR-006)
+
+Within the Presentation Bridge, the runtime splits into three layers (see `docs/architecture/topology.md`):
+
+```
+C# AUTHORITATIVE WORLD   ECS + Box2D.NET (target): gameplay physics, collisions, rules
+        │  fixed timestep → RenderSnapshot (Tick, Pos, Velocity)
+        ▼
+PRESENTATION WORLD       lightweight interpolation (default) + optional Rapier 2D
+        │  display-Hz visual
+        ▼
+PIXIJS v8                sprites, containers, animation, camera, particles, GPU
+```
+
+- C# is the sole authority; PixiJS is a pure mirror (interpolation + optional presentation physics).
+- Never move simulation back-and-forth through JS interop per frame; cross via batched render snapshots only.
+- Box2D.NET = authoritative physics (vendored `src/Box2D.NET`, not yet wired). Rapier (`@dimforge/rapier2d`, not installed) = optional JS-side presentation physics, entity-selective (`PresentationPhysicsComponent.Mode`).
+- glTF (`.glb`) = asset contract, not ECS architecture; a skeletal character = one entity with contiguous-array `SkeletonComponent`; the animation state machine belongs to the ECS.
+
+## ECS Rules (implemented in `EcsSimulation`; rules below)
 
 - Components: zero-logic public `struct`s only — no classes, no methods.
 - Systems: stateless, iterate via `QueryDescription` / `Arch.Systems.BaseSystem`.

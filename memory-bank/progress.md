@@ -8,8 +8,7 @@
 
 - ✅ Monorepo structure: `bonoboWebGame.slnx` with 4 projects (`Game.Engine`, `Game.UI`,
   `Game.Web`, `Game.Maui`), all net10.0.
-- ✅ `Game.Web` host: Interactive Server Blazor app; router discovers shared RCL routes via
-  `AdditionalAssemblies`; static assets + error/not-found pipeline configured.
+- ✅ `Game.Web` host: **static SSR only** Blazor app (no Interactive Server/SignalR); router discovers shared RCL routes via `AddAdditionalAssemblies`; `GET /api/ecs/stream` SSE (`event: sprite-move`, `SpriteState[]`); static assets + error/not-found pipeline.
 - ✅ `Game.UI` frontend pipeline: Vite IIFE bundle + Tailwind v4 CLI → `wwwroot/dist`;
   `npm` scripts for build/watch.
 - ✅ PixiJS bootstrap: `game.ts` `initGame(containerId)` with 0px-container fallback;
@@ -20,12 +19,16 @@
   of truth, `docs/2d-games` + `docs/game-development` knowledge base (cross-linked),
   `AGENTS.md` agent rules.
 - ✅ Agentic-dev docs: `docs/ai-agents/codebase-truth.md` (verified facts),
-  `docs/adr/` infrastructure, `openspec/config.yaml` populated.
+  `docs/adr/` infrastructure (ADR-001…ADR-006 recorded), `openspec/config.yaml` populated.
+- ✅ Architecture topology: `docs/architecture/topology.md` (Implemented vs Target) +
+  ADR-001 (three-layer topology), ADR-002 (Box2D.NET/Rapier layering), ADR-003 (render-bridge
+  evolution), ADR-004 (glTF as asset contract), ADR-005 (entity-selective presentation
+  physics), ADR-006 (domain responsibility matrix).
 - ✅ Memory bank initialized (this directory).
 
 ## In Progress / Template-State
 
-- 🔶 `Game.Engine`: only placeholder `Class1.cs` — no simulation, commands, or events yet.
+- ✅ `Game.Engine`: Arch ECS implemented — `EcsSimulation` (60 Hz, `MovementSystem`/`ColorSystem`, batched `EcsRenderSignal` @1s, SSR `Snapshot()`), `Components.cs` (`Position`/`Velocity`/`SpriteColor`/`RenderId`). No commands/`ProcessCommand` yet.
 - 🔶 `Game.UI`: template leftovers `Component1.razor`, `ExampleJsInterop.cs`;
   `wwwroot/exampleJsInterop.js`.
 - 🔶 `Game.Web`: template demo pages (`Counter`, `Weather`) and Bootstrap lib assets.
@@ -40,6 +43,10 @@
 - ❌ Persistence: System.Text.Json source-generated serializers.
 - ❌ Test projects (solution currently has none; `dotnet test` validates build only).
 - ❌ Server host for authoritative multiplayer (phase 2 of the blueprint).
+- ❌ Box2D.NET authoritative physics wired into ECS loop (vendored `src/Box2D.NET`, unreferenced).
+- ❌ Rapier presentation physics, entity-selective (`@dimforge/rapier2d` not installed).
+- ❌ Shared-memory `HEAPF32` zero-copy render bridge + `TransformSnapshot` + JS interpolation.
+- ❌ glTF importer + skeletal ECS components (`SkeletonComponent`/`AnimationPlayerComponent`).
 
 ## Known Issues
 

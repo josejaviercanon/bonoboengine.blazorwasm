@@ -43,116 +43,169 @@ You should split your codebase into three distinct layers:
 
 1. **The Core Simulation Engine (Pure C#)** — a standard .NET Class Library. It knows absolutely nothing about graphics, rendering, or browsers.
    - *State Management:* manages coordinates, stats, pathfinding matrices, and entity maps.
-   - *The Deterministic Tick:* processes input via a command pattern (e.g., `ExecuteCommand(PlayerMoveCommand)`), updates state, and fires off highly optimized, lightweight C# events detailing what changed (e.g., `OnEntityMoved(Id, NewX, NewY)`).
+   - *The Deterministic Tick:* runs the Arch ECS systems each fixed step (e.g., `MovementSystem`, `ColorSystem`) and emits one **batched** render signal (`EcsRenderSignal`) per interval — not one event per entity — so the presentation layer mirrors authoritative state without per-frame interop. A `ProcessCommand` command pattern is the planned input boundary (ADR-003).
 2. **The Presentation Layer (Blazor + PixiJS + Tailwind)** — a pure mirror of your C# state.
    - *Tailwind UI:* Blazor hooks into C# state to display inventories or menus using standard data-binding.
-   - *PixiJS Canvas:* instead of polling C# for positions 60 times a second, PixiJS sits completely idle until the C# engine fires a state change event. When an event fires, Blazor forwards a highly optimized, flat payload to PixiJS via `IJSRuntime` to animate the sprite.
+   - *PixiJS Canvas:* instead of polling C# for positions 60 times a second, PixiJS sits idle until the C# engine emits a batched render signal. The host streams that batched payload to PixiJS (SSE on the web host; `IJSRuntime` on MAUI Hybrid), and PixiJS animates only the sprites that changed.
 
 ### ⚠️ The Performance Gold Rule: Avoid JSON Serialization
 
-Calling `IJSRuntime` every single frame to pass a massive C# state tree to JavaScript will reduce your game's frame rate down to single digits. You **must** use a **Push-Based Delta Event** approach.
+Polling C# from JavaScript every frame, or serializing the whole state tree per frame, will reduce your game's frame rate down to single digits. You **must** use a **Push-Based Delta Event** approach: the engine emits a batched render signal and the host streams it to PixiJS (SSE on the web host; `IJSRuntime` on MAUI Hybrid).
 
 - ❌ **Bad (Polling):** PixiJS loops at 60fps and calls C# via interop — "Where is everyone right now?" C# serializes 500 characters into JSON and passes it back.
-- ✅ **Good (Reactive Delta Push):** the C# engine finishes a tick. Only two monsters moved. C# calls a single JavaScript function: `DotNet.invokeMethod('UpdatePositions', [ { id: 4, x: 120, y: 80 }, { id: 9, x: 200, y: 300 } ])`. PixiJS updates just those two sprites.
+- ✅ **Good (Batched Delta Push):** the C# engine finishes a tick and emits one batched `EcsRenderSignal` (`SpriteState[]`). The web host streams it to PixiJS over SSE (`event: sprite-move`); PixiJS updates only the sprites that changed. (MAUI Hybrid uses `IJSRuntime` for the same batched push.)
 
 **2.1. UI:** keep the presentation layer thin. Use Razor components and Tailwind CSS for menus, inventories, and HUD. Drop a standard HTML5 `<canvas>` inside that Razor view, and use a modular, object-oriented vanilla TypeScript/JavaScript file to initialize PixiJS and map incoming C# events directly to sprites. Bypassing the React wrapper keeps the application simple, clean, and fast.
 
+## 🧬 Engine Topology: Simulation ↔ Presentation ↔ Render
+
+The Authoritative C# Architecture above splits the **Presentation Bridge** into two further layers at runtime, yielding a three-layer topology (ADR-001). C# is the sole authority; PixiJS is a pure mirror that interpolates and may run presentation physics for visual flair only.
+
+```
+C# AUTHORITATIVE WORLD          ECS + Box2D.NET (target): gameplay physics, collisions, rules
+        │  fixed timestep → RenderSnapshot (Tick, Pos, Velocity)
+        ▼
+PRESENTATION WORLD              lightweight interpolation (default) + optional Rapier 2D
+        │  120/144/240 Hz visual
+        ▼
+PIXIJS v8                       sprites, containers, animation, camera, particles, GPU
+```
+
+- **Never** move simulation back-and-forth through JS interop every frame. Cross the boundary only via batched render snapshots.
+- **Domain ownership (ADR-006):** C# owns game rules, collision, gravity, character controllers, deterministic networking. PixiJS owns interpolation, sprite transforms/animation, camera smoothing, secondary motion (cloth/ragdoll), particle physics.
+- **Bridge status:** current = SSE `event: sprite-move` with batched `SpriteState[]` JSON (`/api/ecs/stream`); target = pinned shared memory + `HEAPF32` `Float32Array` view + client interpolation `P_render = P_prev + (P_curr − P_prev) × α` (ADR-003).
+- **Physics:** Box2D.NET = authoritative (C# ECS loop, vendored at `src/Box2D.NET`, not yet wired); Rapier `@dimforge/rapier2d` = optional presentation physics, entity-selective, not yet installed (ADR-002, ADR-005).
+- **Skeletal animation:** glTF (`.glb`) is the asset contract, not the ECS architecture — two decoupled pipelines (authoring: AI+Blender→`.glb`; runtime: `.glb`→importer→ECS→PixiJS); the animation state machine belongs to the ECS (ADR-004).
+
+Full matrices (ecosystem integration, implementation status, packages) live in `docs/architecture/topology.md`. Decisions: `docs/adr/` (ADR-001…ADR-006).
+
 ## 🛠️ Step-by-Step Blueprint for the MVP
 
-### Step 1: Define Your Command and Event System
+### Step 1: The Authoritative C# ECS Simulation
 
-Create a message-based communication boundary. This ensures your network transition later is as simple as routing these messages over a WebSocket connection instead of a local memory bridge.
+The authoritative simulation is an Arch ECS world in `src/Game.Engine` (not a `Dictionary` of entities). Components are zero-logic `[Component]` structs; systems are `[Query]`-generated. It ticks at 60 Hz and emits one **batched** `EcsRenderSignal` per second (throttled so the render pipeline isn't flooded). `Snapshot()` returns the initial state for SSR.
 
 ```csharp
-// The single source of truth contract
+// src/Game.Engine/ECS/Components.cs — pure-data structs
+[Component] public struct Position    { public float X; public float Y; }
+[Component] public struct Velocity    { public float X; public float Y; }
+[Component] public struct SpriteColor { public byte R; public byte G; public byte B; }
+[Component] public struct RenderId    { public int Id; }   // stable id → client sprite
 
-public record EntityMovedEvent(int EntityId, float X, float Y);
+// src/Game.Engine/ECS/EcsSimulation.cs — the authoritative tick
+public record struct SpriteState(int Id, float X, float Y, byte R, byte G, byte B);
+public sealed record EcsRenderSignal(long Seq, int EntityCount, double TickMs, IReadOnlyList<SpriteState> Sprites);
 
-public class GameSimulation
+public sealed class EcsSimulation : IDisposable
 {
-    public Dictionary<int, GameEntity> Entities { get; } = new();
-
-    // UI or Network triggers this
-    public void ProcessCommand(MoveCommand cmd)
-    {
-        var entity = Entities[cmd.EntityId];
-        entity.X = cmd.TargetX;
-        entity.Y = cmd.TargetY;
-
-        // Notify the rendering layers
-        OnEntityMoved?.Invoke(new EntityMovedEvent(entity.Id, entity.X, entity.Y));
-    }
-
-    public event Action<EntityMovedEvent> OnEntityMoved;
+    public event Action<EcsRenderSignal>? OnRenderSignal;   // batched delta → host
+    public IReadOnlyList<SpriteState> Snapshot() { /* …initial SSR state… */ }
+    // 60 Hz Timer → MovementSystem + ColorSystem → emits EcsRenderSignal @1s
 }
 ```
 
-### Step 2: The Skinny Blazor-to-PixiJS Bridge
+No per-entity `EntityMoved` events and no `IJSRuntime` calls from the engine: state leaves the simulation only as a batched render signal (the "Performance Gold Rule"; ADR-003 refines this toward `TransformSnapshot` + shared-memory).
 
-In your shared Razor Component, subscribe to your C# engine events. When an event triggers, push the raw data directly down to PixiJS.
+### Step 2: The Static-SSR Host + SSE Bridge
+
+`Game.Web` is **static SSR only** (no Interactive Server, no SignalR circuit). It registers `EcsSimulation` as a singleton, maps the Razor components (discovering shared RCL routes via `AddAdditionalAssemblies`), and exposes one SSE endpoint that streams the batched render signal. No `IJSRuntime` on the web host.
+
+```csharp
+// src/Game.Web/Program.cs
+builder.Services.AddRazorComponents();
+builder.Services.AddSingleton<EcsSimulation>();
+
+app.MapStaticAssets();
+app.MapRazorComponents<App>()
+    .AddAdditionalAssemblies(typeof(GameView).Assembly)
+    .AddAdditionalAssemblies(typeof(ExamplesHome).Assembly);
+
+// SSE push of batched ECS render signals (no SignalR).
+app.MapGet("/api/ecs/stream", (EcsSimulation sim, HttpResponse response, CancellationToken ct) =>
+{
+    response.ContentType = "text/event-stream";
+    var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+    var writeSync = new object();
+
+    Action<EcsRenderSignal> handler = signal =>
+    {
+        var json = JsonSerializer.Serialize(signal, jsonOptions);
+        lock (writeSync)
+        {
+            response.WriteAsync($"event: sprite-move\ndata: {json}\n\n").GetAwaiter().GetResult();
+        }
+    };
+
+    sim.OnRenderSignal += handler;
+
+    var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    ct.Register(() =>
+    {
+        sim.OnRenderSignal -= handler;
+        completed.TrySetResult();
+    });
+    return completed.Task;
+});
+```
+
+The SSR page (`GameView.razor`) carries the initial payload to the client through a `data-message` attribute — no server circuit, no `IJSRuntime`:
 
 ```razor
-@inject IJSRuntime JS
+@page "/hello"
+@using Game.Engine
 @implements IDisposable
 
-<div class="relative w-full h-screen">
-    <!-- Tailwind HUD Layer -->
-    <div class="absolute top-4 left-4 bg-slate-900/80 p-4 rounded text-white">
-        Health: @PlayerHealth
-    </div>
-
-    <!-- PixiJS Canvas Holder -->
-    <div id="pixi-container" class="w-full h-full"></div>
-</div>
+<div id="pixi-viewport" data-message="@Message" style="width:100%;height:100%;"></div>
 
 @code {
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            // Initialize PixiJS canvas locally
-            await JS.InvokeVoidAsync("initPixi", "pixi-container");
+    private readonly GameSimulation _simulation = new();
+    private string Message { get; set; } = "";
 
-            // Subscribe to authoritative C# state changes
-            CoreEngine.OnEntityMoved += HandleEntityMoved;
-        }
+    protected override void OnInitialized()
+    {
+        _simulation.OnRenderMessage += HandleRenderMessage;
+        _simulation.PublishHello();              // raises RenderMessageEvent → Message
     }
 
-    private async void HandleEntityMoved(EntityMovedEvent ev)
-    {
-        // Push only the delta change down to the Pixi rendering layer
-        await JS.InvokeVoidAsync("pixiEngine.moveSprite", ev.EntityId, ev.X, ev.Y);
-    }
+    private void HandleRenderMessage(RenderMessageEvent ev) => Message = ev.Message;
 
-    public void Dispose() => CoreEngine.OnEntityMoved -= HandleEntityMoved;
+    public void Dispose() => _simulation.OnRenderMessage -= HandleRenderMessage;
 }
 ```
 
-### Step 3: Fast JavaScript PixiJS Mirror
+### Step 3: The PixiJS Scene (SSE Consumer)
 
-Keep your JavaScript thin. It shouldn't process game rules, combat math, or boundary checks; it should only load textures and move visual assets based on instructions from C#.
+`src/Game.UI/Frontend/game.ts` bootstraps PixiJS (`initGame` / `renderText` / `renderScene`). The ECS scene opens an `EventSource` on the SSE URL, parses each `sprite-move` batch, and moves only the sprites that changed — a pure mirror of authoritative C# state. No game rules or boundary checks in JS.
 
-```javascript
-window.pixiEngine = {
-    app: null,
-    sprites: new Map(),
+```typescript
+// src/Game.UI/Frontend/scenes/ecsSprites.ts (condensed)
+interface EcsSpriteState  { id: number; x: number; y: number; r: number; g: number; b: number; }
+interface EcsRenderSignal { seq: number; entityCount: number; tickMs: number; sprites: EcsSpriteState[]; }
 
-    initPixi: function (containerId) {
-        const container = document.getElementById(containerId);
-        this.app = new PIXI.Application({ resizeTo: container });
-        container.appendChild(this.app.view);
-    },
+// Initial positions come from the SSR payload → sprites render before the first tick.
+const sprites = new Map<number, Sprite>();
+for (const state of params.sprites ?? []) {
+    const sprite = new Sprite(texture);
+    sprite.anchor.set(0.5);
+    sprite.position.set(state.x, state.y);
+    sprite.tint = (state.r << 16) | (state.g << 8) | state.b;
+    app.stage.addChild(sprite);
+    sprites.set(state.id, sprite);
+}
 
-    moveSprite: function (id, x, y) {
-        const sprite = this.sprites.get(id);
-        if (sprite) {
-            // Animate or teleport to the authoritative coordinates
-            sprite.x = x;
-            sprite.y = y;
-        }
+// Stream authoritative deltas over SSE — never poll C# per frame.
+const source = new EventSource(params.streamUrl);
+source.addEventListener('sprite-move', (event) => {
+    const signal = JSON.parse(event.data) as EcsRenderSignal;
+    for (const state of signal.sprites) {
+        const sprite = sprites.get(state.id);
+        if (sprite && !sprite.destroyed) sprite.position.set(state.x, state.y);
     }
-};
+});
+source.onerror = () => source.close();
 ```
+
+This is the interim SSE/JSON bridge; the target is batched `TransformSnapshot` + shared-memory `HEAPF32` zero-copy + client interpolation (ADR-003).
 
 ## 🚀 Future-Proofing for Authoritative Multiplayer
 
@@ -160,7 +213,7 @@ By designing your MVP this way, moving to a multiplayer model becomes a structur
 
 - You pluck your Shared Core Engine project out of the client build and compile it into a headless ASP.NET Core console application hosted on Linux.
 - Instead of your client UI executing commands directly against a local `GameSimulation` instance, your client UI serializes the `MoveCommand` and shoots it over a SignalR or WebSocket connection.
-- The server runs the command through the exact same C# simulation code, processes the ticks, and broadcasts the `EntityMovedEvent` across the network to all connected clients.
+- The server runs the command through the exact same C# simulation code, processes the ticks, and broadcasts the batched `EcsRenderSignal` across the network to all connected clients.
 - Your Blazor/PixiJS setup handles the network event exactly like it handled the local event during the MVP phase.
 
 ## Sourced Ecosystem Libraries & Starting Points

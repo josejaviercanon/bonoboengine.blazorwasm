@@ -33,4 +33,9 @@ Architecture decisions for the Bonobo Engine are recorded here as ADRs, one file
 
 ## Records
 
-_No ADRs recorded yet._
+- **ADR-001** — [Three-Layer Engine Topology (Authoritative C# / Presentation World / PixiJS Render)](ADR-001-three-layer-topology.md)
+- **ADR-002** — [Physics Layering (Box2D.NET Authoritative, Rapier Optional Presentation)](ADR-002-physics-layering.md)
+- **ADR-003** — [Render-Bridge Evolution (Batched Snapshots → Shared-Memory HEAPF32 + Client Interpolation)](ADR-003-render-bridge-evolution.md)
+- **ADR-004** — [glTF Is the Asset Contract, Not the ECS Architecture](ADR-004-gltf-asset-contract.md)
+- **ADR-005** — [Presentation Physics Is Entity-Selective](ADR-005-presentation-physics-selective.md)
+- **ADR-006** — [Domain Responsibility Matrix (C# Simulation vs PixiJS Presentation)](ADR-006-domain-responsibility-matrix.md)

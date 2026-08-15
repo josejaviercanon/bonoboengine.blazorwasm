@@ -31,6 +31,10 @@ native shell acting purely as a *mirror* of engine state.
   buffers or outside query loops — never mid-query.
 - **System.Text.Json source generators** for AOT-safe persistence and delta frames.
 - **PixiJS v8** for rendering; **Tailwind CSS v4** for UI layout/theme.
+- **Three-layer runtime topology (ADR-001…006):** C# authoritative sim → batched render
+  snapshots → JS presentation world (interpolation + optional Rapier) → PixiJS. Box2D.NET
+  = authoritative physics (vendored, target); Rapier = optional presentation physics. glTF
+  = asset contract, not ECS architecture. See `docs/architecture/topology.md`.
 
 ## Knowledge Bases for Agents
 
