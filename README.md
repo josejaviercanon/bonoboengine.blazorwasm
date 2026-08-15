@@ -232,7 +232,17 @@ When working with an MCP-capable AI agent:
 - **`docs/2d-games`** (137 files) and **`docs/game-development`** — structured game design patterns, structural gamedev guides, and documentation contexts mapping out MonoGame + Arch ECS cross-over ecosystems. It ensures the agent does not stray from professional game loop conventions.
   - `docs/2d-games` is the complete vendored "Universal 2D Engine Toolkit" (MonoGame-flavored stack).
   - `docs/game-development` is the curated, engine-agnostic subset (concepts, programming, game design, project management, AI workflow).
-- **`net-microsoft-documentation` MCP server:** connects to Microsoft Learn via streamable HTTP, letting agents search documentation, fetch complete articles, and search code samples — trusted, up-to-date Microsoft knowledge ([source](https://learn.microsoft.com/en-us/training/support/mcp)).
+- **`net-microsoft-documentation` MCP server:** connects to Microsoft Learn via streamable HTTP, letting agents search documentation, fetch complete articles, and search code samples — trusted, up-to-date Microsoft knowledge ([source](https://learn.microsoft.com/en-us/training/support/mcp)):
+
+Queries the entire Microsoft Learn index in real time, an AI agent connected to it can search across virtually any language, framework, product, or tool in Microsoft's documentation ecosystem.
+
+Summary of the scope an agent can search using this server:
+
+1. Programming Languages & RuntimesCore Languages: TypeScript, JavaScript, C#, F#, VB.NET, C++, Python, Java, Rust, PowerShell, Go.Frameworks & Runtimes: .NET Core / .NET 8+, ASP.NET Core, Node.js, React, Angular, Vue, Blazor, MAUI, WPF, WinUI.
+2. Cloud & Infrastructure (Azure)Compute & Containers: Azure Container Apps, Azure Kubernetes Service (AKS), Azure App Service, Azure Functions, Virtual Machines.AI & Machine Learning: Azure OpenAI Service, Azure AI Foundry, Azure AI Search, Cognitive Services, Semantic Kernel, ML.NET.Databases & Storage: Azure Cosmos DB, Azure SQL Database, Azure Blob Storage, Azure Data Factory, Synapse Analytics.DevOps & Security: Azure DevOps, GitHub Actions, Azure Key Vault, Microsoft Entra ID (Azure AD), Role-Based Access Control (RBAC).
+3. Microsoft Developer Tools & SDKsIDEs & Code Editors: Visual Studio, Visual Studio Code, Visual Studio Code Extensions (Copilot, Azure Tools).
+4. CLI & Command Line: Azure CLI (az), Azure Developer CLI (azd), PowerShell modules, Windows Terminal, WSL.
+5. SDKs: Azure SDKs across languages (Python, TypeScript, .NET, Java), Model Context Protocol (MCP) SDKs, Microsoft Graph API.
 
 ## AI Agent Guidelines & System Instructions
 
@@ -304,5 +314,19 @@ dotnet test          # no test projects yet; validates the solution only
 ```
 
 > Build frontend assets before .NET commands. Do not run multiple `dotnet` commands concurrently — static-web-asset compression can race. See `AGENTS.md` for the full command reference.
+
+---
+
+Ported Game as expamples using Blazor Wasm ECS and Pixijs V8 render:
+
+|Done | Order | Game                 | What You'll Learn                                     |
+|---- | ----- | -------------------- | ----------------------------------------------------- |
+| [ ] | 1     | **Snake**            | Basic ECS, commands, delta events                     |
+| [ ] | 2     | **Tetris**           | Grid systems, command validation, line clearing       |
+| [ ] | 3     | **Pong**             | Real-time physics, minimal entity count               |
+| [ ] | 4     | **Asteroids**        | Entity spawning, wrap physics, vectors                |
+| [ ] | 5     | **Puzzling Potions** | Reuse PixiJS code, complex grid logic, asset pipeline |
+| [ ] | 6     | **Pac-Man**          | FSM AI, grid movement, power-up timers                |
+| [ ] | 7     | **NeonShooter**      | Particles, continuous input, visual effects at scale  |
 
 ---

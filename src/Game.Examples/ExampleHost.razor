@@ -3,6 +3,7 @@
 @using Game.Examples
 @using Game.Engine.ECS
 @inject EcsSimulation Ecs
+@inject SnakeSimulation Snake
 
 @code {
     [Parameter] public string ExampleId { get; set; } = string.Empty;
@@ -10,44 +11,25 @@
 
 @{
     var example = ExamplesCatalog.Find(ExampleId);
-    var isEcs = example?.Id == "ecs/sprites";
-    var payload = example is null
-        ? string.Empty
-        : JsonSerializer.Serialize(new ExamplePayload(example.Id, example.Title, example.SourceUrl,
-                isEcs ? Ecs.Snapshot() : null,
-                isEcs ? "/api/ecs/stream" : null),
-            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+    var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+    var payload = example switch
+    {
+        null => string.Empty,
+        { Id: "ecs/sprites" } => JsonSerializer.Serialize(
+            new ExamplePayload(example.Id, example.Title, example.SourceUrl, Ecs.Snapshot(), "/api/ecs/stream"),
+            jsonOptions),
+        { Id: "games/snake" } => JsonSerializer.Serialize(
+            new ExamplePayload(example.Id, example.Title, example.SourceUrl,
+                Snake: new SnakeScenePayload(Snake.Snapshot(), Snake.Score, Snake.IsGameOver, Snake.IsStarted,
+                    SnakeSimulation.GridWidth, SnakeSimulation.GridHeight, SnakeSimulation.CellSize, "/api/snake/stream")),
+            jsonOptions),
+        _ => JsonSerializer.Serialize(new ExamplePayload(example.Id, example.Title, example.SourceUrl), jsonOptions),
+    };
 }
 
 <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #020617; overflow: hidden; z-index: 1;">
 
-    <div style="position: absolute; top: 0; left: 0; right: 0; background-color: rgba(15, 23, 42, 0.9); padding: 0.75rem 1rem; color: #fff; z-index: 10; display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-bottom: 1px solid #1e293b;">
-        <div style="display: flex; align-items: center; gap: 1rem; min-width: 0;">
-            <select id="example-select"
-                    onchange="window.location.href = '/examples/' + this.value"
-                    style="background-color: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 0.375rem; padding: 0.375rem 0.5rem; font-size: 0.875rem;">
-                @foreach (var group in ExamplesCatalog.Groups)
-                {
-                    <optgroup label="@group">
-                        @foreach (var item in ExamplesCatalog.All.Where(e => e.Group == group))
-                        {
-                            <option value="@item.Id" selected="@(item.Id == ExampleId)">@item.Title</option>
-                        }
-                    </optgroup>
-                }
-            </select>
-            @if (example is not null)
-            {
-                <span style="color: #34d399; font-weight: bold; font-size: 0.9rem; white-space: nowrap;">@example.Title</span>
-                <a href="@example.SourceUrl" target="_blank" rel="noopener" style="color: #94a3b8; font-size: 0.75rem; white-space: nowrap;">Source</a>
-            }
-        </div>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span style="font-size: 0.75rem; color: #94a3b8;">PixiJS Examples</span>
-            <button type="button" onclick="togglePixiStats()" style="background-color: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 0.375rem; padding: 0.375rem 0.5rem; font-size: 0.75rem; cursor: pointer;">PixiJS Stats</button>
-            <button type="button" onclick="toggleCSharpStats()" style="background-color: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 0.375rem; padding: 0.375rem 0.5rem; font-size: 0.75rem; cursor: pointer;">C# Stats</button>
-        </div>
-    </div>
+    <ExampleToolbar CurrentId="@ExampleId" />
 
     @if (example is null)
     {

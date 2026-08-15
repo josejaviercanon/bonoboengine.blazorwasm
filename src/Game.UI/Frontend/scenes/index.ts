@@ -15,6 +15,7 @@ import { meshRopeScene } from './meshRope';
 import { pixiTextScene } from './pixiText';
 import { renderTextureScene } from './renderTexture';
 import { simpleGraphicsScene } from './simpleGraphics';
+import { snakeScene } from './snake';
 import { starWarpScene } from './starWarp';
 import { tilingSpriteScene } from './tilingSprite';
 
@@ -44,4 +45,5 @@ export const sceneRegistry: Record<string, SceneBuilder> = {
     'assets/asset-bundle': assetBundleScene,
     'advanced/star-warp': starWarpScene,
     'ecs/sprites': ecsSpritesScene,
+    'games/snake': snakeScene,
 };

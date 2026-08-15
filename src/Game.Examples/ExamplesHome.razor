@@ -2,21 +2,9 @@
 @page "/examples"
 
 <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #020617; overflow: hidden; z-index: 1;">
-    <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; color: #e2e8f0;">
+    <ExampleToolbar CurrentId="" />
+    <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; color: #e2e8f0;">
         <h1 style="margin: 0; font-size: 1.75rem; color: #34d399;">PixiJS Examples</h1>
-        <p style="margin: 0; color: #94a3b8; font-size: 0.9rem;">Select an example to render it.</p>
-        <select id="example-select"
-                onchange="window.location.href = '/examples/' + this.value"
-                style="background-color: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 0.375rem; padding: 0.5rem 0.75rem; font-size: 1rem;">
-            @foreach (var group in ExamplesCatalog.Groups)
-            {
-                <optgroup label="@group">
-                    @foreach (var item in ExamplesCatalog.All.Where(e => e.Group == group))
-                    {
-                        <option value="@item.Id">@item.Title</option>
-                    }
-                </optgroup>
-            }
-        </select>
+        <p style="margin: 0; color: #94a3b8; font-size: 0.9rem;">Pick an example or a game from the toolbar to render it.</p>
     </div>
 </div>

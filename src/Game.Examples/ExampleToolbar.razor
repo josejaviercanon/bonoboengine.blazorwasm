@@ -1,0 +1,46 @@
+@using Game.Examples
+
+@* Shared top toolbar: PixiJS example selector + game selector. *@
+<div style="position: absolute; top: 0; left: 0; right: 0; background-color: rgba(15, 23, 42, 0.9); padding: 0.75rem 1rem; color: #fff; z-index: 10; display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-bottom: 1px solid #1e293b;">
+    <div style="display: flex; align-items: center; gap: 1rem; min-width: 0; flex-wrap: wrap;">
+        <span style="font-size: 0.75rem; color: #94a3b8;">PixiJS Examples</span>
+        <select id="example-select"
+                onchange="window.location.href = '/examples/' + this.value"
+                style="background-color: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 0.375rem; padding: 0.375rem 0.5rem; font-size: 0.875rem;">
+            @foreach (var group in ExamplesCatalog.Examples.Select(e => e.Group).Distinct())
+            {
+                <optgroup label="@group">
+                    @foreach (var item in ExamplesCatalog.Examples.Where(e => e.Group == group))
+                    {
+                        <option value="@item.Id" selected="@(item.Id == CurrentId)">@item.Title</option>
+                    }
+                </optgroup>
+            }
+        </select>
+        <span style="font-size: 0.75rem; color: #94a3b8;">Games</span>
+        <select id="game-select"
+                onchange="window.location.href = '/examples/' + this.value"
+                style="background-color: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 0.375rem; padding: 0.375rem 0.5rem; font-size: 0.875rem;">
+            <option value="">Select a game…</option>
+            @foreach (var item in ExamplesCatalog.Games)
+            {
+                <option value="@item.Id" selected="@(item.Id == CurrentId)">@item.Title</option>
+            }
+        </select>
+        @if (Current is not null)
+        {
+            <span style="color: #34d399; font-weight: bold; font-size: 0.9rem; white-space: nowrap;">@Current.Title</span>
+            <a href="@Current.SourceUrl" target="_blank" rel="noopener" style="color: #94a3b8; font-size: 0.75rem; white-space: nowrap;">Source</a>
+        }
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <button type="button" onclick="togglePixiStats()" style="background-color: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 0.375rem; padding: 0.375rem 0.5rem; font-size: 0.75rem; cursor: pointer;">PixiJS Stats</button>
+        <button type="button" onclick="toggleCSharpStats()" style="background-color: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 0.375rem; padding: 0.375rem 0.5rem; font-size: 0.75rem; cursor: pointer;">C# Stats</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string CurrentId { get; set; } = string.Empty;
+
+    private ExamplesCatalog.ExampleInfo? Current => ExamplesCatalog.Find(CurrentId);
+}

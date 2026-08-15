@@ -14,9 +14,17 @@
 
 - `docs/pixijs-documentation-for-llms/pixyjs.md` — complete vendored PixiJS v8 API reference (llm.txt format). Consult it when writing or verifying any PixiJS code; prefer its API facts over memory or generic web knowledge.
 - `net-microsoft-documentation` MCP server — official, up-to-date Microsoft Learn docs for .NET, ASP.NET Core, Blazor, and MAUI. Use it for framework/API verification.
+Summary of the scope an agent can search using this server:
+
+  1. Programming Languages & RuntimesCore Languages: TypeScript, JavaScript, C#, F#, VB.NET, C++, Python, Java, Rust, PowerShell, Go.Frameworks & Runtimes: .NET Core / .NET 8+, ASP.NET Core, Node.js, React, Angular, Vue, Blazor, MAUI, WPF, WinUI.
+  2. Microsoft Developer Tools & SDKsIDEs & Code Editors: Visual Studio, Visual Studio Code, Visual Studio Code Extensions (Copilot, Azure Tools).
+  3. CLI & Command Line: Azure CLI (az), Azure Developer CLI (azd), PowerShell modules, Windows Terminal, WSL.
+  4. SDKs: Azure SDKs across languages (Python, TypeScript, .NET, Java), Model Context Protocol (MCP) SDKs.
+
 - `docs/2d-games` and `docs/game-development` — game architecture and gamedev workflow references (see `docs/index.md`).
 - `docs/architecture/topology.md` — engine topology deep-dive (Implemented vs Target): three-layer runtime, WASM→JS bridge, physics, skeletal pipelines, domain matrix, ecosystem matrix, implementation status.
 - `docs/adr/` — Architecture Decision Records (ADR-001 topology … ADR-006 domain matrix). Read before changing cross-boundary, physics, render-bridge, or asset-pipeline decisions.
+- `.agents/skills/static-ssr-snapshot-bridge/SKILL.md` — mandatory rules for the `Game.Web` host + C#↔JS boundary (static SSR only, batched-snapshot SSE/POST bridge, strict TS payload types). Supersedes any generic "Blazor WASM + Vite + CustomElements" skill for this repo; load it before touching hosting, bootstrap, the render bridge, or Frontend interop.
 
 ## Architectural Guardrails
 
