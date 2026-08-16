@@ -53,6 +53,13 @@ public sealed class SnakeSimulation : IDisposable
     private static readonly SpriteColor FoodColor = new(34, 211, 238);
     private static readonly SpriteColor BlackFoodColor = new(0, 0, 0);
 
+    // Foods get monotonically increasing render ids so the client can tell a
+    // freshly falling food apart from already-settled black foods.
+    private static int _foodIdCounter = FoodRenderId;
+
+    /// <summary>Next unique render id for a spawned food entity.</summary>
+    public static int NextFoodId() => Interlocked.Increment(ref _foodIdCounter);
+
     private readonly World _world;
     private readonly Group<double> _systems;
     private readonly Timer _timer;
@@ -219,7 +226,7 @@ public sealed class SnakeSimulation : IDisposable
             var cell = new GridCell(_random.Next(GridWidth), _random.Next(GridHeight));
             if (occupied.Contains((cell.Y * (long)GridWidth) + cell.X)) continue;
             _world.Create(
-                new RenderId(FoodRenderId),
+                new RenderId(NextFoodId()),
                 cell,
                 FoodColor,
                 new FoodAge(0f),
@@ -231,14 +238,15 @@ public sealed class SnakeSimulation : IDisposable
     /// <summary>
     ///     One-shot final-position report from the presentation physics (Rapier drop).
     ///     The ECS records the final food cell; afterwards no more drop events of this
-    ///     type are accepted for the current food. Black food stays black forever.
+    ///     type are accepted for the current food. Black food stays black forever as a
+    ///     permanent obstacle, and a fresh normal food spawns so play continues.
     /// </summary>
     public void FoodDropped(int x, int y)
     {
         lock (_sync)
         {
-            var food = FindFoodEntity();
-            if (food == Entity.Null || !_world.Has<FoodFall>(food) || _world.Has<FoodSynced>(food)) return;
+            var food = FindFallingFood();
+            if (food == Entity.Null) return;
 
             var cell = ClampToGrid(new GridCell(x, y));
             if (CellOccupiedBySnake(cell))
@@ -247,7 +255,53 @@ public sealed class SnakeSimulation : IDisposable
             }
             _world.Set(food, cell);
             _world.Add<FoodSynced>(food);
+            SpawnNormalFood();
         }
+    }
+
+    /// <summary>Spawns a new normal (cyan) food on a free cell and flags the spawn event.</summary>
+    private void SpawnNormalFood()
+    {
+        var occupied = new HashSet<long>();
+        var entities = new Entity[_world.Size];
+        _world.GetEntities(new QueryDescription(), entities.AsSpan());
+        foreach (var entity in entities)
+        {
+            if (!_world.IsAlive(entity) || !_world.Has<GridCell>(entity)) continue;
+            var cell = _world.Get<GridCell>(entity);
+            occupied.Add((cell.Y * (long)GridWidth) + cell.X);
+        }
+
+        for (var attempt = 0; attempt < 100; attempt++)
+        {
+            var cell = new GridCell(_random.Next(GridWidth), _random.Next(GridHeight));
+            if (occupied.Contains((cell.Y * (long)GridWidth) + cell.X)) continue;
+            _world.Create(
+                new RenderId(NextFoodId()),
+                cell,
+                FoodColor,
+                new FoodAge(0f),
+                new SnakeFood());
+            var statsEntity = FindStatsEntity();
+            if (statsEntity != Entity.Null)
+            {
+                var stats = _world.Get<SnakeStats>(statsEntity);
+                _world.Set(statsEntity, new SnakeStats(stats.Score, stats.GameOver, stats.Started, stats.Ate, foodSpawned: true));
+            }
+            return;
+        }
+    }
+
+    private Entity FindFallingFood()
+    {
+        var entities = new Entity[_world.Size];
+        _world.GetEntities(new QueryDescription(), entities.AsSpan());
+        foreach (var entity in entities)
+        {
+            if (!_world.IsAlive(entity) || !_world.Has<SnakeFood>(entity)) continue;
+            if (_world.Has<FoodFall>(entity) && !_world.Has<FoodSynced>(entity)) return entity;
+        }
+        return Entity.Null;
     }
 
     private GridCell ClampToGrid(GridCell cell) =>
@@ -353,21 +407,25 @@ public sealed class SnakeSimulation : IDisposable
 
         if (isFalling && !isSynced && age.Seconds >= FoodFallDelaySeconds + FoodDropTimeoutSeconds)
         {
-            // No drop report arrived: force the final position (random free bottom cell).
+            // No drop report arrived: force the final position (random free bottom
+            // cell) and spawn a fresh normal food so the game keeps going.
             var cell = FindFreeBottomCell(_random.Next(GridWidth));
             _world.Set(food, cell);
             _world.Add<FoodSynced>(food);
+            SpawnNormalFood();
         }
         return false;
     }
 
+    /// <summary>Finds the currently playable (normal, non-falling) food entity.</summary>
     private Entity FindFoodEntity()
     {
         var entities = new Entity[_world.Size];
         _world.GetEntities(new QueryDescription(), entities.AsSpan());
         foreach (var entity in entities)
         {
-            if (_world.IsAlive(entity) && _world.Has<SnakeFood>(entity)) return entity;
+            if (!_world.IsAlive(entity) || !_world.Has<SnakeFood>(entity)) continue;
+            if (!_world.Has<FoodFall>(entity)) return entity;
         }
         return Entity.Null;
     }

@@ -64,7 +64,10 @@ const KEY_TO_DIRECTION: Record<string, string> = {
     L: 'right',
 };
 
-const FOOD_RENDER_ID = 1000; // must match SnakeSimulation.FoodRenderId
+// Food entities get monotonically increasing render ids starting at 1000
+// (must match SnakeSimulation.FoodRenderId). id >= FOOD_ID_START => food.
+const FOOD_ID_START = 1000;
+const isFood = (id: number) => id >= FOOD_ID_START;
 
 const EAT_SOUND_ALIAS = 'snake-eat';
 const SPAWN_SOUND_ALIAS = 'snake-spawn';
@@ -199,14 +202,19 @@ export const snakeScene: SceneBuilder = (app, params) => {
     let physicsWorld: RAPIER.World | null = null;
     let foodBody: RAPIER.RigidBody | null = null;
     let foodFalling = false;
+    let fallingFoodId: number | null = null;
     let settleFrames = 0;
     let dropPosted = false;
+    // Ids of foods that already settled at the bottom (drawn statically, black).
+    const settledFoodIds = new Set<number>();
 
     const initPhysics = async () => {
         if (physicsWorld) return;
         const initFn = (RAPIER as unknown as { init?: () => Promise<void> }).init;
         if (initFn) await initFn();
-        physicsWorld = new RAPIER.World({ x: 0, y: 9.81 });
+        // Rapier is y-up; the board is y-down, so gravity must point DOWN in world
+        // space (negative y) for the food to fall to the bottom of the screen.
+        physicsWorld = new RAPIER.World({ x: 0, y: -9.81 });
         const floorBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(boardWidth / 2, -2));
         physicsWorld.createCollider(RAPIER.ColliderDesc.cuboid(boardWidth / 2, 2), floorBody);
         const leftBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(-2, boardHeight / 2));
@@ -246,6 +254,8 @@ export const snakeScene: SceneBuilder = (app, params) => {
         foodBody = null;
         foodFalling = false;
         dropPosted = true;
+        if (fallingFoodId !== null) settledFoodIds.add(fallingFoodId);
+        fallingFoodId = null;
         dbg('food dropped, reporting final cell', gx, gy);
         fetch('/api/snake/food-dropped', {
             method: 'POST',
@@ -277,9 +287,14 @@ export const snakeScene: SceneBuilder = (app, params) => {
         board.clear();
         foodGfx.clear();
         for (const state of states) {
-            if (state.id === FOOD_RENDER_ID && foodFalling) continue;
-            const target = state.id === FOOD_RENDER_ID ? foodGfx : board;
-            target.rect(state.x - cellSize / 2, state.y - cellSize / 2, cellSize, cellSize)
+            if (!isFood(state.id)) {
+                board.rect(state.x - cellSize / 2, state.y - cellSize / 2, cellSize, cellSize)
+                    .fill((state.r << 16) | (state.g << 8) | state.b);
+                continue;
+            }
+            // The falling food is animated by the Rapier ticker; skip its stale position.
+            if (state.id === fallingFoodId) continue;
+            foodGfx.rect(state.x - cellSize / 2, state.y - cellSize / 2, cellSize, cellSize)
                 .fill((state.r << 16) | (state.g << 8) | state.b);
         }
     };
@@ -332,10 +347,18 @@ export const snakeScene: SceneBuilder = (app, params) => {
                 playSound(SPAWN_SOUND_ALIAS, SPAWN_SOUND_URL);
             }
             if (signal.foodFalling) {
-                const food = signal.sprites.find((state) => state.id === FOOD_RENDER_ID);
-                const cellX = food ? Math.round(food.x / cellSize - 0.5) : Math.round(gridWidth / 2);
-                const cellY = food ? Math.round(food.y / cellSize - 0.5) : Math.round(gridHeight / 2);
-                void startFoodFall(cellX, cellY);
+                // The falling food is the black one not yet settled at the bottom.
+                const blackFoods = signal.sprites.filter(
+                    (state) => isFood(state.id) && state.r === 0 && state.g === 0 && state.b === 0);
+                const food = blackFoods.find((state) => !settledFoodIds.has(state.id)) ?? blackFoods[0];
+                if (food) {
+                    fallingFoodId = food.id;
+                    void startFoodFall(
+                        Math.round(food.x / cellSize - 0.5),
+                        Math.round(food.y / cellSize - 0.5));
+                } else {
+                    dbg('ECS event: food falling, but no black food found in snapshot');
+                }
             }
             if (signal.gameOver) {
                 // Stop any running drop: the physics body dies with the round.

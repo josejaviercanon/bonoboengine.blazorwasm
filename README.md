@@ -321,7 +321,7 @@ Ported Game as expamples using Blazor Wasm ECS and Pixijs V8 render:
 
 |Done | Order | Game                 | What You'll Learn                                     |
 |---- | ----- | -------------------- | ----------------------------------------------------- |
-| [ ] | 1     | **Snake**            | Basic ECS, commands, delta events                     |
+| [X] | 1     | **Snake**            | Basic ECS, commands, delta events,  basic physics     |
 | [ ] | 2     | **Tetris**           | Grid systems, command validation, line clearing       |
 | [ ] | 3     | **Pong**             | Real-time physics, minimal entity count               |
 | [ ] | 4     | **Asteroids**        | Entity spawning, wrap physics, vectors                |
