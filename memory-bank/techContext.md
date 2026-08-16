@@ -41,7 +41,7 @@
 
 ```powershell
 dotnet build bonoboWebGame.slnx     # build all
-dotnet test                          # no test projects yet; validates solution
+dotnet test                          # Game.Tests + Game.Tests.Aot (Playwright suite runs from src/Game.Tests.UI)
 dotnet watch --project src/Game.Web  # run web host
 ```
 

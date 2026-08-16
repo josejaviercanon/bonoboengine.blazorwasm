@@ -6,7 +6,9 @@
 - `src/Game.Engine` is a plain C# class library. Keep engine logic independent of UI and platform code. It hosts the Arch ECS (`Game.Engine.ECS`: components, `[Query]` systems, `EcsSimulation`) via vendored `src/Arch` + `src/Arch.Generators` (analyzer only).
 - `src/Game.UI` is the shared Razor Class Library. It references `Game.Engine` and owns shared Razor components plus PixiJS assets.
 - `src/Game.Web` is the Blazor Web App host. It uses **static SSR only** (no Interactive Server, no SignalR circuit, no reconnect modal) and discovers shared RCL routes via `AddAdditionalAssemblies` in `Program.cs` plus the `Router` `AdditionalAssemblies` in `Components/Routes.razor`. PixiJS is bootstrapped client-side from an inline `load`-event script in `Components/App.razor`, which reads the engine payload from `#pixi-viewport[data-message]`.
-- `src/Game.Maui` is the .NET MAUI Blazor Hybrid host. It targets Android by default, plus iOS, Mac Catalyst, and Windows when supported by the OS/workloads.
+- `src/Game.Tests` is the xUnit v3 test project (determinism self-checks, ECS unit tests, snapshot shape). `src/Game.Tests.Aot` is the TUnit test project (AOT/trim pattern checks over the `Game.Engine` closure). Both are in the solution and run under the Microsoft.Testing.Platform runner opted in via root `global.json` — do not delete that file or `dotnet test` misbehaves on .NET 10.
+- `src/Game.Tests.UI` is the Node/TypeScript Playwright E2E suite against the real `Game.Web` host. Not a `.csproj` — run from its folder via npm. Uses installed Chrome (`channel: 'chrome'`); config boots the host on port 5902. See `docs/testing-ui-E2E/index.md`.
+- `src/Game.Maui` is the .NET MAUI Blazor Hybrid host. It targets Android by default, plus iOS, Mac Catalyst, and Windows when supported by the OS/workloads. **Currently commented out of `bonoboWebGame.slnx` (temporary web-only solution build for speed)** — build it directly with `dotnet build src/Game.Maui/Game.Maui.csproj` when doing native app work.
 - `src/Box2D.NET` and `src/BrainAI` are **vendored** C# libraries (physics; pathfinding/AI) but are **not referenced** by `Game.Engine.csproj` yet — treat as target dependencies, not active. `src/Temp/` holds upstream samples/demos (`Box2D.NET.Samples`, `Box2D.NET.Shared`, `BrainAI.Demo`, `ECS-example`) plus the source topology doc — not part of the build/solution.
 - The PixiJS v8 ecosystem (`pixi.js`, `@pixi/ui`, `@pixi/sound`, `@pixi/tilemap`, `pixi-viewport`, `pixi-filters`, `@spd789562/particle-emitter`) is declared in `src/Game.UI/package.json`. **Rapier (`@dimforge/rapier2d`) it is optional presentation-physics only (ADR-002).
 
@@ -47,7 +49,7 @@ Run from repository root:
 
 ```powershell
 dotnet build bonoboWebGame.slnx
-dotnet test
+dotnet test          # Game.Tests (xUnit v3) + Game.Tests.Aot (TUnit); MTP runner via global.json
 ```
 
 Run from `src/Game.UI`:
@@ -57,6 +59,16 @@ npm ci
 npm run build
 npm run typecheck # scoped tsconfig.app.json (Frontend) + tsconfig.node.json (vite.config.ts)
 ```
+
+Run Playwright E2E from `src/Game.Tests.UI` (Node project; needs `npm ci` first):
+
+```powershell
+npm ci
+npx playwright test        # boots Game.Web on port 5902, uses installed Chrome (channel: 'chrome')
+npm run typecheck
+```
+
+For exploratory agent-driven browser work use the `playwright-cli` skill with Chrome: `playwright-cli open <url> --browser=chrome`. A Playwright MCP server is NOT needed — skills + playwright-cli + the checked-in Playwright suite cover this repo (verdict + rationale in `docs/testing-ui-E2E/index.md`).
 
 Run web host from repository root:
 
@@ -70,7 +82,8 @@ MAUI builds require .NET MAUI workloads. Platform-specific target frameworks may
 
 ## Verification Notes
 
-- No test projects currently exist; `dotnet test` may report no tests while still validating the solution.
+- Test projects: `Game.Tests` (xUnit v3), `Game.Tests.Aot` (TUnit), `Game.Tests.UI` (Playwright, Node-only, not in the solution). Full guide: `docs/testing-ui-E2E/index.md`. `Game.Maui` is temporarily commented out of the solution (web-only builds for speed).
+- After touching `Game.UI` RCL assets, kill any running `Game.Web.exe` before rebuilding. Static-asset 500s (`_content/Game.UI/dist/*`) = stale/raced `bin`/`obj` static-web-asset output; fix by killing the host and rebuilding (delete `src/Game.Web/bin`+`obj` if it persists).
 - `bin/`, `obj/`, `node_modules/`, and other build output are ignored. Do not commit them.
 - Trust `.csproj`, `.slnx`, `package.json`, and executable build output over setup prose in `README.md`.
 - `docs/index.md` describe architecture; `docs/ai-agents/codebase-truth.md` holds verified API facts; record significant decisions in `docs/adr/`.

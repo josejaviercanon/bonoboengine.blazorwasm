@@ -310,7 +310,7 @@ The console prints a local loopback URL (e.g., `https://localhost:5001`). Open i
 
 ```powershell
 dotnet build bonoboWebGame.slnx
-dotnet test          # no test projects yet; validates the solution only
+dotnet test          # Game.Tests (xUnit v3) + Game.Tests.Aot (TUnit); Playwright suite is separate (src/Game.Tests.UI)
 ```
 
 > Build frontend assets before .NET commands. Do not run multiple `dotnet` commands concurrently — static-web-asset compression can race. See `AGENTS.md` for the full command reference.

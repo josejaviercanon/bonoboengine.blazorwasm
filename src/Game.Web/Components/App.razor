@@ -16,8 +16,9 @@
 <body class="bg-slate-950 m-0 p-0 overflow-hidden">
     <Routes />
 
-    <!-- Use the direct physical static web asset path to guarantee global scope registration -->
-    <script src="_content/Game.UI/dist/game-bundle.iife.js"></script>
+    <!-- Use the direct physical static web asset path to guarantee global scope registration.
+         ES module: required because the Rapier wasm wrapper uses top-level await. -->
+    <script type="module" src="_content/Game.UI/dist/game-bundle.js"></script>
 
     <!--
         Static-SSR bootstrap: no server circuit, no SignalR, no reconnect modal.
@@ -26,8 +27,7 @@
         (plain text for "/", or an example scene for "/examples/{id}").
     -->
     <script>
-        window.addEventListener('load', function () {
-            console.log('[pixi-debug] window load fired');
+        function startPixi() {
             var viewport = document.getElementById('pixi-viewport');
             if (!viewport) {
                 console.warn('[pixi-debug] #pixi-viewport NOT found in DOM');
@@ -35,11 +35,6 @@
             }
             var message = viewport.getAttribute('data-message') || '';
             console.log('[pixi-debug] #pixi-viewport found, data-message =', JSON.stringify(message));
-            if (typeof initGame !== 'function') {
-                console.error('[pixi-debug] initGame is not defined - game-bundle may have failed to load');
-                return;
-            }
-            console.log('[pixi-debug] calling initGame("pixi-viewport")');
             initGame('pixi-viewport')
                 .then(function () {
                     console.log('[pixi-debug] initGame resolved, calling renderScene(message)');
@@ -52,6 +47,23 @@
                 .catch(function (err) {
                     console.error('[pixi-debug] initGame failed:', err);
                 });
+        }
+
+        window.addEventListener('load', function () {
+            console.log('[pixi-debug] window load fired');
+            // game-bundle.js is an ES module with dynamic imports (PixiJS chunks,
+            // optional Rapier wasm): its execution can finish AFTER the load event.
+            // Poll until initGame is exposed instead of failing fast.
+            var attempts = 0;
+            (function waitForBundle() {
+                if (typeof initGame === 'function') {
+                    startPixi();
+                } else if (++attempts < 300) { // ~15 s max at 50 ms intervals
+                    setTimeout(waitForBundle, 50);
+                } else {
+                    console.error('[pixi-debug] initGame is not defined after 15s - game-bundle may have failed to load');
+                }
+            })();
         });
     </script>
 </body>

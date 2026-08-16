@@ -25,6 +25,10 @@
   evolution), ADR-004 (glTF as asset contract), ADR-005 (entity-selective presentation
   physics), ADR-006 (domain responsibility matrix).
 - ✅ Memory bank initialized (this directory).
+- ✅ Test infrastructure (2026-08): `Game.Tests` (xUnit v3, determinism/ECS/snapshot unit tests), `Game.Tests.Aot` (TUnit, AOT/trim pattern checks), `Game.Tests.UI` (Node/TS Playwright E2E vs `Game.Web`, Chrome channel, port 5902). Root `global.json` opts into Microsoft.Testing.Platform (required for `dotnet test` on .NET 10). All green: 21 .NET tests, 5 Playwright tests. Guide: `docs/testing-ui-E2E/index.md`.
+- ✅ Playwright bootstrap-race fix: `App.razor` inline `load` script now polls up to 15 s for `window.initGame` (ES-module dynamic imports finish after `load`).
+- ✅ Solution build is web-only for speed: `Game.Maui` commented out of `bonoboWebGame.slnx` (re-enable for native work).
+- ✅ Verdict recorded: Playwright MCP server NOT needed — skills + `playwright-cli` + checked-in Playwright suite suffice (`docs/testing-ui-E2E/index.md`).
 
 ## In Progress / Template-State
 

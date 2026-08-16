@@ -102,6 +102,15 @@ app.MapPost("/api/snake/start", (SnakeSimulation sim) =>
     return Results.NoContent();
 });
 
+// One-shot final-position report from the presentation physics (Rapier food drop).
+// The ECS records the final food cell and accepts no further drop events of this
+// type for the current food.
+app.MapPost("/api/snake/food-dropped", (SnakeSimulation sim, FoodDroppedRequest request) =>
+{
+    sim.FoodDropped(request.X, request.Y);
+    return Results.NoContent();
+});
+
 app.MapPost("/api/snake/restart", (SnakeSimulation sim) =>
 {
     sim.Reset();

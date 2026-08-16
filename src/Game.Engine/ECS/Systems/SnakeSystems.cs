@@ -108,6 +108,14 @@ public partial class SnakeStepSystem : BaseSystem<World, double>
         var body = CollectBody(entities);
         var oldTail = body.Length > 0 ? World.Get<GridCell>(body[^1]) : headCell;
         var eats = food != Entity.Null && SameCell(World.Get<GridCell>(food), newCell);
+        var eatsBlack = eats && World.Has<FoodFall>(food);
+
+        if (eatsBlack)
+        {
+            // The black food is a deadly obstacle: touching it ends the game.
+            World.Set(statsEntity, new SnakeStats(stats.Score, true, stats.Started));
+            return;
+        }
 
         // Shift: every segment takes the cell of the segment in front of it; the
         // head's old cell moves into the first body segment, the tail cell is dropped.
@@ -196,6 +204,7 @@ public partial class SnakeStepSystem : BaseSystem<World, double>
                 new RenderId(SnakeSimulation.FoodRenderId),
                 cell,
                 _foodColor,
+                new FoodAge(0f),
                 new SnakeFood());
             var stats = World.Get<SnakeStats>(statsEntity);
             World.Set(statsEntity, new SnakeStats(stats.Score, stats.GameOver, stats.Started, stats.Ate, foodSpawned: true));

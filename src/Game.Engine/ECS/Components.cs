@@ -123,6 +123,35 @@ public struct SnakeFood
 {
 }
 
+/// <summary>Age of the current food in seconds. Drives the 3 s fall trigger.</summary>
+[Component]
+public struct FoodAge
+{
+    public float Seconds;
+
+    public FoodAge(float seconds)
+    {
+        Seconds = seconds;
+    }
+}
+
+/// <summary>
+///     Marks food that has started its presentation-physics drop (black, deadly).
+///     The ECS does not simulate the fall: it only records initial/current position
+///     until the client reports the final position via <c>FoodDropped</c>.
+/// </summary>
+[Component]
+public struct FoodFall
+{
+}
+
+/// <summary>Marks food whose final drop position was already synced from the client.
+/// One-shot: after this, no more drop sync events of this type are accepted.</summary>
+[Component]
+public struct FoodSynced
+{
+}
+
 /// <summary>Per-game mutable state kept on a dedicated stats entity.
 /// <see cref="Ate"/> and <see cref="FoodSpawned"/> are set by the step system and consumed
 /// by the simulation when building the next render signal (they drive client events

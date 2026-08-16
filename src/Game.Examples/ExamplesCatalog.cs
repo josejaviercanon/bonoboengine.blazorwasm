@@ -69,3 +69,6 @@ public sealed record SnakeScenePayload(
 
 /// <summary>Client input for the snake scene: a suggested direction the sim validates.</summary>
 public sealed record SnakeInputRequest(string Direction);
+
+/// <summary>Final-position report of the Rapier food drop (cell coordinates).</summary>
+public sealed record FoodDroppedRequest(int X, int Y);

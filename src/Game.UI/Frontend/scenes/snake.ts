@@ -1,5 +1,7 @@
 import { Graphics, Text, TextStyle } from 'pixi.js';
+import type { Ticker } from 'pixi.js';
 import { sound } from '@pixi/sound';
+import RAPIER from '@dimforge/rapier2d';
 import type { SceneBuilder } from './types';
 import { publishCSharpStats } from '../stats/overlays';
 
@@ -22,6 +24,7 @@ interface SnakeRenderSignal {
     started: boolean;
     ate: boolean;
     foodSpawned: boolean;
+    foodFalling: boolean;
 }
 
 interface SnakeSceneParams {
@@ -60,6 +63,8 @@ const KEY_TO_DIRECTION: Record<string, string> = {
     l: 'right',
     L: 'right',
 };
+
+const FOOD_RENDER_ID = 1000; // must match SnakeSimulation.FoodRenderId
 
 const EAT_SOUND_ALIAS = 'snake-eat';
 const SPAWN_SOUND_ALIAS = 'snake-spawn';
@@ -100,11 +105,24 @@ export const snakeScene: SceneBuilder = (app, params) => {
     const boardHeight = gridHeight * cellSize;
 
     const board = new Graphics();
+    const foodGfx = new Graphics();
     const scale = Math.min(app.screen.width / boardWidth, app.screen.height / boardHeight);
     board.scale.set(scale);
     board.x = (app.screen.width - boardWidth * scale) / 2;
     board.y = (app.screen.height - boardHeight * scale) / 2;
+    foodGfx.scale.set(scale);
+    foodGfx.x = board.x;
+    foodGfx.y = board.y;
     app.stage.addChild(board);
+    app.stage.addChild(foodGfx);
+
+    // Wall border around the play field: static presentation, drawn once.
+    const border = new Graphics();
+    border.rect(0, 0, boardWidth, boardHeight).stroke({ width: 4, color: '#8B0000' });
+    border.scale.set(scale);
+    border.x = board.x;
+    border.y = board.y;
+    app.stage.addChild(border);
 
     const scoreText = new Text({
         text: 'Score: 0',
@@ -174,10 +192,94 @@ export const snakeScene: SceneBuilder = (app, params) => {
     };
     startButton.addEventListener('click', startGame);
 
+    // --- Presentation physics: Rapier food drop (ADR-002/005) -------------------
+    // The ECS flags the food as falling after 3 s; this client runs the gravity
+    // fall, then reports the FINAL position once. The ECS only ever sees the
+    // initial and final positions - never the intermediate frames.
+    let physicsWorld: RAPIER.World | null = null;
+    let foodBody: RAPIER.RigidBody | null = null;
+    let foodFalling = false;
+    let settleFrames = 0;
+    let dropPosted = false;
+
+    const initPhysics = async () => {
+        if (physicsWorld) return;
+        const initFn = (RAPIER as unknown as { init?: () => Promise<void> }).init;
+        if (initFn) await initFn();
+        physicsWorld = new RAPIER.World({ x: 0, y: 9.81 });
+        const floorBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(boardWidth / 2, -2));
+        physicsWorld.createCollider(RAPIER.ColliderDesc.cuboid(boardWidth / 2, 2), floorBody);
+        const leftBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(-2, boardHeight / 2));
+        physicsWorld.createCollider(RAPIER.ColliderDesc.cuboid(2, boardHeight), leftBody);
+        const rightBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(boardWidth + 2, boardHeight / 2));
+        physicsWorld.createCollider(RAPIER.ColliderDesc.cuboid(2, boardHeight), rightBody);
+        dbg('Rapier world initialized');
+    };
+
+    const startFoodFall = async (cellX: number, cellY: number) => {
+        if (foodFalling) return;
+        await initPhysics();
+        if (!physicsWorld) return;
+
+        // Board coords are y-down; Rapier is y-up: flip when entering the world.
+        const worldX = (cellX + 0.5) * cellSize;
+        const worldY = boardHeight - (cellY + 0.5) * cellSize;
+        const randomDrift = (Math.random() - 0.5) * cellSize * 2;
+        foodBody = physicsWorld.createRigidBody(
+            RAPIER.RigidBodyDesc.dynamic()
+                .setTranslation(worldX, worldY)
+                .setLinvel(randomDrift, 0),
+        );
+        physicsWorld.createCollider(RAPIER.ColliderDesc.cuboid(cellSize / 2 - 1, cellSize / 2 - 1), foodBody);
+        foodFalling = true;
+        settleFrames = 0;
+        dropPosted = false;
+        dbg('ECS event: food falling, Rapier drop started at cell', cellX, cellY);
+    };
+
+    const reportFoodDrop = () => {
+        if (dropPosted || !physicsWorld || !foodBody) return;
+        const pos = foodBody.translation();
+        const gx = Math.max(0, Math.min(gridWidth - 1, Math.round(pos.x / cellSize - 0.5)));
+        const gy = Math.max(0, Math.min(gridHeight - 1, Math.round((boardHeight - pos.y) / cellSize - 0.5)));
+        physicsWorld.removeRigidBody(foodBody);
+        foodBody = null;
+        foodFalling = false;
+        dropPosted = true;
+        dbg('food dropped, reporting final cell', gx, gy);
+        fetch('/api/snake/food-dropped', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ x: gx, y: gy }),
+        }).catch((err) => console.error('[pixi-debug] snake food-dropped failed:', err));
+    };
+
+    const onTicker = (ticker: Ticker) => {
+        if (!foodFalling || !physicsWorld || !foodBody) return;
+        physicsWorld.timestep = Math.min(ticker.deltaMS / 1000, 1 / 30);
+        physicsWorld.step();
+
+        const pos = foodBody.translation();
+        const gx = pos.x / cellSize - 0.5;
+        const gy = (boardHeight - pos.y) / cellSize - 0.5;
+        foodGfx.clear();
+        foodGfx.rect(gx * cellSize - cellSize / 2, gy * cellSize - cellSize / 2, cellSize, cellSize)
+            .fill(0x000000);
+
+        const speed = Math.abs(foodBody.linvel().y) + Math.abs(foodBody.linvel().x);
+        if (foodBody.isSleeping() || (pos.y <= 2 && speed < 0.5 && ++settleFrames > 20)) {
+            reportFoodDrop();
+        }
+    };
+    app.ticker.add(onTicker);
+
     const draw = (states: SnakeSpriteState[]) => {
         board.clear();
+        foodGfx.clear();
         for (const state of states) {
-            board.rect(state.x - cellSize / 2, state.y - cellSize / 2, cellSize, cellSize)
+            if (state.id === FOOD_RENDER_ID && foodFalling) continue;
+            const target = state.id === FOOD_RENDER_ID ? foodGfx : board;
+            target.rect(state.x - cellSize / 2, state.y - cellSize / 2, cellSize, cellSize)
                 .fill((state.r << 16) | (state.g << 8) | state.b);
         }
     };
@@ -229,6 +331,20 @@ export const snakeScene: SceneBuilder = (app, params) => {
                 dbg('ECS event: food spawned');
                 playSound(SPAWN_SOUND_ALIAS, SPAWN_SOUND_URL);
             }
+            if (signal.foodFalling) {
+                const food = signal.sprites.find((state) => state.id === FOOD_RENDER_ID);
+                const cellX = food ? Math.round(food.x / cellSize - 0.5) : Math.round(gridWidth / 2);
+                const cellY = food ? Math.round(food.y / cellSize - 0.5) : Math.round(gridHeight / 2);
+                void startFoodFall(cellX, cellY);
+            }
+            if (signal.gameOver) {
+                // Stop any running drop: the physics body dies with the round.
+                if (physicsWorld && foodBody) {
+                    physicsWorld.removeRigidBody(foodBody);
+                    foodBody = null;
+                }
+                foodFalling = false;
+            }
         } catch (err) {
             console.error('[pixi-debug] snake-move parse failed:', err);
         }
@@ -236,6 +352,9 @@ export const snakeScene: SceneBuilder = (app, params) => {
     const cleanup = () => {
         source.close();
         window.removeEventListener('keydown', onKeyDown);
+        app.ticker.remove(onTicker);
+        if (physicsWorld) physicsWorld.free();
+        physicsWorld = null;
         overlay.remove();
     };
     source.onerror = () => cleanup();

@@ -8,8 +8,9 @@ namespace Game.Engine.ECS;
 /// <summary>
 ///     Batched render signal for the snake scene. Emitted once per grid step (8 Hz),
 ///     carrying the full set of cell-aligned sprites plus score/game-over flags.
-///     <see cref="Ate"/> and <see cref="FoodSpawned"/> are ECS-originated events:
-///     the step system sets them and the client reacts (eat sound, food-spawn sound).
+///     <see cref="Ate"/>, <see cref="FoodSpawned"/> and <see cref="FoodFalling"/> are
+///     ECS-originated edge events consumed once: the client reacts (eat sound,
+///     food-spawn sound, start of the presentation-physics food drop).
 /// </summary>
 public sealed record SnakeRenderSignal(
     long Seq,
@@ -20,13 +21,19 @@ public sealed record SnakeRenderSignal(
     bool GameOver,
     bool Started,
     bool Ate,
-    bool FoodSpawned);
+    bool FoodSpawned,
+    bool FoodFalling);
 
 /// <summary>
 ///     Owns the snake Arch ECS world. The sim ticks at 60 Hz, advances the grid at
 ///     8 Hz (see <see cref="StepIntervalSeconds"/>) and emits one batched
 ///     <see cref="SnakeRenderSignal"/> per step. C# is the sole authority: input is
 ///     queued from the client but validated and applied by <see cref="SnakeInputSystem"/>.
+///     The food drop is a presentation-physics integration test: after
+///     <see cref="FoodFallDelaySeconds"/> the ECS flags the food as falling (black,
+///     deadly) and the client runs a Rapier gravity fall; the ECS only records the
+///     initial position and, after the one-shot <see cref="FoodDropped"/> report, the
+///     final position.
 /// </summary>
 public sealed class SnakeSimulation : IDisposable
 {
@@ -36,12 +43,15 @@ public sealed class SnakeSimulation : IDisposable
     public const int InitialLength = 6;
     public const int FoodRenderId = 1000;
     public const int MaxBufferedInput = 3;
+    public const double FoodFallDelaySeconds = 3.0;
+    public const double FoodDropTimeoutSeconds = 5.0;
     private const double TickIntervalSeconds = 1.0 / 60.0;
     private const double StepIntervalSeconds = 1.0 / 8.0;
 
     private static readonly SpriteColor BodyColor = new(22, 101, 52);
     private static readonly SpriteColor HeadColor = new(34, 197, 94);
     private static readonly SpriteColor FoodColor = new(34, 211, 238);
+    private static readonly SpriteColor BlackFoodColor = new(0, 0, 0);
 
     private readonly World _world;
     private readonly Group<double> _systems;
@@ -212,9 +222,62 @@ public sealed class SnakeSimulation : IDisposable
                 new RenderId(FoodRenderId),
                 cell,
                 FoodColor,
+                new FoodAge(0f),
                 new SnakeFood());
             return;
         }
+    }
+
+    /// <summary>
+    ///     One-shot final-position report from the presentation physics (Rapier drop).
+    ///     The ECS records the final food cell; afterwards no more drop events of this
+    ///     type are accepted for the current food. Black food stays black forever.
+    /// </summary>
+    public void FoodDropped(int x, int y)
+    {
+        lock (_sync)
+        {
+            var food = FindFoodEntity();
+            if (food == Entity.Null || !_world.Has<FoodFall>(food) || _world.Has<FoodSynced>(food)) return;
+
+            var cell = ClampToGrid(new GridCell(x, y));
+            if (CellOccupiedBySnake(cell))
+            {
+                cell = FindFreeBottomCell(cell.X);
+            }
+            _world.Set(food, cell);
+            _world.Add<FoodSynced>(food);
+        }
+    }
+
+    private GridCell ClampToGrid(GridCell cell) =>
+        new(Math.Clamp(cell.X, 0, GridWidth - 1), Math.Clamp(cell.Y, 0, GridHeight - 1));
+
+    private bool CellOccupiedBySnake(GridCell cell)
+    {
+        var entities = new Entity[_world.Size];
+        _world.GetEntities(new QueryDescription(), entities.AsSpan());
+        foreach (var entity in entities)
+        {
+            if (!_world.IsAlive(entity) || !_world.Has<GridCell>(entity)) continue;
+            if (_world.Has<SnakeFood>(entity)) continue;
+            if (_world.Get<GridCell>(entity).X == cell.X && _world.Get<GridCell>(entity).Y == cell.Y) return true;
+        }
+        return false;
+    }
+
+    private GridCell FindFreeBottomCell(int preferredX)
+    {
+        for (var radius = 0; radius < GridWidth; radius++)
+        {
+            foreach (var x in new[] { preferredX - radius, preferredX + radius })
+            {
+                if (x < 0 || x >= GridWidth) continue;
+                var cell = new GridCell(x, GridHeight - 1);
+                if (!CellOccupiedBySnake(cell)) return cell;
+            }
+        }
+        return new GridCell(preferredX, GridHeight - 1);
     }
 
     private void Tick(object? _)
@@ -239,6 +302,8 @@ public sealed class SnakeSimulation : IDisposable
             _systems.BeforeUpdate(in dt);
             _systems.Update(in dt);
             _systems.AfterUpdate(in dt);
+
+            var foodFalling = AdvanceFoodState(statsEntity, statsBeforeStep);
             stopwatch.Stop();
 
             _seq++;
@@ -247,14 +312,64 @@ public sealed class SnakeSimulation : IDisposable
                 : _world.Get<SnakeStats>(statsEntity);
             var ate = stats.Ate;
             var foodSpawned = stats.FoodSpawned;
-            if (ate || foodSpawned)
+            if (ate || foodSpawned || foodFalling)
             {
                 _world.Set(statsEntity, new SnakeStats(stats.Score, stats.GameOver, stats.Started));
             }
             OnRenderSignal?.Invoke(new SnakeRenderSignal(
                 _seq, _world.Size, stopwatch.Elapsed.TotalMilliseconds,
-                BuildSnapshot(), stats.Score, stats.GameOver, stats.Started, ate, foodSpawned));
+                BuildSnapshot(), stats.Score, stats.GameOver, stats.Started, ate, foodSpawned, foodFalling));
         }
+    }
+
+    /// <summary>
+    ///     Ages the food entity and drives the drop state machine: after
+    ///     <see cref="FoodFallDelaySeconds"/> the food turns black and is flagged
+    ///     falling (deadly, presentation physics takes over); after
+    ///     <see cref="FoodDropTimeoutSeconds"/> without a client drop report the ECS
+    ///     force-syncs the final position itself (authority fallback).
+    ///     Returns true exactly once when the fall starts (edge event for the client).
+    /// </summary>
+    private bool AdvanceFoodState(Entity statsEntity, SnakeStats stats)
+    {
+        var food = FindFoodEntity();
+        if (food == Entity.Null) return false;
+
+        var age = _world.Get<FoodAge>(food);
+        age.Seconds += (float)StepIntervalSeconds;
+        _world.Set(food, age);
+
+        if (!stats.Started || stats.GameOver) return false;
+
+        var isFalling = _world.Has<FoodFall>(food);
+        var isSynced = _world.Has<FoodSynced>(food);
+
+        if (!isFalling && age.Seconds >= FoodFallDelaySeconds)
+        {
+            _world.Add<FoodFall>(food);
+            _world.Set(food, BlackFoodColor);
+            return true;
+        }
+
+        if (isFalling && !isSynced && age.Seconds >= FoodFallDelaySeconds + FoodDropTimeoutSeconds)
+        {
+            // No drop report arrived: force the final position (random free bottom cell).
+            var cell = FindFreeBottomCell(_random.Next(GridWidth));
+            _world.Set(food, cell);
+            _world.Add<FoodSynced>(food);
+        }
+        return false;
+    }
+
+    private Entity FindFoodEntity()
+    {
+        var entities = new Entity[_world.Size];
+        _world.GetEntities(new QueryDescription(), entities.AsSpan());
+        foreach (var entity in entities)
+        {
+            if (_world.IsAlive(entity) && _world.Has<SnakeFood>(entity)) return entity;
+        }
+        return Entity.Null;
     }
 
     private Entity FindStatsEntity()

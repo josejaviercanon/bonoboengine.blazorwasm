@@ -230,7 +230,7 @@ npx tsc --noEmit
 
 **Build rule:** Run `dotnet build bonoboWebGame.slnx` after every code change. Do not accumulate changes without building.
 
-> **MAUI builds** require .NET MAUI workloads; platform-specific TFMs may make full-solution builds depend on host OS/workloads. No test projects currently exist; `dotnet test` validates the solution but reports no tests.
+> **MAUI builds** require .NET MAUI workloads; platform-specific TFMs may make full-solution builds depend on host OS/workloads. `Game.Maui` is temporarily commented out of the solution (web-only builds for speed). Test projects: `Game.Tests` (xUnit v3), `Game.Tests.Aot` (TUnit), `Game.Tests.UI` (Playwright/Node) — see `docs/testing-ui-E2E/index.md`.
 
 
 ---

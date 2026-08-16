@@ -68,7 +68,7 @@ From repo root:
 
 ```powershell
 dotnet build bonoboWebGame.slnx
-dotnet test          # no test projects yet; validates solution only
+dotnet test          # Game.Tests (xUnit v3) + Game.Tests.Aot (TUnit); needs global.json MTP opt-in
 dotnet watch --project src/Game.Web
 ```
 
