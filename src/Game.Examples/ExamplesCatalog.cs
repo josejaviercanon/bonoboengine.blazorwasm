@@ -34,6 +34,7 @@ public static class ExamplesCatalog
         new("advanced/star-warp", "Star Warp", "Advanced", "https://pixijs.com/8.x/examples/advanced/star-warp"),
         new("ecs/sprites", "ECS Sprites", "ECS", "https://github.com/genaray/Arch"),
         new("games/snake", "Snake", "Games", "https://github.com/JDStraughan/html5-snake"),
+        new("games/tetris", "Tetris", "Games", "https://github.com/jakesgordon/javascript-tetris"),
     };
 
     /// <summary>Group name that separates game scenes from plain PixiJS examples.</summary>
@@ -54,7 +55,8 @@ public static class ExamplesCatalog
 /// <summary>Serialized into <c>#pixi-viewport[data-message]</c> for the client bootstrap script.
 /// <c>Sprites</c>/<c>StreamUrl</c> are ECS-specific and null for plain PixiJS examples.</summary>
 public sealed record ExamplePayload(string ExampleId, string Title, string SourceUrl,
-    IReadOnlyList<SpriteState>? Sprites = null, string? StreamUrl = null, SnakeScenePayload? Snake = null);
+    IReadOnlyList<SpriteState>? Sprites = null, string? StreamUrl = null, SnakeScenePayload? Snake = null,
+    TetrisScenePayload? Tetris = null);
 
 /// <summary>Snake scene payload: initial snapshot, grid metrics and the live SSE stream URL.</summary>
 public sealed record SnakeScenePayload(
@@ -69,6 +71,22 @@ public sealed record SnakeScenePayload(
 
 /// <summary>Client input for the snake scene: a suggested direction the sim validates.</summary>
 public sealed record SnakeInputRequest(string Direction);
+
+/// <summary>Tetris scene payload: initial snapshot, grid metrics and the live SSE stream URL.</summary>
+public sealed record TetrisScenePayload(
+    IReadOnlyList<SpriteState> Sprites,
+    int Score,
+    int Rows,
+    int Level,
+    bool GameOver,
+    bool Started,
+    int GridWidth,
+    int GridHeight,
+    float CellSize,
+    string StreamUrl);
+
+/// <summary>Client input for the tetris scene: a suggested command (left/right/rotate/down) the sim validates.</summary>
+public sealed record TetrisInputRequest(string Command);
 
 /// <summary>Final-position report of the Rapier food drop (cell coordinates).</summary>
 public sealed record FoodDroppedRequest(int X, int Y);

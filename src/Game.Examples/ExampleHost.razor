@@ -4,6 +4,7 @@
 @using Game.Engine.ECS
 @inject EcsSimulation Ecs
 @inject SnakeSimulation Snake
+@inject TetrisSimulation Tetris
 
 @code {
     [Parameter] public string ExampleId { get; set; } = string.Empty;
@@ -22,6 +23,12 @@
             new ExamplePayload(example.Id, example.Title, example.SourceUrl,
                 Snake: new SnakeScenePayload(Snake.Snapshot(), Snake.Score, Snake.IsGameOver, Snake.IsStarted,
                     SnakeSimulation.GridWidth, SnakeSimulation.GridHeight, SnakeSimulation.CellSize, "/api/snake/stream")),
+            jsonOptions),
+        { Id: "games/tetris" } => JsonSerializer.Serialize(
+            new ExamplePayload(example.Id, example.Title, example.SourceUrl,
+                Tetris: new TetrisScenePayload(Tetris.Snapshot(), Tetris.Score, Tetris.Rows, Tetris.Level,
+                    Tetris.IsGameOver, Tetris.IsStarted,
+                    TetrisSimulation.GridWidth, TetrisSimulation.GridHeight, TetrisSimulation.CellSize, "/api/tetris/stream")),
             jsonOptions),
         _ => JsonSerializer.Serialize(new ExamplePayload(example.Id, example.Title, example.SourceUrl), jsonOptions),
     };

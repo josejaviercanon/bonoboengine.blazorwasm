@@ -10,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents();
 builder.Services.AddSingleton<EcsSimulation>();
 builder.Services.AddSingleton<SnakeSimulation>();
+builder.Services.AddSingleton<TetrisSimulation>();
 
 var app = builder.Build();
 
@@ -112,6 +113,55 @@ app.MapPost("/api/snake/food-dropped", (SnakeSimulation sim, FoodDroppedRequest 
 });
 
 app.MapPost("/api/snake/restart", (SnakeSimulation sim) =>
+{
+    sim.Reset();
+    return Results.NoContent();
+});
+
+// SSE push of batched tetris render signals, one per board mutation.
+app.MapGet("/api/tetris/stream", (TetrisSimulation sim, HttpResponse response, CancellationToken ct) =>
+{
+    response.ContentType = "text/event-stream";
+
+    var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+    var writeSync = new object();
+
+    Action<TetrisRenderSignal> handler = signal =>
+    {
+        var json = JsonSerializer.Serialize(signal, jsonOptions);
+        lock (writeSync)
+        {
+            response.WriteAsync($"event: tetris-move\ndata: {json}\n\n").GetAwaiter().GetResult();
+        }
+    };
+
+    sim.OnRenderSignal += handler;
+
+    var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    ct.Register(() =>
+    {
+        sim.OnRenderSignal -= handler;
+        completed.TrySetResult();
+    });
+    return completed.Task;
+});
+
+// Client input channel for the tetris scene. The JS layer only suggests a command;
+// the simulation validates and applies it (C# sole authority).
+app.MapPost("/api/tetris/input", (TetrisSimulation sim, TetrisInputRequest request) =>
+{
+    sim.QueueInput(request.Command);
+    return Results.NoContent();
+});
+
+// Starts a fresh tetris game (start button or Space bar). Restarts if game over.
+app.MapPost("/api/tetris/start", (TetrisSimulation sim) =>
+{
+    sim.Start();
+    return Results.NoContent();
+});
+
+app.MapPost("/api/tetris/restart", (TetrisSimulation sim) =>
 {
     sim.Reset();
     return Results.NoContent();

@@ -17,6 +17,7 @@ import { renderTextureScene } from './renderTexture';
 import { simpleGraphicsScene } from './simpleGraphics';
 import { snakeScene } from './snake';
 import { starWarpScene } from './starWarp';
+import { tetrisScene } from './tetris';
 import { tilingSpriteScene } from './tilingSprite';
 
 import type { SceneBuilder } from './types';
@@ -46,4 +47,5 @@ export const sceneRegistry: Record<string, SceneBuilder> = {
     'advanced/star-warp': starWarpScene,
     'ecs/sprites': ecsSpritesScene,
     'games/snake': snakeScene,
+    'games/tetris': tetrisScene,
 };
