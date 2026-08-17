@@ -1,4 +1,5 @@
 using Game.Engine.ECS;
+using Game.Engine.ECS.Breakout;
 using Game.Engine.ECS.Systems;
 using Xunit;
 

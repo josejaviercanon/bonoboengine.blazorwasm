@@ -2,11 +2,17 @@
 @using System.Text.Json
 @using Game.Examples
 @using Game.Engine.ECS
+@using Game.Engine.ECS.Asteroids
+@using Game.Engine.ECS.Breakout
+@using Game.Engine.ECS.Racer
+@using Game.Engine.ECS.Snake
+@using Game.Engine.ECS.Tetris
 @inject EcsSimulation Ecs
 @inject SnakeSimulation Snake
 @inject TetrisSimulation Tetris
 @inject BreakoutSimulation Breakout
 @inject AsteroidsSimulation Asteroids
+@inject RacerSimulation Racer
 
 @code {
     [Parameter] public string ExampleId { get; set; } = string.Empty;
@@ -43,6 +49,11 @@
                 Asteroids: new AsteroidsScenePayload(Asteroids.Snapshot(), Asteroids.Score, Asteroids.HighScore,
                     Asteroids.Lives, Asteroids.Level, Asteroids.IsGameOver, Asteroids.IsStarted,
                     AsteroidsConfig.CourtWidth, AsteroidsConfig.CourtHeight, "/api/asteroids/stream")),
+            jsonOptions),
+        { Id: "games/racer" } => JsonSerializer.Serialize(
+            new ExamplePayload(example.Id, example.Title, example.SourceUrl,
+                Racer: new RacerScenePayload(Racer.TrackSnapshot(), Racer.PlayerSnapshot(), Racer.SnapshotCars(),
+                    Racer.Settings, "/api/racer/stream")),
             jsonOptions),
         _ => JsonSerializer.Serialize(new ExamplePayload(example.Id, example.Title, example.SourceUrl), jsonOptions),
     };

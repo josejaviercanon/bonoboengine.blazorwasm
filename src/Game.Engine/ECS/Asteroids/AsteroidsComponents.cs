@@ -1,7 +1,7 @@
 using Arch.AOT.SourceGenerator;
 using Box2D.NET;
 
-namespace Game.Engine.ECS;
+namespace Game.Engine.ECS.Asteroids;
 
 /// <summary>
 ///     Tuning constants for the asteroids court. Ported from the reference game
@@ -55,13 +55,13 @@ public static class AsteroidsConfig
     // --- Bullets ----------------------------------------------------------------
 
     /// <summary>Maximum concurrent bullets (reference: 4).</summary>
-    public const int MaxBullets = 5;
+    public const int MaxBullets = 4;
 
     /// <summary>Bullet speed in px/s (reference: 100 px per frame on the virtual canvas).</summary>
     public const float BulletSpeed = 100f * ReferenceScale * 600f;
 
     /// <summary>Bullet lifetime (reference: 1 s).</summary>
-    public const float BulletLifetimeSeconds = 2f;
+    public const float BulletLifetimeSeconds = 1f;
 
     /// <summary>Bullet collision circle radius in px.</summary>
     public const float BulletRadius = 3f;

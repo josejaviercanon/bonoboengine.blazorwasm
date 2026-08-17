@@ -3,7 +3,7 @@ using Arch.Core;
 using Arch.Systems;
 using Game.Engine.ECS.Systems;
 
-namespace Game.Engine.ECS;
+namespace Game.Engine.ECS.Asteroids;
 
 /// <summary>
 ///     Batched render signal for the asteroids scene. Emitted once per 60 Hz physics

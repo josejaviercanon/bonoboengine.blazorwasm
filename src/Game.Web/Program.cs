@@ -1,5 +1,10 @@
 using System.Text.Json;
 using Game.Engine.ECS;
+using Game.Engine.ECS.Asteroids;
+using Game.Engine.ECS.Breakout;
+using Game.Engine.ECS.Racer;
+using Game.Engine.ECS.Snake;
+using Game.Engine.ECS.Tetris;
 using Game.Examples;
 using Game.Web.Components;
 using Game.UI;
@@ -13,6 +18,7 @@ builder.Services.AddSingleton<SnakeSimulation>();
 builder.Services.AddSingleton<TetrisSimulation>();
 builder.Services.AddSingleton<BreakoutSimulation>();
 builder.Services.AddSingleton<AsteroidsSimulation>();
+builder.Services.AddSingleton<RacerSimulation>();
 
 var app = builder.Build();
 
@@ -264,6 +270,66 @@ app.MapPost("/api/asteroids/start", (AsteroidsSimulation sim) =>
 app.MapPost("/api/asteroids/restart", (AsteroidsSimulation sim) =>
 {
     sim.Reset();
+    return Results.NoContent();
+});
+
+// SSE push of batched racer snapshots. Static track geometry travels in the SSR payload;
+// live signals carry player state and traffic within draw distance.
+app.MapGet("/api/racer/stream", (RacerSimulation sim, HttpResponse response, CancellationToken ct) =>
+{
+    response.ContentType = "text/event-stream";
+
+    var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+    var writeSync = new object();
+
+    Action<RacerRenderSignal> handler = signal =>
+    {
+        var json = JsonSerializer.Serialize(signal, jsonOptions);
+        lock (writeSync)
+        {
+            response.WriteAsync($"event: racer-move\ndata: {json}\n\n").GetAwaiter().GetResult();
+        }
+    };
+
+    sim.OnRenderSignal += handler;
+
+    var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    ct.Register(() =>
+    {
+        sim.OnRenderSignal -= handler;
+        completed.TrySetResult();
+    });
+    return completed.Task;
+});
+
+// Client only suggests held input; ECS consumes it on the next fixed tick.
+app.MapPost("/api/racer/input", (RacerSimulation sim, RacerInputRequest request) =>
+{
+    sim.QueueInput(request);
+    return Results.NoContent();
+});
+
+app.MapPost("/api/racer/config", (RacerSimulation sim, RacerConfigRequest request) =>
+{
+    sim.ApplyConfig(request);
+    return Results.NoContent();
+});
+
+app.MapPost("/api/racer/pause", (RacerSimulation sim) =>
+{
+    sim.Pause();
+    return Results.NoContent();
+});
+
+app.MapPost("/api/racer/resume", (RacerSimulation sim) =>
+{
+    sim.Resume();
+    return Results.NoContent();
+});
+
+app.MapPost("/api/racer/restart", (RacerSimulation sim) =>
+{
+    sim.Restart();
     return Results.NoContent();
 });
 

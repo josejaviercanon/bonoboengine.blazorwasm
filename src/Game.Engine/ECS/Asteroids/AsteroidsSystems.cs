@@ -7,7 +7,7 @@ using static Box2D.NET.B2Shapes;
 using static Box2D.NET.B2MathFunction;
 using static Box2D.NET.B2Worlds;
 
-namespace Game.Engine.ECS.Systems;
+namespace Game.Engine.ECS.Asteroids;
 
 /// <summary>Client-suggested asteroid input. Held flags are absolute state (no lost
 /// key-up edges); Fire and Hyperspace are one-shot edges consumed by the gameplay system.</summary>

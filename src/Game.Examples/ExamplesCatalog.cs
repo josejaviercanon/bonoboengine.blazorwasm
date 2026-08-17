@@ -1,5 +1,8 @@
 using System.Text.Json.Serialization;
 using Game.Engine.ECS;
+using Game.Engine.ECS.Asteroids;
+using Game.Engine.ECS.Breakout;
+using Game.Engine.ECS.Racer;
 
 namespace Game.Examples;
 
@@ -37,6 +40,7 @@ public static class ExamplesCatalog
         new("games/tetris", "Tetris", "Games", "https://github.com/jakesgordon/javascript-tetris"),
         new("games/breakout", "Breakout", "Games", "https://github.com/jakesgordon/javascript-breakout"),
         new("games/asteroids", "Asteroids", "Games", "https://github.com/aesalazar/AsteroidsWasm"),
+        new("games/racer", "Endless Race Runner", "Games", "https://github.com/jakesgordon/javascript-racer"),
     };
 
     /// <summary>Group name that separates game scenes from plain PixiJS examples.</summary>
@@ -58,7 +62,8 @@ public static class ExamplesCatalog
 /// <c>Sprites</c>/<c>StreamUrl</c> are ECS-specific and null for plain PixiJS examples.</summary>
 public sealed record ExamplePayload(string ExampleId, string Title, string SourceUrl,
     IReadOnlyList<SpriteState>? Sprites = null, string? StreamUrl = null, SnakeScenePayload? Snake = null,
-    TetrisScenePayload? Tetris = null, BreakoutScenePayload? Breakout = null, AsteroidsScenePayload? Asteroids = null);
+    TetrisScenePayload? Tetris = null, BreakoutScenePayload? Breakout = null, AsteroidsScenePayload? Asteroids = null,
+    RacerScenePayload? Racer = null);
 
 /// <summary>Snake scene payload: initial snapshot, grid metrics and the live SSE stream URL.</summary>
 public sealed record SnakeScenePayload(

@@ -1,4 +1,5 @@
 using Game.Engine.ECS;
+using Game.Engine.ECS.Asteroids;
 using Xunit;
 
 namespace Game.Tests;

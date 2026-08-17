@@ -16,6 +16,7 @@ import { graphicsMaskScene } from './graphicsMask';
 import { meshRopeScene } from './meshRope';
 import { pixiTextScene } from './pixiText';
 import { renderTextureScene } from './renderTexture';
+import { racerScene } from './racer';
 import { simpleGraphicsScene } from './simpleGraphics';
 import { snakeScene } from './snake';
 import { starWarpScene } from './starWarp';
@@ -52,4 +53,5 @@ export const sceneRegistry: Record<string, SceneBuilder> = {
     'games/tetris': tetrisScene,
     'games/breakout': breakoutScene,
     'games/asteroids': asteroidsScene,
+    'games/racer': racerScene,
 };

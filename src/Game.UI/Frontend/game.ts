@@ -12,6 +12,16 @@ interface ScenePayload {
     sourceUrl?: string;
 }
 
+declare global {
+    interface Window {
+        initGame: (containerId: string) => Promise<void>;
+        renderText: (message: string) => void;
+        renderScene: (message: string) => Promise<void>;
+        togglePixiStats: () => void;
+        toggleCSharpStats: () => void;
+    }
+}
+
 let app: Application | null = null;
 let container: HTMLElement | null = null;
 let messageText: Text | null = null;
@@ -142,8 +152,8 @@ export async function renderScene(message: string): Promise<void> {
 
 dbg('game-bundle loaded, exposing window.initGame / window.renderText / window.renderScene');
 
-(window as any).initGame = initGame;
-(window as any).renderText = renderText;
-(window as any).renderScene = renderScene;
-(window as any).togglePixiStats = togglePixiStats;
-(window as any).toggleCSharpStats = toggleCSharpStats;
+window.initGame = initGame;
+window.renderText = renderText;
+window.renderScene = renderScene;
+window.togglePixiStats = togglePixiStats;
+window.toggleCSharpStats = toggleCSharpStats;

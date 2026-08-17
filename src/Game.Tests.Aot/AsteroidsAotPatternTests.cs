@@ -1,4 +1,5 @@
 using Game.Engine.ECS;
+using Game.Engine.ECS.Asteroids;
 using TUnit.Core;
 
 namespace Game.Tests.Aot;

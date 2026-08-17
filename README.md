@@ -319,14 +319,23 @@ dotnet test          # Game.Tests (xUnit v3) + Game.Tests.Aot (TUnit); Playwrigh
 
 Ported Game as expamples using Blazor Wasm ECS and Pixijs V8 render:
 
-|Done | Order | Game                 | What You'll Learn                                     |
-|---- | ----- | -------------------- | ----------------------------------------------------- |
-| [X] | 1     | **Snake**            | Basic ECS, commands, delta events, basic physics      |
-| [X] | 2     | **Tetris**           | Grid systems, command validation, line clearing       |
-| [X] | 3     | **Breakout**         | Real-time physics, entity count                       |
-| [X] | 4     | **Asteroids**        | Entity spawning, wrap physics, vectors, visual effects|
-| [ ] | 5     | **Puzzling Potions** | Reuse PixiJS code, complex grid logic, asset pipeline |
-| [ ] | 6     | **Pac-Man**          | FSM AI, grid movement, power-up timers                |
-| [ ] | 7     | **2D Platformer**    | Scroller, visual effects                              |
+|Done | Order | Game                    | What You'll Learn                                     |
+|---- | ----- | ----------------------- | ----------------------------------------------------- |
+| [X] | 1     | **Snake**               | Basic ECS, commands, delta events, basic physics      |
+| [X] | 2     | **Tetris**              | Grid systems, command validation, line clearing       |
+| [X] | 3     | **Breakout**            | Real-time physics, entity count                       |
+| [X] | 4     | **Asteroids**           | Entity spawning, wrap physics, vectors, visual effects|
+| [ ] | 5     | **Endless Race Runner** | Pseudo-3D pseudo-geometry, active entity pipelines    |
+| [ ] | 6     | **Pac-Man**             | FSM AI, grid movement, power-up timers                |
+| [ ] | 7     | **2D Platformer**       | Scroller, visual effects, AI                          |
+| [ ] | 8     | **2D Top Down**         | RPG style, visual effects, AI                         |
+| [ ] | 9     | **Snake Multiplayer**   | Multiplayer, AI                                       |
+
+---
+
+## Licensing
+
+* **Source Code:** Distributed under the [MIT License](./LICENSE).
+* **Media Assets (Graphics, Sound, Music):** Subject to third-party rights and provided strictly for educational and demonstration purposes. See [LICENSE-ASSETS.md](./LICENSE-ASSETS.md) for full terms before reusing any media files.
 
 ---
