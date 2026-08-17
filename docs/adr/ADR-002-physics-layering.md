@@ -1,7 +1,7 @@
 # ADR-002: Physics Layering — Box2D.NET Authoritative, Rapier Optional Presentation
 
 **Date:** 2026-08-15
-**Status:** Accepted (decision; Box2D.NET vendored but not yet wired into `Game.Engine`; Rapier not yet installed)
+**Status:** Accepted (implemented: Box2D.NET wired into `Game.Engine` and used by `AsteroidsSimulation`; Rapier `@dimforge/rapier2d` installed and used by the asteroids presentation layer)
 
 ## Context
 
@@ -23,4 +23,4 @@ The engine needs deterministic gameplay physics **and** smooth visuals at arbitr
 
 - Clear four-part answer: **Box2D.NET** = "where is the object really?"; **interpolation** = "where to draw this frame?"; **Rapier** = "how should this visual object move dynamically?"; **PixiJS** = "how to render it?"
 - Rapier's WASM loads asynchronously; it coexists with Blazor WASM + PixiJS. Keep the Rapier world resident in JS; never ping-pong simulation state through interop per frame.
-- Status: `src/Box2D.NET` is vendored but **not referenced** by `Game.Engine.csproj` (which refs only `Arch` + `Arch.Generators`); `src/BrainAI` (pathfinding/AI) is likewise vendored but unreferenced. Rapier is not in `src/Game.UI/package.json` yet.
+- Status: `src/Box2D.NET` is wired into `Game.Engine.csproj` and used by `AsteroidsSimulation` as the authoritative physics world (gravity 0, `workerCount = 1`, circle bodies, contact events, screen wrap). `src/BrainAI` (pathfinding/AI) is vendored but unreferenced. Rapier `@dimforge/rapier2d` is in `src/Game.UI/package.json` and drives the asteroids debris field (presentation only).

@@ -15,9 +15,10 @@
 | CSS | Tailwind CSS v4 via `@tailwindcss/cli` ^4.3.3, PostCSS, autoprefixer |
 | ECS (planned) | Arch ECS |
 | Serialization (planned) | System.Text.Json source generators (AOT-safe) |
-| Authoritative physics (target) | Box2D.NET (vendored `src/Box2D.NET`, **not referenced**) |
+| Authoritative physics | Box2D.NET (vendored `src/Box2D.NET`, referenced; used by `AsteroidsSimulation`) |
 | Presentation physics (target) | Rapier `@dimforge/rapier2d` (**not installed**) |
 | Pathfinding/AI (target) | BrainAI (vendored `src/BrainAI`, **not referenced**) |
+| JS module system | ESM (`"type": "module"` in both `src/Game.UI/package.json` and `src/Game.Tests.UI/package.json`) |
 
 ## Projects
 

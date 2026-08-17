@@ -72,10 +72,11 @@ public partial class SnakeStepSystem : BaseSystem<World, double>
     private readonly SpriteColor _bodyColor;
     private readonly SpriteColor _headColor;
     private readonly SpriteColor _foodColor;
+    private readonly Func<int> _nextFoodId;
     private int _nextSegmentId;
 
     public SnakeStepSystem(World world, int gridWidth, int gridHeight, int initialLength,
-        SpriteColor bodyColor, SpriteColor headColor, SpriteColor foodColor, Random random)
+        SpriteColor bodyColor, SpriteColor headColor, SpriteColor foodColor, Random random, Func<int> nextFoodId)
         : base(world)
     {
         _gridWidth = gridWidth;
@@ -85,6 +86,7 @@ public partial class SnakeStepSystem : BaseSystem<World, double>
         _headColor = headColor;
         _foodColor = foodColor;
         _random = random;
+        _nextFoodId = nextFoodId;
     }
 
     public override void Update(in double t)
@@ -211,7 +213,7 @@ public partial class SnakeStepSystem : BaseSystem<World, double>
             var cell = new GridCell(_random.Next(_gridWidth), _random.Next(_gridHeight));
             if (occupied.Contains((cell.Y * (long)_gridWidth) + cell.X)) continue;
             World.Create(
-                new RenderId(SnakeSimulation.NextFoodId()),
+                new RenderId(_nextFoodId()),
                 cell,
                 _foodColor,
                 new FoodAge(0f),

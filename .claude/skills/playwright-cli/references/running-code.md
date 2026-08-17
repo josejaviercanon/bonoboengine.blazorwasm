@@ -239,3 +239,106 @@ playwright-cli run-code "async page => {
   return results;
 }"
 ```
+
+## Standalone Scripts in ESM Context (Bonobo Repo)
+
+When writing a standalone Node.js `.js` script inside `src/Game.Tests.UI/`, you MUST use ESM `import` syntax. The directory's `package.json` declares `"type": "module"`, so `.js` files parse as ECMAScript Modules where `require()` is not defined.
+
+**Resolution options:**
+| Strategy | Extension | Syntax | Notes |
+| --- | --- | --- | --- |
+| **ESM Native** | `.js` | `import` | Aligns with `"type": "module"`; use dynamic `import()` inside closures |
+| **CommonJS Override** | `.cjs` | `require()` | Zero refactoring; explicit extension in an ESM-first codebase |
+| **Synthetic Bridge** | `.js` | `createRequire` | `import { createRequire } from 'module'` boilerplate |
+
+### Process Lifecycle on Windows
+
+Never use `{ shell: true }` with `child_process.spawn` on Windows — it wraps the command in `cmd.exe` and `host.kill()` only terminates the shell, leaving the child `.NET` process alive and locking the port.
+
+**Correct cleanup:**
+```ts
+import { spawn } from 'child_process';
+// ... spawn without { shell: true }
+const host = spawn('dotnet', ['run', '--project', '../../src/Game.Web']);
+// In finally:
+if (process.platform === 'win32') {
+  spawn('taskkill', ['/pid', host.pid.toString(), '/f', '/t']);
+} else {
+  host.kill('SIGKILL');
+}
+```
+
+### Path Resolution
+
+Do NOT specify both `cwd` and `--project` with relative paths — `dotnet` resolves `--project` relative to `cwd`, doubling the traversal. Use `--project` alone from the default working directory.
+
+### HTTP Readiness Polling
+
+Replace `await wait(20000)` / `setTimeout` with HTTP polling to proceed as soon as the server is ready:
+```ts
+import http from 'http';
+const pollServer = (url: string, timeoutMs = 30_000) => {
+  const start = Date.now();
+  return new Promise<void>((resolve, reject) => {
+    const check = () => {
+      http.get(url, () => resolve())
+        .on('error', () => {
+          if (Date.now() - start > timeoutMs) reject(new Error('Server startup timeout'));
+          else setTimeout(check, 500);
+        });
+    };
+    check();
+  });
+};
+```
+
+### Complete Screenshot Example (run from repo root)
+
+```powershell
+$screenshot = @'
+import { chromium } from '@playwright/test';
+import { spawn } from 'child_process';
+import http from 'http';
+const pollServer = (url, timeoutMs = 30000) => {
+  const start = Date.now();
+  return new Promise((resolve, reject) => {
+    const check = () => {
+      http.get(url, (res) => resolve())
+        .on('error', () => {
+          if (Date.now() - start > timeoutMs) reject(new Error('Server startup timeout'));
+          else setTimeout(check, 500);
+        });
+    };
+    check();
+  });
+};
+(async () => {
+  const host = spawn('dotnet', ['run', '--project', '../../src/Game.Web']);
+  try {
+    await pollServer('http://localhost:5902');
+    const browser = await chromium.launch({ channel: 'chrome' });
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    const errors = [];
+    page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+    page.on('pageerror', e => errors.push(String(e)));
+    await page.goto('http://localhost:5902/examples/games/asteroids', { waitUntil: 'networkidle' });
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('Space');
+    await page.screenshot({ path: 'asteroids-visual.png' });
+    console.log('ERRORS:', JSON.stringify(errors));
+    console.log('title:', await page.title());
+    await browser.close();
+  } finally {
+    if (process.platform === 'win32') {
+      spawn('taskkill', ['/pid', host.pid.toString(), '/f', '/t']);
+    } else {
+      host.kill('SIGKILL');
+    }
+  }
+})().catch(e => { console.error('FAILED', e); process.exit(1); });
+'@
+Set-Content -Path "shot.js" -Value $screenshot
+node shot.js 2>&1 | Select-Object -Last 10
+Remove-Item shot.js
+```

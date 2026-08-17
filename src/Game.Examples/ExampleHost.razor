@@ -6,6 +6,7 @@
 @inject SnakeSimulation Snake
 @inject TetrisSimulation Tetris
 @inject BreakoutSimulation Breakout
+@inject AsteroidsSimulation Asteroids
 
 @code {
     [Parameter] public string ExampleId { get; set; } = string.Empty;
@@ -36,6 +37,12 @@
                 Breakout: new BreakoutScenePayload(Breakout.Snapshot(), Breakout.Score, Breakout.Lives, Breakout.Level,
                     Breakout.IsGameOver, Breakout.IsStarted,
                     BreakoutConfig.CourtWidth, BreakoutConfig.CourtHeight, BreakoutConfig.ChunkSize, "/api/breakout/stream")),
+            jsonOptions),
+        { Id: "games/asteroids" } => JsonSerializer.Serialize(
+            new ExamplePayload(example.Id, example.Title, example.SourceUrl,
+                Asteroids: new AsteroidsScenePayload(Asteroids.Snapshot(), Asteroids.Score, Asteroids.HighScore,
+                    Asteroids.Lives, Asteroids.Level, Asteroids.IsGameOver, Asteroids.IsStarted,
+                    AsteroidsConfig.CourtWidth, AsteroidsConfig.CourtHeight, "/api/asteroids/stream")),
             jsonOptions),
         _ => JsonSerializer.Serialize(new ExamplePayload(example.Id, example.Title, example.SourceUrl), jsonOptions),
     };

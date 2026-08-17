@@ -54,11 +54,12 @@ public sealed class SnakeSimulation : IDisposable
     private static readonly SpriteColor BlackFoodColor = new(0, 0, 0);
 
     // Foods get monotonically increasing render ids so the client can tell a
-    // freshly falling food apart from already-settled black foods.
-    private static int _foodIdCounter = FoodRenderId;
+    // freshly falling food apart from already-settled black foods. Instance-based
+    // so parallel test simulations never share id state.
+    private int _foodIdCounter = FoodRenderId;
 
-    /// <summary>Next unique render id for a spawned food entity.</summary>
-    public static int NextFoodId() => Interlocked.Increment(ref _foodIdCounter);
+    /// <summary>Next unique render id for a spawned food entity (per simulation).</summary>
+    public int NextFoodId() => _foodIdCounter++;
 
     private readonly World _world;
     private readonly Group<double> _systems;
@@ -80,7 +81,7 @@ public sealed class SnakeSimulation : IDisposable
             "Snake",
             new SnakeInputSystem(_world, _pendingInput),
             new SnakeStepSystem(_world, GridWidth, GridHeight, InitialLength,
-                BodyColor, HeadColor, FoodColor, _random)
+                BodyColor, HeadColor, FoodColor, _random, NextFoodId)
         );
         _systems.Initialize();
         SeedWorld();
@@ -182,6 +183,7 @@ public sealed class SnakeSimulation : IDisposable
             if (_world.IsAlive(entity)) _world.Destroy(entity);
         }
         _pendingInput.Clear();
+        _foodIdCounter = FoodRenderId;
         SeedWorld();
     }
 

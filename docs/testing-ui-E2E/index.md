@@ -29,10 +29,104 @@ Three test projects cover the simulation/presentation split. All commands verifi
 - **Bootstrap timing is a product contract**: `game-bundle.js` is an ES module with dynamic imports; its execution can finish *after* the window `load` event. The inline script in `Game.Web/Components/App.razor` polls up to 15 s for `window.initGame`. Tests assert canvas visibility with a 20 s timeout — do not shrink these without understanding cold-load module fetches.
 - `/hello` `data-message` payload is plain text, not JSON. Home heading text is `PixiJS Examples` (there is no `<title>`).
 
+## Standalone Screenshot Scripts (ESM Context)
+
+When writing a standalone Node.js script (`.js` extension) that runs inside `src/Game.Tests.UI/`, you MUST use ESM syntax because `src/Game.Tests.UI/package.json` declares `"type": "module"`. Using `require()` in a `.js` file fails with `ReferenceError: require is not defined`.
+
+### Root Cause
+
+`package.json` `"type": "module"` instructs Node.js to parse all `.js` files in its scope as ECMAScript Modules, where the CommonJS `require()` function is not available. Use `import` syntax instead, or name the file `.cjs` to force CommonJS.
+
+| Strategy | Extension | Syntax | Notes |
+| --- | --- | --- | --- |
+| **ESM Native** | `.js` | `import` | Aligns with `"type": "module"`; dynamic imports required inside closures |
+| **CommonJS Override** | `.cjs` | `require()` | Zero refactoring; explicit extension in ESM-first codebase |
+| **Synthetic Bridge** | `.js` | `createRequire` | Boilerplate; `import { createRequire } from 'module'` |
+
+### Process Lifecycle — Avoid Orphaned .NET Processes
+
+Never pass `{ shell: true }` to `child_process.spawn` on Windows. It wraps the command in `cmd.exe`; calling `host.kill()` terminates only the shell wrapper, leaving the child `.NET` host process alive and locking TCP port 5902.
+
+**Correct Windows cleanup:**
+```ts
+if (process.platform === 'win32') {
+  spawn('taskkill', ['/pid', host.pid.toString(), '/f', '/t']);
+} else {
+  host.kill('SIGKILL');
+}
+```
+
+### Path Resolution
+
+Do NOT specify both `cwd` and `--project` with relative paths simultaneously — `dotnet` resolves `--project` relative to `cwd`, doubling the traversal and breaking project resolution. Use `spawn('dotnet', ['run', '--project', '../../src/Game.Web'])` from the repo root without overriding `cwd`.
+
+### Dynamic Readiness Polling — Replace Static Sleep
+
+Use HTTP readiness polling (`http.get` loop) instead of `await wait(20000)` or `setTimeout`. Polling minimizes test latency and eliminates timing race conditions from arbitrary sleep windows.
+
+### Corrected Standalone Screenshot Command
+
+Run from the repo root (`x:/PROJECTS/BonoboEngine/Repos/bonoboengine.blazorwasm`):
+
+```powershell
+$screenshot = @'
+import { chromium } from '@playwright/test';
+import { spawn } from 'child_process';
+import http from 'http';
+const pollServer = (url, timeoutMs = 30000) => {
+  const start = Date.now();
+  return new Promise((resolve, reject) => {
+    const check = () => {
+      http.get(url, (res) => resolve())
+        .on('error', () => {
+          if (Date.now() - start > timeoutMs) reject(new Error('Server startup timeout'));
+          else setTimeout(check, 500);
+        });
+    };
+    check();
+  });
+};
+(async () => {
+  const host = spawn('dotnet', ['run', '--project', '../../src/Game.Web']);
+  try {
+    await pollServer('http://localhost:5902');
+    const browser = await chromium.launch({ channel: 'chrome' });
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    const errors = [];
+    page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+    page.on('pageerror', e => errors.push(String(e)));
+    await page.goto('http://localhost:5902/examples/games/asteroids', { waitUntil: 'networkidle' });
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('Space');
+    await page.screenshot({ path: 'asteroids-visual.png' });
+    console.log('ERRORS:', JSON.stringify(errors));
+    console.log('title:', await page.title());
+    await browser.close();
+  } finally {
+    if (process.platform === 'win32') {
+      spawn('taskkill', ['/pid', host.pid.toString(), '/f', '/t']);
+    } else {
+      host.kill('SIGKILL');
+    }
+  }
+})().catch(e => { console.error('FAILED', e); process.exit(1); });
+'@
+Set-Content -Path "shot.js" -Value $screenshot
+node shot.js 2>&1 | Select-Object -Last 10
+Remove-Item shot.js
+```
+
+Key points in the corrected script:
+- ESM `import` syntax (compatible with `"type": "module"`)
+- No `{ shell: true }` — `spawn` manages the `dotnet` PID directly
+- Windows cleanup: `taskkill /pid /f /t` terminates the entire process tree
+- No `cwd` override — `--project` path resolves correctly from the default working directory
+- HTTP polling replaces static `sleep()` — script proceeds as soon as the server is ready
+
 ## Agent workflow for UI testing (skills + playwright-cli)
 
 For exploratory/agentic browser work (not the checked-in suite), use the `playwright-cli` skill (`.agents/skills/playwright-cli/`) — interactive session commands (`open`, `snapshot`, `click`, `eval`, …), run against the dev host:
-
 ```bash
 # terminal 1: host
 dotnet watch --project src/Game.Web

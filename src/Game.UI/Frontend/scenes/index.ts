@@ -1,4 +1,5 @@
 import { animatedSpriteScene } from './animatedSprite';
+import { asteroidsScene } from './asteroids';
 import { assetBundleScene } from './assetBundle';
 import { basicSpriteScene } from './basicSprite';
 import { bitmapText2Scene } from './bitmapText2';
@@ -50,4 +51,5 @@ export const sceneRegistry: Record<string, SceneBuilder> = {
     'games/snake': snakeScene,
     'games/tetris': tetrisScene,
     'games/breakout': breakoutScene,
+    'games/asteroids': asteroidsScene,
 };

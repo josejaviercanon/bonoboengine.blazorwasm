@@ -1,6 +1,8 @@
 # Active Context
 
-## Current Focus (2026-08-15)
+## Current Focus (2026-08-17)
+
+Playwright standalone-script documentation hardening. Documented the ESM (`"type": "module"`) constraint in `src/Game.Tests.UI/package.json`, process-lifecycle bugs (`{ shell: true }` orphaned .NET processes, `cwd` + `--project` path doubling), and the HTTP-readiness-polling anti-pattern. Updated `docs/testing-ui-E2E/index.md`, both `playwright-cli` skill references, `AGENTS.md`, `codebase-truth.md`, and memory bank.
 
 Architecture-topology adoption + agentic-doc alignment. Past scaffold now: Arch ECS sim
 (`EcsSimulation` 60 Hz) + static-SSR SSE bridge + PixiJS bootstrap are implemented. The

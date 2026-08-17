@@ -57,6 +57,7 @@
 | Issue | Impact | Notes |
 | --- | --- | --- |
 | `npx tsc --noEmit` fails | Type-checking unavailable | `vite.config.ts` lacks Node type definitions |
+| Standalone `.js` scripts in ESM dirs | `require()` fails with `ReferenceError` | `src/Game.Tests.UI/package.json` declares `"type": "module"`; use `import` syntax or `.cjs` extension. Also: `{ shell: true }` spawns orphan .NET processes; use `taskkill /pid /f /t` on Windows |
 | Full-solution MAUI build | OS/workload dependent | Requires .NET MAUI workloads; TFMs vary per host OS |
 | Static-web-asset races | Flaky parallel builds | Never run concurrent `dotnet` commands |
 

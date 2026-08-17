@@ -12,6 +12,7 @@ builder.Services.AddSingleton<EcsSimulation>();
 builder.Services.AddSingleton<SnakeSimulation>();
 builder.Services.AddSingleton<TetrisSimulation>();
 builder.Services.AddSingleton<BreakoutSimulation>();
+builder.Services.AddSingleton<AsteroidsSimulation>();
 
 var app = builder.Build();
 
@@ -212,6 +213,55 @@ app.MapPost("/api/breakout/start", (BreakoutSimulation sim) =>
 });
 
 app.MapPost("/api/breakout/restart", (BreakoutSimulation sim) =>
+{
+    sim.Reset();
+    return Results.NoContent();
+});
+
+// SSE push of batched asteroids render signals, one per 60 Hz physics tick while running.
+app.MapGet("/api/asteroids/stream", (AsteroidsSimulation sim, HttpResponse response, CancellationToken ct) =>
+{
+    response.ContentType = "text/event-stream";
+
+    var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+    var writeSync = new object();
+
+    Action<AsteroidsRenderSignal> handler = signal =>
+    {
+        var json = JsonSerializer.Serialize(signal, jsonOptions);
+        lock (writeSync)
+        {
+            response.WriteAsync($"event: asteroids-move\ndata: {json}\n\n").GetAwaiter().GetResult();
+        }
+    };
+
+    sim.OnRenderSignal += handler;
+
+    var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    ct.Register(() =>
+    {
+        sim.OnRenderSignal -= handler;
+        completed.TrySetResult();
+    });
+    return completed.Task;
+});
+
+// Client input channel for the asteroids scene. The JS layer only suggests the held
+// controls + one-shot fire/hyperspace; the simulation validates and applies them (C# sole authority).
+app.MapPost("/api/asteroids/input", (AsteroidsSimulation sim, AsteroidsInputRequest request) =>
+{
+    sim.QueueInput(request);
+    return Results.NoContent();
+});
+
+// Starts a fresh asteroids game (start button or Space bar). Restarts if game over.
+app.MapPost("/api/asteroids/start", (AsteroidsSimulation sim) =>
+{
+    sim.Start();
+    return Results.NoContent();
+});
+
+app.MapPost("/api/asteroids/restart", (AsteroidsSimulation sim) =>
 {
     sim.Reset();
     return Results.NoContent();

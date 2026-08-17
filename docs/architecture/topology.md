@@ -28,8 +28,8 @@ PixiJS v8 Presentation Layer (WebGPU / WebGL2 pipelines)
 
 | Layer | Role | Status |
 | --- | --- | --- |
-| **1. C# Authoritative World** | ECS + Box2D.NET; gameplay physics, collisions, rules, deterministic tick. Sole authority. | Arch ECS implemented (`EcsSimulation` 60 Hz, `MovementSystem`/`ColorSystem`, batched `EcsRenderSignal`, SSR `Snapshot()`). Box2D.NET vendored, **not wired**. |
-| **2. Presentation World** | Lightweight custom interpolation (default) + optional Rapier 2D (visual dynamics). Pure mirror of authoritative state. | Not implemented. |
+| **1. C# Authoritative World** | ECS + Box2D.NET; gameplay physics, collisions, rules, deterministic tick. Sole authority. | Arch ECS implemented (`EcsSimulation` 60 Hz, `MovementSystem`/`ColorSystem`, batched `EcsRenderSignal`, SSR `Snapshot()`; games: Snake, Tetris, Breakout, Asteroids). Box2D.NET **wired** into `Game.Engine` and used by `AsteroidsSimulation` as the authoritative physics world (circle bodies, contact events, screen wrap, per-sim deterministic world `workerCount = 1`). |
+| **2. Presentation World** | Lightweight custom interpolation (default) + optional Rapier 2D (visual dynamics). Pure mirror of authoritative state. | Partially implemented: `asteroids.ts` interpolates prev/curr snapshots (ADR-003), runs a Rapier debris field (JS-side only) and particle-emitter bursts. Other scenes render raw signals. |
 | **3. PixiJS v8** | Sprites, containers, animation, camera, particles, GPU render. | Bootstrap implemented (`initGame`/`renderText`/`renderScene`, scenes, stats overlays). |
 
 Rule: never move simulation back-and-forth through JS interop every frame. Keep any JS physics world resident; feed it snapshots at discrete boundaries.
@@ -114,9 +114,7 @@ Animation state machine belongs to the ECS, not glTF. See `docs/2d-skeletal-anim
 
 ## Ecosystem Packages
 
-The full PixiJS v8 stack is already declared in `src/Game.UI/package.json`: `pixi.js`, `@pixi/ui`, `@pixi/sound`, `@pixi/tilemap`, `pixi-viewport`, `pixi-filters`, `@spd789562/particle-emitter`.
-
-**Not installed:** `@dimforge/rapier2d` (optional presentation physics — target). Vendored C# libs `src/Box2D.NET` (physics) and `src/BrainAI` (pathfinding/AI) exist but are **not referenced** by `Game.Engine.csproj`.
+The full PixiJS v8 stack is declared in `src/Game.UI/package.json`: `pixi.js`, `@pixi/ui`, `@pixi/sound`, `@pixi/tilemap`, `pixi-viewport`, `pixi-filters`, `@spd789562/particle-emitter`, plus `@dimforge/rapier2d` (presentation physics, JS-side only). Vendored C# `src/Box2D.NET` (physics) is **referenced** by `Game.Engine.csproj` and used by `AsteroidsSimulation`; `src/BrainAI` (pathfinding/AI) remains unreferenced.
 
 ## Implementation Status
 
@@ -124,11 +122,13 @@ The full PixiJS v8 stack is already declared in `src/Game.UI/package.json`: `pix
 | --- | --- |
 | Arch ECS sim (60 Hz, systems, batched signal, SSR snapshot, SSE stream) | Implemented |
 | PixiJS bootstrap (`initGame`/`renderText`/`renderScene`, scenes, stats) | Implemented |
-| Static-SSR web host + SSE delta bridge (`/api/ecs/stream`) | Implemented |
+| Static-SSR web host + SSE delta bridge (`/api/{ecs,snake,tetris,breakout,asteroids}/stream`) | Implemented |
+| Games: Snake, Tetris, Breakout, Asteroids (ECS authority + POST input + HUD) | Implemented |
+| Box2D.NET authoritative physics in ECS loop (Asteroids: bodies, contact events, wrap) | Implemented (ADR-002) |
+| Asteroids presentation layer: interpolation + Rapier debris + particle-emitter + GlowFilter | Implemented (ADR-003/005) |
 | `SpriteState` -> `TransformSnapshot` (velocity/rotation/tick) | Target |
 | Shared-memory `HEAPF32` zero-copy transfer | Target |
-| JS interpolation layer (prev / curr / `alpha`) | Target |
-| Box2D.NET authoritative physics in ECS loop | Target (vendored) |
-| Rapier presentation physics (entity-selective) | Target (not installed) |
+| Box2D.NET for other games (Snake/Tetris/Breakout) | Target |
+| Rapier presentation physics (entity-selective, other games) | Target |
 | glTF importer + skeletal ECS components | Target |
 | Camera / tilemap / audio / culler integration | Target |

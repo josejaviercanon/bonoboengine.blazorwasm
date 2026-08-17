@@ -36,6 +36,7 @@ public static class ExamplesCatalog
         new("games/snake", "Snake", "Games", "https://github.com/JDStraughan/html5-snake"),
         new("games/tetris", "Tetris", "Games", "https://github.com/jakesgordon/javascript-tetris"),
         new("games/breakout", "Breakout", "Games", "https://github.com/jakesgordon/javascript-breakout"),
+        new("games/asteroids", "Asteroids", "Games", "https://github.com/aesalazar/AsteroidsWasm"),
     };
 
     /// <summary>Group name that separates game scenes from plain PixiJS examples.</summary>
@@ -57,7 +58,7 @@ public static class ExamplesCatalog
 /// <c>Sprites</c>/<c>StreamUrl</c> are ECS-specific and null for plain PixiJS examples.</summary>
 public sealed record ExamplePayload(string ExampleId, string Title, string SourceUrl,
     IReadOnlyList<SpriteState>? Sprites = null, string? StreamUrl = null, SnakeScenePayload? Snake = null,
-    TetrisScenePayload? Tetris = null, BreakoutScenePayload? Breakout = null);
+    TetrisScenePayload? Tetris = null, BreakoutScenePayload? Breakout = null, AsteroidsScenePayload? Asteroids = null);
 
 /// <summary>Snake scene payload: initial snapshot, grid metrics and the live SSE stream URL.</summary>
 public sealed record SnakeScenePayload(
@@ -104,3 +105,16 @@ public sealed record BreakoutScenePayload(
 
 /// <summary>Final-position report of the Rapier food drop (cell coordinates).</summary>
 public sealed record FoodDroppedRequest(int X, int Y);
+
+/// <summary>Asteroids scene payload: initial snapshot, court metrics and the live SSE stream URL.</summary>
+public sealed record AsteroidsScenePayload(
+    IReadOnlyList<AsteroidsSpriteState> Sprites,
+    int Score,
+    int HighScore,
+    int Lives,
+    int Level,
+    bool GameOver,
+    bool Started,
+    float CourtWidth,
+    float CourtHeight,
+    string StreamUrl);

@@ -59,7 +59,7 @@ PIXIJS v8                sprites, containers, animation, camera, particles, GPU
 
 - C# is the sole authority; PixiJS is a pure mirror (interpolation + optional presentation physics).
 - Never move simulation back-and-forth through JS interop per frame; cross via batched render snapshots only.
-- Box2D.NET = authoritative physics (vendored `src/Box2D.NET`, not yet wired). Rapier (`@dimforge/rapier2d`, not installed) = optional JS-side presentation physics, entity-selective (`PresentationPhysicsComponent.Mode`).
+- Box2D.NET = authoritative physics (vendored `src/Box2D.NET`, referenced, used by `AsteroidsSimulation`). Rapier (`@dimforge/rapier2d`, installed) = optional JS-side presentation physics, entity-selective (`PresentationPhysicsComponent.Mode`).
 - glTF (`.glb`) = asset contract, not ECS architecture; a skeletal character = one entity with contiguous-array `SkeletonComponent`; the animation state machine belongs to the ECS.
 
 ## ECS Rules (implemented in `EcsSimulation`; rules below)
