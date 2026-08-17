@@ -15,6 +15,7 @@ import { fromFontScene } from './fromFont';
 import { graphicsMaskScene } from './graphicsMask';
 import { meshRopeScene } from './meshRope';
 import { pixiTextScene } from './pixiText';
+import { pacmanScene } from './pacman';
 import { renderTextureScene } from './renderTexture';
 import { racerScene } from './racer';
 import { simpleGraphicsScene } from './simpleGraphics';
@@ -54,4 +55,5 @@ export const sceneRegistry: Record<string, SceneBuilder> = {
     'games/breakout': breakoutScene,
     'games/asteroids': asteroidsScene,
     'games/racer': racerScene,
+    'games/pacman': pacmanScene,
 };

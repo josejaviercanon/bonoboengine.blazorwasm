@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Game.Engine.ECS;
 using Game.Engine.ECS.Asteroids;
 using Game.Engine.ECS.Breakout;
+using Game.Engine.ECS.Pacman;
 using Game.Engine.ECS.Racer;
 
 namespace Game.Examples;
@@ -41,6 +42,7 @@ public static class ExamplesCatalog
         new("games/breakout", "Breakout", "Games", "https://github.com/jakesgordon/javascript-breakout"),
         new("games/asteroids", "Asteroids", "Games", "https://github.com/aesalazar/AsteroidsWasm"),
         new("games/racer", "Endless Race Runner", "Games", "https://github.com/jakesgordon/javascript-racer"),
+        new("games/pacman", "Pac-Man", "Games", "https://github.com/josejaviercanon/bonoboengine.blazorwasm/tree/main/src/Temp/PacManBlazor"),
     };
 
     /// <summary>Group name that separates game scenes from plain PixiJS examples.</summary>
@@ -63,7 +65,7 @@ public static class ExamplesCatalog
 public sealed record ExamplePayload(string ExampleId, string Title, string SourceUrl,
     IReadOnlyList<SpriteState>? Sprites = null, string? StreamUrl = null, SnakeScenePayload? Snake = null,
     TetrisScenePayload? Tetris = null, BreakoutScenePayload? Breakout = null, AsteroidsScenePayload? Asteroids = null,
-    RacerScenePayload? Racer = null);
+    RacerScenePayload? Racer = null, PacmanScenePayload? Pacman = null);
 
 /// <summary>Snake scene payload: initial snapshot, grid metrics and the live SSE stream URL.</summary>
 public sealed record SnakeScenePayload(
@@ -123,3 +125,21 @@ public sealed record AsteroidsScenePayload(
     float CourtWidth,
     float CourtHeight,
     string StreamUrl);
+
+/// <summary>Pacman scene payload: maze topology, initial actors and live SSE stream.</summary>
+public sealed record PacmanScenePayload(
+    IReadOnlyList<PacmanSpriteState> Sprites,
+    IReadOnlyList<string> MazeRows,
+    int Score,
+    int Lives,
+    int Level,
+    int PelletsRemaining,
+    bool GameOver,
+    bool Started,
+    int MazeWidth,
+    int MazeHeight,
+    float CellSize,
+    string StreamUrl);
+
+/// <summary>Client input suggestion for Pacman; ECS validates direction on fixed tick.</summary>
+public sealed record PacmanInputRequest(string Direction);

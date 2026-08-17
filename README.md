@@ -325,8 +325,8 @@ Ported Game as expamples using Blazor Wasm ECS and Pixijs V8 render:
 | [X] | 2     | **Tetris**              | Grid systems, command validation, line clearing       |
 | [X] | 3     | **Breakout**            | Real-time physics, entity count                       |
 | [X] | 4     | **Asteroids**           | Entity spawning, wrap physics, vectors, visual effects|
-| [ ] | 5     | **Endless Race Runner** | Pseudo-3D pseudo-geometry, active entity pipelines    |
-| [ ] | 6     | **Pac-Man**             | FSM AI, grid movement, power-up timers                |
+| [X] | 5     | **Endless Race Runner** | Pseudo-3D pseudo-geometry, active entity pipelines    |
+| [X] | 6     | **Pac-Man**             | FSM AI, grid movement, power-up timers                |
 | [ ] | 7     | **2D Platformer**       | Scroller, visual effects, AI                          |
 | [ ] | 8     | **2D Top Down**         | RPG style, visual effects, AI                         |
 | [ ] | 9     | **Snake Multiplayer**   | Multiplayer, AI                                       |

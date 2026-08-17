@@ -4,6 +4,7 @@
 @using Game.Engine.ECS
 @using Game.Engine.ECS.Asteroids
 @using Game.Engine.ECS.Breakout
+@using Game.Engine.ECS.Pacman
 @using Game.Engine.ECS.Racer
 @using Game.Engine.ECS.Snake
 @using Game.Engine.ECS.Tetris
@@ -11,6 +12,7 @@
 @inject SnakeSimulation Snake
 @inject TetrisSimulation Tetris
 @inject BreakoutSimulation Breakout
+@inject PacmanSimulation Pacman
 @inject AsteroidsSimulation Asteroids
 @inject RacerSimulation Racer
 
@@ -43,6 +45,13 @@
                 Breakout: new BreakoutScenePayload(Breakout.Snapshot(), Breakout.Score, Breakout.Lives, Breakout.Level,
                     Breakout.IsGameOver, Breakout.IsStarted,
                     BreakoutConfig.CourtWidth, BreakoutConfig.CourtHeight, BreakoutConfig.ChunkSize, "/api/breakout/stream")),
+            jsonOptions),
+        { Id: "games/pacman" } => JsonSerializer.Serialize(
+            new ExamplePayload(example.Id, example.Title, example.SourceUrl,
+                Pacman: new PacmanScenePayload(Pacman.Snapshot(), Pacman.MazeRows, Pacman.Score, Pacman.Lives,
+                    Pacman.Level, Pacman.PelletsRemaining, Pacman.IsGameOver, Pacman.IsStarted,
+                    PacmanSimulation.MazeWidth, PacmanSimulation.MazeHeight, PacmanSimulation.CellSize,
+                    "/api/pacman/stream")),
             jsonOptions),
         { Id: "games/asteroids" } => JsonSerializer.Serialize(
             new ExamplePayload(example.Id, example.Title, example.SourceUrl,

@@ -1,7 +1,9 @@
 using System.Text.Json;
+using System.Threading.Channels;
 using Game.Engine.ECS;
 using Game.Engine.ECS.Asteroids;
 using Game.Engine.ECS.Breakout;
+using Game.Engine.ECS.Pacman;
 using Game.Engine.ECS.Racer;
 using Game.Engine.ECS.Snake;
 using Game.Engine.ECS.Tetris;
@@ -17,6 +19,7 @@ builder.Services.AddSingleton<EcsSimulation>();
 builder.Services.AddSingleton<SnakeSimulation>();
 builder.Services.AddSingleton<TetrisSimulation>();
 builder.Services.AddSingleton<BreakoutSimulation>();
+builder.Services.AddSingleton<PacmanSimulation>();
 builder.Services.AddSingleton<AsteroidsSimulation>();
 builder.Services.AddSingleton<RacerSimulation>();
 
@@ -121,6 +124,64 @@ app.MapPost("/api/snake/food-dropped", (SnakeSimulation sim, FoodDroppedRequest 
 });
 
 app.MapPost("/api/snake/restart", (SnakeSimulation sim) =>
+{
+    sim.Reset();
+    return Results.NoContent();
+});
+
+// SSE push of batched Pacman render signals, one per authoritative fixed tick.
+// The simulation callback only enqueues into a bounded channel, so a slow browser
+// cannot block the ECS timer or throw from inside the simulation lock.
+app.MapGet("/api/pacman/stream", async (PacmanSimulation sim, HttpResponse response, CancellationToken ct) =>
+{
+    response.ContentType = "text/event-stream";
+
+    var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+    var signals = Channel.CreateBounded<PacmanRenderSignal>(new BoundedChannelOptions(2)
+    {
+        FullMode = BoundedChannelFullMode.DropOldest,
+        SingleReader = true,
+        SingleWriter = false,
+    });
+
+    Action<PacmanRenderSignal> handler = signal => signals.Writer.TryWrite(signal);
+
+    sim.OnRenderSignal += handler;
+
+    try
+    {
+        await foreach (var signal in signals.Reader.ReadAllAsync(ct))
+        {
+            var json = JsonSerializer.Serialize(signal, jsonOptions);
+            await response.WriteAsync($"event: pacman-move\ndata: {json}\n\n", ct);
+            await response.Body.FlushAsync(ct);
+        }
+    }
+    catch (OperationCanceledException) when (ct.IsCancellationRequested)
+    {
+        // Browser disconnected; cleanup below.
+    }
+    finally
+    {
+        sim.OnRenderSignal -= handler;
+        signals.Writer.TryComplete();
+    }
+});
+
+// Client only suggests direction; PacmanInputSystem validates it on the next fixed tick.
+app.MapPost("/api/pacman/input", (PacmanSimulation sim, PacmanInputRequest request) =>
+{
+    sim.QueueDirection(request.Direction);
+    return Results.NoContent();
+});
+
+app.MapPost("/api/pacman/start", (PacmanSimulation sim) =>
+{
+    sim.Start();
+    return Results.NoContent();
+});
+
+app.MapPost("/api/pacman/restart", (PacmanSimulation sim) =>
 {
     sim.Reset();
     return Results.NoContent();
