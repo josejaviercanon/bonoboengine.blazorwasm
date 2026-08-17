@@ -35,6 +35,7 @@ public static class ExamplesCatalog
         new("ecs/sprites", "ECS Sprites", "ECS", "https://github.com/genaray/Arch"),
         new("games/snake", "Snake", "Games", "https://github.com/JDStraughan/html5-snake"),
         new("games/tetris", "Tetris", "Games", "https://github.com/jakesgordon/javascript-tetris"),
+        new("games/breakout", "Breakout", "Games", "https://github.com/jakesgordon/javascript-breakout"),
     };
 
     /// <summary>Group name that separates game scenes from plain PixiJS examples.</summary>
@@ -56,7 +57,7 @@ public static class ExamplesCatalog
 /// <c>Sprites</c>/<c>StreamUrl</c> are ECS-specific and null for plain PixiJS examples.</summary>
 public sealed record ExamplePayload(string ExampleId, string Title, string SourceUrl,
     IReadOnlyList<SpriteState>? Sprites = null, string? StreamUrl = null, SnakeScenePayload? Snake = null,
-    TetrisScenePayload? Tetris = null);
+    TetrisScenePayload? Tetris = null, BreakoutScenePayload? Breakout = null);
 
 /// <summary>Snake scene payload: initial snapshot, grid metrics and the live SSE stream URL.</summary>
 public sealed record SnakeScenePayload(
@@ -87,6 +88,19 @@ public sealed record TetrisScenePayload(
 
 /// <summary>Client input for the tetris scene: a suggested command (left/right/rotate/down) the sim validates.</summary>
 public sealed record TetrisInputRequest(string Command);
+
+/// <summary>Breakout scene payload: initial snapshot, court metrics and the live SSE stream URL.</summary>
+public sealed record BreakoutScenePayload(
+    IReadOnlyList<BreakoutSpriteState> Sprites,
+    int Score,
+    int Lives,
+    int Level,
+    bool GameOver,
+    bool Started,
+    float CourtWidth,
+    float CourtHeight,
+    float ChunkSize,
+    string StreamUrl);
 
 /// <summary>Final-position report of the Rapier food drop (cell coordinates).</summary>
 public sealed record FoodDroppedRequest(int X, int Y);

@@ -5,6 +5,7 @@ import { bitmapText2Scene } from './bitmapText2';
 import { bitmapTextScene } from './bitmapText';
 import { blendModesScene } from './blendModes';
 import { blurFilterScene } from './blurFilter';
+import { breakoutScene } from './breakout';
 import { containerPivotScene } from './containerPivot';
 import { containerScene } from './container';
 import { draggingScene } from './dragging';
@@ -48,4 +49,5 @@ export const sceneRegistry: Record<string, SceneBuilder> = {
     'ecs/sprites': ecsSpritesScene,
     'games/snake': snakeScene,
     'games/tetris': tetrisScene,
+    'games/breakout': breakoutScene,
 };

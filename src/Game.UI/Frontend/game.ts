@@ -43,7 +43,9 @@ export async function initGame(containerId: string): Promise<void> {
     // Initialize with fallback bounds if resizeTo yields zero size
     await app.init({
         resizeTo: container,
-        backgroundAlpha: 0,
+        backgroundAlpha: 1, // opaque canvas: avoids driver/compositor blank-canvas issues with transparent WebGL
+        autoDensity: true, // set canvas CSS size to screen size; without it the canvas keeps its DPR-scaled
+        // buffer size on HiDPI displays and overflows the viewport (content appears off-screen)
         antialias: true,
         hello: true // Forces PixiJS to log its boot signature to the console to verify execution
     });

@@ -11,6 +11,7 @@ builder.Services.AddRazorComponents();
 builder.Services.AddSingleton<EcsSimulation>();
 builder.Services.AddSingleton<SnakeSimulation>();
 builder.Services.AddSingleton<TetrisSimulation>();
+builder.Services.AddSingleton<BreakoutSimulation>();
 
 var app = builder.Build();
 
@@ -162,6 +163,55 @@ app.MapPost("/api/tetris/start", (TetrisSimulation sim) =>
 });
 
 app.MapPost("/api/tetris/restart", (TetrisSimulation sim) =>
+{
+    sim.Reset();
+    return Results.NoContent();
+});
+
+// SSE push of batched breakout render signals, one per 60 Hz physics tick while running.
+app.MapGet("/api/breakout/stream", (BreakoutSimulation sim, HttpResponse response, CancellationToken ct) =>
+{
+    response.ContentType = "text/event-stream";
+
+    var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+    var writeSync = new object();
+
+    Action<BreakoutRenderSignal> handler = signal =>
+    {
+        var json = JsonSerializer.Serialize(signal, jsonOptions);
+        lock (writeSync)
+        {
+            response.WriteAsync($"event: breakout-move\ndata: {json}\n\n").GetAwaiter().GetResult();
+        }
+    };
+
+    sim.OnRenderSignal += handler;
+
+    var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    ct.Register(() =>
+    {
+        sim.OnRenderSignal -= handler;
+        completed.TrySetResult();
+    });
+    return completed.Task;
+});
+
+// Client input channel for the breakout scene. The JS layer only suggests the held
+// paddle direction + a one-shot launch; the simulation validates and applies it (C# sole authority).
+app.MapPost("/api/breakout/input", (BreakoutSimulation sim, BreakoutInputRequest request) =>
+{
+    sim.QueueInput(request);
+    return Results.NoContent();
+});
+
+// Starts a fresh breakout game (start button or Space bar). Restarts if game over.
+app.MapPost("/api/breakout/start", (BreakoutSimulation sim) =>
+{
+    sim.Start();
+    return Results.NoContent();
+});
+
+app.MapPost("/api/breakout/restart", (BreakoutSimulation sim) =>
 {
     sim.Reset();
     return Results.NoContent();

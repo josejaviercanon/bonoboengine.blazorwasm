@@ -321,12 +321,12 @@ Ported Game as expamples using Blazor Wasm ECS and Pixijs V8 render:
 
 |Done | Order | Game                 | What You'll Learn                                     |
 |---- | ----- | -------------------- | ----------------------------------------------------- |
-| [X] | 1     | **Snake**            | Basic ECS, commands, delta events,  basic physics     |
-| [ ] | 2     | **Tetris**           | Grid systems, command validation, line clearing       |
-| [ ] | 3     | **Pong**             | Real-time physics, minimal entity count               |
-| [ ] | 4     | **Asteroids**        | Entity spawning, wrap physics, vectors                |
+| [X] | 1     | **Snake**            | Basic ECS, commands, delta events, basic physics      |
+| [X] | 2     | **Tetris**           | Grid systems, command validation, line clearing       |
+| [X] | 3     | **Breakout**         | Real-time physics, entity count                       |
+| [ ] | 4     | **Asteroids**        | Entity spawning, wrap physics, vectors, visual effects|
 | [ ] | 5     | **Puzzling Potions** | Reuse PixiJS code, complex grid logic, asset pipeline |
 | [ ] | 6     | **Pac-Man**          | FSM AI, grid movement, power-up timers                |
-| [ ] | 7     | **NeonShooter**      | Particles, continuous input, visual effects at scale  |
+| [ ] | 7     | **2D Platformer**    | Scroller, visual effects                              |
 
 ---
