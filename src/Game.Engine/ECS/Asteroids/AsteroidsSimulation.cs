@@ -12,7 +12,7 @@ namespace Game.Engine.ECS.Asteroids;
 ///     <see cref="SaucerSpawned"/>, <see cref="LevelUp"/> and <see cref="LifeGained"/>
 ///     are ECS-originated edge events consumed once by the client (sound/particle triggers).
 /// </summary>
-public sealed record AsteroidsRenderSignal(
+public sealed partial record AsteroidsRenderSignal(
     long Seq,
     int EntityCount,
     double TickMs,
@@ -29,6 +29,12 @@ public sealed record AsteroidsRenderSignal(
     bool SaucerSpawned,
     bool LevelUp,
     bool LifeGained);
+
+public partial record AsteroidsRenderSignal
+{
+    public double StepMs { get; init; } = AsteroidsConfig.TickIntervalSeconds * 1000d;
+    public long Epoch { get; init; }
+}
 
 /// <summary>
 ///     Owns the asteroids Arch ECS world + Box2D physics world. The sim ticks at
@@ -50,6 +56,7 @@ public sealed class AsteroidsSimulation : IDisposable
     // Guards the world (step mutation + snapshot reads across timer and request threads).
     private readonly object _sync = new();
     private long _seq;
+    private long _epoch;
 
     public event Action<AsteroidsRenderSignal>? OnRenderSignal;
 
@@ -372,6 +379,7 @@ public sealed class AsteroidsSimulation : IDisposable
 
     private void ResetWorld()
     {
+        _epoch++;
         _gameSystem.DestroyAll(_world);
         _ctx.Input.Thrust = false;
         _ctx.Input.Left = false;
@@ -408,7 +416,8 @@ public sealed class AsteroidsSimulation : IDisposable
             OnRenderSignal?.Invoke(new AsteroidsRenderSignal(
                 _seq, _world.Size, stopwatch.Elapsed.TotalMilliseconds,
                 BuildSnapshot(), stats.Score, stats.HighScore, stats.Lives, stats.Level, stats.GameOver, stats.Started,
-                stats.ThrustOn, stats.Exploded, stats.Fired, stats.SaucerSpawned, stats.LevelUp, stats.LifeGained));
+                stats.ThrustOn, stats.Exploded, stats.Fired, stats.SaucerSpawned, stats.LevelUp, stats.LifeGained)
+            { Epoch = _epoch });
         }
     }
 

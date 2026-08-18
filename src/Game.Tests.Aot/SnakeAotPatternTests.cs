@@ -18,7 +18,7 @@ public class SnakeAotPatternTests
         var snapshot = sim.Snapshot();
         var expectedSprites = SnakeSimulation.InitialLength + 1;
 
-        await Assert.That(snapshot).HasCount(expectedSprites);
+        await Assert.That(snapshot.Count).IsEqualTo(expectedSprites);
         await Assert.That(snapshot[0].Id).IsEqualTo(SnakeSimulation.FoodRenderId);
     }
 
@@ -30,5 +30,42 @@ public class SnakeAotPatternTests
         sim.Start();
 
         await Assert.That(sim.IsStarted).IsTrue();
+    }
+
+    [Test]
+    public async Task Bad_Food_Spawns_Replacement_At_Fall_Start()
+    {
+        using var sim = new SnakeSimulation(seed: 7, startTimer: false);
+        SnakeRenderSignal? falling = null;
+        sim.OnRenderSignal += signal =>
+        {
+            if (signal.FoodFalling) falling = signal;
+        };
+        sim.Start();
+
+        var directions = new[] { "up", "right", "down", "left" };
+        for (var signalIndex = 0; signalIndex < 25; signalIndex++)
+        {
+            if (signalIndex % 6 == 0)
+            {
+                sim.QueueDirection(directions[(signalIndex / 6) % directions.Length]);
+            }
+
+            for (var tick = 0; tick < 8; tick++) sim.StepOnce();
+        }
+
+        await Assert.That(falling).IsNotNull();
+        var foods = falling!.Sprites.Where(sprite =>
+            sprite.Kind is SnakeSpriteKind.GoodFood or SnakeSpriteKind.BadFood).ToArray();
+        await Assert.That(foods.Length).IsEqualTo(2);
+
+        var bad = foods.Single(sprite => sprite.Kind == SnakeSpriteKind.BadFood);
+        var good = foods.Single(sprite => sprite.Kind == SnakeSpriteKind.GoodFood);
+        await Assert.That(bad.R).IsEqualTo((byte)239);
+        await Assert.That(bad.G).IsEqualTo((byte)68);
+        await Assert.That(bad.B).IsEqualTo((byte)68);
+        await Assert.That(good.R).IsEqualTo((byte)34);
+        await Assert.That(good.G).IsEqualTo((byte)211);
+        await Assert.That(good.B).IsEqualTo((byte)238);
     }
 }

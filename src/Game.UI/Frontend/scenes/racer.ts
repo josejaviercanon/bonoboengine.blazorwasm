@@ -2,6 +2,7 @@ import { Assets, Container, Graphics, Rectangle, Sprite, Text, TextStyle, Textur
 import { sound } from '@pixi/sound';
 import type { SceneBuilder } from './types';
 import { publishCSharpStats } from '../stats/overlays';
+import { SnapshotBuffer, lerp, lerpWrapped } from './interpolation';
 
 interface RacerSettings {
     lanes: number;
@@ -70,11 +71,17 @@ interface RacerRenderSignal {
     seq: number;
     entityCount: number;
     tickMs: number;
+    stepMs?: number;
+    epoch?: number;
     player: RacerPlayerState;
     cars: RacerCarState[];
     settings: RacerSettings;
     lapCompleted: boolean;
     collided: boolean;
+}
+
+interface RacerPlayerSample extends RacerPlayerState {
+    id: number;
 }
 
 interface AtlasRect {
@@ -366,6 +373,9 @@ export const racerScene: SceneBuilder = async (app, params) => {
     let hillOffset = 0;
     let treeOffset = 0;
     let previousPosition = player.z;
+    let stepMs = 1000 / 60;
+    const playerInterpolation = new SnapshotBuffer<RacerPlayerSample>();
+    const carInterpolation = new SnapshotBuffer<RacerCarState>();
 
     app.renderer.background.color = '#72d7ee';
 
@@ -629,15 +639,37 @@ export const racerScene: SceneBuilder = async (app, params) => {
 
     const render = (): void => {
         if (segments.length === 0) return;
+        const playerEntry = playerInterpolation.values().next().value;
+        const playerAlpha = playerInterpolation.alpha(stepMs);
+        const renderedPlayer = playerEntry
+            ? {
+                ...playerEntry.current,
+                x: lerp(playerEntry.previous.x, playerEntry.current.x, playerAlpha),
+                z: lerpWrapped(playerEntry.previous.z, playerEntry.current.z, playerAlpha, trackLength),
+            }
+            : player;
+        const carAlpha = carInterpolation.alpha(stepMs);
+        const renderedCars = Array.from(carInterpolation.values(), entry => {
+            const z = lerpWrapped(entry.previous.z, entry.current.z, carAlpha, trackLength);
+            return { ...entry.current, z, percent: percentRemaining(z, segmentLength) };
+        });
+        const delta = increase(renderedPlayer.z - previousPosition, 0, trackLength);
+        const motionIndex = Math.floor(renderedPlayer.z / segmentLength) % segments.length;
+        const motionSegment = segments[motionIndex < 0 ? motionIndex + segments.length : motionIndex];
+        const motionCurve = motionSegment?.curve ?? 0;
+        skyOffset = increase(skyOffset, SKY_SPEED * motionCurve * delta / segmentLength, 1);
+        hillOffset = increase(hillOffset, HILL_SPEED * motionCurve * delta / segmentLength, 1);
+        treeOffset = increase(treeOffset, TREE_SPEED * motionCurve * delta / segmentLength, 1);
+        previousPosition = renderedPlayer.z;
         const scale = Math.max(0.1, settings.resolutionScale);
         const width = Math.max(1, app.screen.width / scale);
         const height = Math.max(1, app.screen.height / scale);
         const cameraDepth = 1 / Math.tan((settings.fieldOfView / 2) * Math.PI / 180);
         const playerZ = settings.cameraHeight * cameraDepth;
-        const baseIndex = Math.floor(player.z / segmentLength) % segments.length;
+        const baseIndex = Math.floor(renderedPlayer.z / segmentLength) % segments.length;
         const normalizedBaseIndex = baseIndex < 0 ? baseIndex + segments.length : baseIndex;
-        const basePercent = percentRemaining(player.z, segmentLength);
-        const playerAbsoluteZ = increase(player.z + playerZ, 0, trackLength);
+        const basePercent = percentRemaining(renderedPlayer.z, segmentLength);
+        const playerAbsoluteZ = increase(renderedPlayer.z + playerZ, 0, trackLength);
         const playerSegmentIndex = Math.floor(playerAbsoluteZ / segmentLength) % segments.length;
         const playerSegment = segments[playerSegmentIndex] ?? segments[0];
         const playerPercent = percentRemaining(playerAbsoluteZ, segmentLength);
@@ -659,10 +691,10 @@ export const racerScene: SceneBuilder = async (app, params) => {
             if (!segment) continue;
             const looped = segment.index < normalizedBaseIndex;
             const fog = 1 / Math.pow(Math.E, (n / settings.drawDistance) ** 2 * settings.fogDensity);
-            const p1 = project(0, segment.p1WorldY, segment.index * segmentLength, player.x * settings.roadWidth - x,
-                cameraY, player.z - (looped ? trackLength : 0), cameraDepth, width, height, settings.roadWidth);
-            const p2 = project(0, segment.p2WorldY, (segment.index + 1) * segmentLength, player.x * settings.roadWidth - x - dx,
-                cameraY, player.z - (looped ? trackLength : 0), cameraDepth, width, height, settings.roadWidth);
+            const p1 = project(0, segment.p1WorldY, segment.index * segmentLength, renderedPlayer.x * settings.roadWidth - x,
+                cameraY, renderedPlayer.z - (looped ? trackLength : 0), cameraDepth, width, height, settings.roadWidth);
+            const p2 = project(0, segment.p2WorldY, (segment.index + 1) * segmentLength, renderedPlayer.x * settings.roadWidth - x - dx,
+                cameraY, renderedPlayer.z - (looped ? trackLength : 0), cameraDepth, width, height, settings.roadWidth);
             x += dx;
             dx += segment.curve;
 
@@ -675,7 +707,7 @@ export const racerScene: SceneBuilder = async (app, params) => {
         }
 
         const carsBySegment = new Map<number, RacerCarState[]>();
-        for (const car of cars) {
+        for (const car of renderedCars) {
             const index = Math.floor(car.z / segmentLength) % segments.length;
             const normalized = index < 0 ? index + segments.length : index;
             const list = carsBySegment.get(normalized) ?? [];
@@ -716,35 +748,30 @@ export const racerScene: SceneBuilder = async (app, params) => {
                     playerPercent);
                 const playerScale = cameraDepth / playerZ;
                 const playerScreenY = height / 2 - playerScale * playerCameraY * height / 2;
-                const playerKind = player.uphill
-                    ? player.steer < 0 ? KIND.PLAYER_UPHILL_LEFT : player.steer > 0 ? KIND.PLAYER_UPHILL_RIGHT : KIND.PLAYER_UPHILL_STRAIGHT
-                    : player.steer < 0 ? KIND.PLAYER_LEFT : player.steer > 0 ? KIND.PLAYER_RIGHT : KIND.PLAYER_STRAIGHT;
-                const bounce = 1.5 * Math.random() * (player.speed / 60000) * settings.resolutionScale;
+                const playerKind = renderedPlayer.uphill
+                    ? renderedPlayer.steer < 0 ? KIND.PLAYER_UPHILL_LEFT : renderedPlayer.steer > 0 ? KIND.PLAYER_UPHILL_RIGHT : KIND.PLAYER_UPHILL_STRAIGHT
+                    : renderedPlayer.steer < 0 ? KIND.PLAYER_LEFT : renderedPlayer.steer > 0 ? KIND.PLAYER_RIGHT : KIND.PLAYER_STRAIGHT;
+                const bounce = 1.5 * Math.random() * (renderedPlayer.speed / 60000) * settings.resolutionScale;
                 drawSprite(playerContainer, playerKind, playerScale, width / 2, playerScreenY + bounce,
                     -0.5, height, width);
             }
         }
 
-        hud.text = `${Math.round(5 * Math.round(player.speed / 500))} mph   ` +
-            `Time: ${formatTime(player.currentLapTime)}   Lap: ${player.lap}` +
-            (player.lastLapTime > 0 ? `   Last: ${formatTime(player.lastLapTime)}` : '');
+        hud.text = `${Math.round(5 * Math.round(renderedPlayer.speed / 500))} mph   ` +
+            `Time: ${formatTime(renderedPlayer.currentLapTime)}   Lap: ${renderedPlayer.lap}` +
+            (renderedPlayer.lastLapTime > 0 ? `   Last: ${formatTime(renderedPlayer.lastLapTime)}` : '');
         hud.position.set(16, 12);
         const viewport = document.getElementById('pixi-viewport');
         viewport?.setAttribute('data-racer-bounds', `${Math.round(width)}x${Math.round(height)}`);
     };
 
     const applySignal = (signal: RacerRenderSignal): void => {
-        const delta = increase(signal.player.z - previousPosition, 0, trackLength);
-        const playerIndex = Math.floor(signal.player.z / segmentLength) % segments.length;
-        const segment = segments[playerIndex < 0 ? playerIndex + segments.length : playerIndex];
-        const curve = segment?.curve ?? 0;
-        skyOffset = increase(skyOffset, SKY_SPEED * curve * delta / segmentLength, 1);
-        hillOffset = increase(hillOffset, HILL_SPEED * curve * delta / segmentLength, 1);
-        treeOffset = increase(treeOffset, TREE_SPEED * curve * delta / segmentLength, 1);
-        previousPosition = signal.player.z;
+        stepMs = Math.max(1, signal.stepMs ?? 1000 / 60);
         player = signal.player;
         cars = signal.cars;
         settings = signal.settings;
+        playerInterpolation.ingest([{ id: 0, ...signal.player }], signal.seq, signal.epoch);
+        carInterpolation.ingest(signal.cars, signal.seq, signal.epoch);
         if (!tuningOpen) panel.update(settings);
         publishCSharpStats({ seq: signal.seq, entityCount: signal.entityCount, tickMs: signal.tickMs });
         if (signal.lapCompleted) dbg('lap completed:', player.lap, formatTime(player.lastLapTime));
@@ -816,6 +843,8 @@ export const racerScene: SceneBuilder = async (app, params) => {
     });
     source?.addEventListener('error', () => dbg('SSE connection error'));
 
+    playerInterpolation.ingest([{ id: 0, ...player }]);
+    carInterpolation.ingest(cars);
     sound.add(SOUND_ALIAS, SOUND_URL);
     void sound.play(SOUND_ALIAS, { loop: true, volume: 0.05 });
     app.ticker.add(render);

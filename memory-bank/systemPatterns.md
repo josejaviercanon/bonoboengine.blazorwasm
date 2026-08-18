@@ -37,6 +37,7 @@
 
 - **Current bridge (static SSR):** C# emits a batched `EcsRenderSignal`; the web host pushes it to PixiJS via the `GET /api/ecs/stream` SSE endpoint (`event: sprite-move`, `SpriteState[]` JSON, 1 s throttle) — no `IJSRuntime` on the web host (no interactivity). ❌ No per-frame polling, ❌ no full-state JSON per frame.
 - **Target bridge (ADR-003):** batched `TransformSnapshot` (pos + velocity + rotation + tick) → pinned shared-memory `HEAPF32` `Float32Array` view; client interpolates `P_render = P_prev + (P_curr − P_prev) × α`.
+- **Interpolation implementation pattern** (`docs/architecture/render-interpolation.md`): per-entity in-place `InterpState {prev, curr, at}` (no whole-buffer copies), signal-borne `stepMs`/`tickMs` denominator, shortest-path angular LERP, clamped α (no extrapolation), `dt` clamped to 1/30, resident Rapier world with one-way kinematic→dynamic coupling. Reference code: `asteroids.ts` (`ingest`/`nowAlpha`/`drawWorld`), `snake.ts`.
 - JS entry: `Frontend/game.ts` exports `initGame(containerId)`, also exposed as
   `window.initGame`; `GameView.razor` calls it in `OnAfterRenderAsync(firstRender)`.
 - Vite builds an **IIFE** bundle (`game-bundle.iife.js`) into `wwwroot/dist` for direct

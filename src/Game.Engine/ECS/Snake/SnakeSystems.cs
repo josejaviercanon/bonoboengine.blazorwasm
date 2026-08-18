@@ -109,13 +109,20 @@ public partial class SnakeStepSystem : BaseSystem<World, double>
 
         var body = CollectBody(entities);
         var oldTail = body.Length > 0 ? World.Get<GridCell>(body[^1]) : headCell;
-        // Any food at the target cell (normal cyan or fallen black) reacts with the
-        // head: black food is a deadly obstacle, normal food is eaten and respawned.
+        World.Set(head, new PreviousGridCell(headCell.X, headCell.Y));
+        foreach (var segment in body)
+        {
+            var cell = World.Get<GridCell>(segment);
+            World.Set(segment, new PreviousGridCell(cell.X, cell.Y));
+        }
+
+        // Any food at target cell (normal cyan or settled red) reacts with the
+        // head: bad food is a deadly obstacle, normal food is eaten and respawned.
         var foodAtCell = FindFoodAtCell(entities, newCell);
 
         if (foodAtCell != Entity.Null && World.Has<FoodFall>(foodAtCell))
         {
-            // The black food is a deadly obstacle: touching it ends the game.
+            // The bad food is a deadly obstacle: touching it ends the game.
             World.Set(statsEntity, new SnakeStats(stats.Score, true, stats.Started));
             return;
         }
@@ -139,6 +146,7 @@ public partial class SnakeStepSystem : BaseSystem<World, double>
             World.Create(
                 new RenderId(_nextSegmentId++),
                 oldTail,
+                new PreviousGridCell(oldTail.X, oldTail.Y),
                 _bodyColor,
                 new SnakeBody());
             World.Set(statsEntity, new SnakeStats(stats.Score + 1, false, stats.Started, ate: true));
@@ -162,15 +170,18 @@ public partial class SnakeStepSystem : BaseSystem<World, double>
         return entities;
     }
 
-    /// <summary>Returns the food entity (normal or black) occupying <paramref name="cell"/>, if any.</summary>
+    /// <summary>Returns the food entity occupying <paramref name="cell"/>, if any.</summary>
     private Entity FindFoodAtCell(Entity[] entities, GridCell cell)
     {
+        var normalFood = Entity.Null;
         foreach (var entity in entities)
         {
             if (!World.IsAlive(entity) || !World.Has<SnakeFood>(entity)) continue;
-            if (SameCell(World.Get<GridCell>(entity), cell)) return entity;
+            if (!SameCell(World.Get<GridCell>(entity), cell)) continue;
+            if (World.Has<FoodFall>(entity)) return entity;
+            normalFood = entity;
         }
-        return Entity.Null;
+        return normalFood;
     }
 
     private Entity[] CollectBody(Entity[] entities)
@@ -215,8 +226,10 @@ public partial class SnakeStepSystem : BaseSystem<World, double>
             World.Create(
                 new RenderId(_nextFoodId()),
                 cell,
+                new PreviousGridCell(cell.X, cell.Y),
                 _foodColor,
                 new FoodAge(0f),
+                new FoodKind(SnakeSpriteKind.GoodFood),
                 new SnakeFood());
             var stats = World.Get<SnakeStats>(statsEntity);
             World.Set(statsEntity, new SnakeStats(stats.Score, stats.GameOver, stats.Started, stats.Ate, foodSpawned: true));

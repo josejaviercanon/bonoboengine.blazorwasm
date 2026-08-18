@@ -1,14 +1,19 @@
 import { Graphics, Text, TextStyle } from 'pixi.js';
 import type { Ticker } from 'pixi.js';
 import { sound } from '@pixi/sound';
-import RAPIER from '@dimforge/rapier2d';
 import type { SceneBuilder } from './types';
 import { publishCSharpStats } from '../stats/overlays';
+import { SnapshotBuffer } from './interpolation';
 
 interface SnakeSpriteState {
     id: number;
     x: number;
     y: number;
+    previousX: number;
+    previousY: number;
+    velocityX: number;
+    velocityY: number;
+    kind: number;
     r: number;
     g: number;
     b: number;
@@ -18,6 +23,8 @@ interface SnakeRenderSignal {
     seq: number;
     entityCount: number;
     tickMs: number;
+    stepMs: number;
+    epoch?: number;
     sprites: SnakeSpriteState[];
     score: number;
     gameOver: boolean;
@@ -40,6 +47,10 @@ interface SnakeSceneParams {
         streamUrl?: string;
     };
 }
+
+const GOOD_FOOD_KIND = 2;
+const BAD_FOOD_KIND = 3;
+const DEFAULT_STEP_MS = 125;
 
 const KEY_TO_DIRECTION: Record<string, string> = {
     ArrowUp: 'up',
@@ -64,11 +75,6 @@ const KEY_TO_DIRECTION: Record<string, string> = {
     L: 'right',
 };
 
-// Food entities get monotonically increasing render ids starting at 1000
-// (must match SnakeSimulation.FoodRenderId). id >= FOOD_ID_START => food.
-const FOOD_ID_START = 1000;
-const isFood = (id: number) => id >= FOOD_ID_START;
-
 const EAT_SOUND_ALIAS = 'snake-eat';
 const SPAWN_SOUND_ALIAS = 'snake-spawn';
 const ENDGAME_SOUND_ALIAS = 'snake-endgame';
@@ -89,13 +95,42 @@ function playSound(alias: string, url: string): void {
     void sound.play(alias);
 }
 
-const dbg = (...args: unknown[]) => console.log('[pixi-debug] snake:', ...args);
+function isSnakeSpriteState(value: unknown): value is SnakeSpriteState {
+    if (!value || typeof value !== 'object') return false;
+    const state = value as Partial<SnakeSpriteState>;
+    return typeof state.id === 'number' &&
+        typeof state.x === 'number' &&
+        typeof state.y === 'number' &&
+        typeof state.previousX === 'number' &&
+        typeof state.previousY === 'number' &&
+        typeof state.velocityX === 'number' &&
+        typeof state.velocityY === 'number' &&
+        typeof state.kind === 'number' &&
+        typeof state.r === 'number' &&
+        typeof state.g === 'number' &&
+        typeof state.b === 'number';
+}
+
+function isSnakeRenderSignal(value: unknown): value is SnakeRenderSignal {
+    if (!value || typeof value !== 'object') return false;
+    const signal = value as Partial<SnakeRenderSignal>;
+    return typeof signal.seq === 'number' &&
+        typeof signal.entityCount === 'number' &&
+        typeof signal.tickMs === 'number' &&
+        typeof signal.stepMs === 'number' &&
+        Array.isArray(signal.sprites) &&
+        signal.sprites.every(isSnakeSpriteState) &&
+        typeof signal.score === 'number' &&
+        typeof signal.gameOver === 'boolean' &&
+        typeof signal.started === 'boolean' &&
+        typeof signal.ate === 'boolean' &&
+        typeof signal.foodSpawned === 'boolean' &&
+        typeof signal.foodFalling === 'boolean';
+}
 
 /**
- * Snake scene: the C# simulation owns the grid and pushes one batched signal per
- * 8 Hz step over SSE. This scene only renders cells, forwards key input to the
- * sim as a suggestion, shows score/game-over state, and reacts to ECS events
- * (e.g. `ate` plays the eat sound). C# is the sole authority.
+ * Snake scene: C# owns grid rules, food fall, collision and state. SSE carries
+ * batched snapshots; Pixi interpolates previous/current positions at display Hz.
  */
 export const snakeScene: SceneBuilder = (app, params) => {
     const s = ((params ?? {}) as SnakeSceneParams).snake ?? {};
@@ -135,8 +170,7 @@ export const snakeScene: SceneBuilder = (app, params) => {
     scoreText.position.set(app.screen.width - 16, 12);
     app.stage.addChild(scoreText);
 
-    // Simple start/game-over GUI: DOM overlay with a start button (works with mouse
-    // and is immune to canvas focus quirks). Space/Enter do the same thing.
+    // Simple start/game-over GUI: DOM overlay with a start button.
     const overlay = document.createElement('div');
     overlay.style.cssText =
         'position:fixed;top:52px;left:0;right:0;bottom:0;display:flex;flex-direction:column;' +
@@ -160,12 +194,13 @@ export const snakeScene: SceneBuilder = (app, params) => {
     let score = s.score ?? 0;
     let prevStarted = started;
     let prevGameOver = gameOver;
+    let stepMs = DEFAULT_STEP_MS;
+    const interpolation = new SnapshotBuffer<SnakeSpriteState>();
 
-    // Logs ECS state transitions and plays the end sound exactly once per game over.
     const logTransitions = () => {
-        if (started && !prevStarted) dbg('game started (ECS signal)');
+        if (started && !prevStarted) console.debug('[pixi-debug] snake started (ECS signal)');
         if (gameOver && !prevGameOver) {
-            dbg('game ended (ECS signal) - score', score);
+            console.debug('[pixi-debug] snake ended (ECS signal) - score', score);
             playSound(ENDGAME_SOUND_ALIAS, ENDGAME_SOUND_URL);
         }
         prevStarted = started;
@@ -184,118 +219,31 @@ export const snakeScene: SceneBuilder = (app, params) => {
 
     const startGame = () => {
         if (started && !gameOver) return;
-        dbg('starting game (button or space)');
         fetch('/api/snake/start', { method: 'POST' })
-            .then(() => {
+            .then((response: Response) => {
+                if (!response.ok) throw new Error(`start failed with HTTP ${response.status}`);
                 started = true;
                 gameOver = false;
                 updateOverlay();
             })
-            .catch((err) => console.error('[pixi-debug] snake start failed:', err));
+            .catch((error: unknown) => console.error('[pixi-debug] snake start failed:', error));
     };
     startButton.addEventListener('click', startGame);
 
-    // --- Presentation physics: Rapier food drop (ADR-002/005) -------------------
-    // The ECS flags the food as falling after 3 s; this client runs the gravity
-    // fall, then reports the FINAL position once. The ECS only ever sees the
-    // initial and final positions - never the intermediate frames.
-    let physicsWorld: RAPIER.World | null = null;
-    let foodBody: RAPIER.RigidBody | null = null;
-    let foodFalling = false;
-    let fallingFoodId: number | null = null;
-    let settleFrames = 0;
-    let dropPosted = false;
-    // Ids of foods that already settled at the bottom (drawn statically, black).
-    const settledFoodIds = new Set<number>();
-
-    const initPhysics = async () => {
-        if (physicsWorld) return;
-        const initFn = (RAPIER as unknown as { init?: () => Promise<void> }).init;
-        if (initFn) await initFn();
-        // Rapier is y-up; the board is y-down, so gravity must point DOWN in world
-        // space (negative y) for the food to fall to the bottom of the screen.
-        physicsWorld = new RAPIER.World({ x: 0, y: -9.81 });
-        const floorBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(boardWidth / 2, -2));
-        physicsWorld.createCollider(RAPIER.ColliderDesc.cuboid(boardWidth / 2, 2), floorBody);
-        const leftBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(-2, boardHeight / 2));
-        physicsWorld.createCollider(RAPIER.ColliderDesc.cuboid(2, boardHeight), leftBody);
-        const rightBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(boardWidth + 2, boardHeight / 2));
-        physicsWorld.createCollider(RAPIER.ColliderDesc.cuboid(2, boardHeight), rightBody);
-        dbg('Rapier world initialized');
-    };
-
-    const startFoodFall = async (cellX: number, cellY: number) => {
-        if (foodFalling) return;
-        await initPhysics();
-        if (!physicsWorld) return;
-
-        // Board coords are y-down; Rapier is y-up: flip when entering the world.
-        const worldX = (cellX + 0.5) * cellSize;
-        const worldY = boardHeight - (cellY + 0.5) * cellSize;
-        const randomDrift = (Math.random() - 0.5) * cellSize * 2;
-        foodBody = physicsWorld.createRigidBody(
-            RAPIER.RigidBodyDesc.dynamic()
-                .setTranslation(worldX, worldY)
-                .setLinvel(randomDrift, 0),
-        );
-        physicsWorld.createCollider(RAPIER.ColliderDesc.cuboid(cellSize / 2 - 1, cellSize / 2 - 1), foodBody);
-        foodFalling = true;
-        settleFrames = 0;
-        dropPosted = false;
-        dbg('ECS event: food falling, Rapier drop started at cell', cellX, cellY);
-    };
-
-    const reportFoodDrop = () => {
-        if (dropPosted || !physicsWorld || !foodBody) return;
-        const pos = foodBody.translation();
-        const gx = Math.max(0, Math.min(gridWidth - 1, Math.round(pos.x / cellSize - 0.5)));
-        const gy = Math.max(0, Math.min(gridHeight - 1, Math.round((boardHeight - pos.y) / cellSize - 0.5)));
-        physicsWorld.removeRigidBody(foodBody);
-        foodBody = null;
-        foodFalling = false;
-        dropPosted = true;
-        if (fallingFoodId !== null) settledFoodIds.add(fallingFoodId);
-        fallingFoodId = null;
-        dbg('food dropped, reporting final cell', gx, gy);
-        fetch('/api/snake/food-dropped', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ x: gx, y: gy }),
-        }).catch((err) => console.error('[pixi-debug] snake food-dropped failed:', err));
-    };
-
-    const onTicker = (ticker: Ticker) => {
-        if (!foodFalling || !physicsWorld || !foodBody) return;
-        physicsWorld.timestep = Math.min(ticker.deltaMS / 1000, 1 / 30);
-        physicsWorld.step();
-
-        const pos = foodBody.translation();
-        const gx = pos.x / cellSize - 0.5;
-        const gy = (boardHeight - pos.y) / cellSize - 0.5;
-        foodGfx.clear();
-        foodGfx.rect(gx * cellSize - cellSize / 2, gy * cellSize - cellSize / 2, cellSize, cellSize)
-            .fill(0x000000);
-
-        const speed = Math.abs(foodBody.linvel().y) + Math.abs(foodBody.linvel().x);
-        if (foodBody.isSleeping() || (pos.y <= 2 && speed < 0.5 && ++settleFrames > 20)) {
-            reportFoodDrop();
-        }
-    };
-    app.ticker.add(onTicker);
-
-    const draw = (states: SnakeSpriteState[]) => {
+    const draw = () => {
+        const alpha = interpolation.alpha(stepMs);
         board.clear();
         foodGfx.clear();
-        for (const state of states) {
-            if (!isFood(state.id)) {
-                board.rect(state.x - cellSize / 2, state.y - cellSize / 2, cellSize, cellSize)
-                    .fill((state.r << 16) | (state.g << 8) | state.b);
-                continue;
-            }
-            // The falling food is animated by the Rapier ticker; skip its stale position.
-            if (state.id === fallingFoodId) continue;
-            foodGfx.rect(state.x - cellSize / 2, state.y - cellSize / 2, cellSize, cellSize)
-                .fill((state.r << 16) | (state.g << 8) | state.b);
+
+        for (const { previous, current } of interpolation.values()) {
+            const x = previous.x + (current.x - previous.x) * alpha;
+            const y = previous.y + (current.y - previous.y) * alpha;
+            const color = (current.r << 16) | (current.g << 8) | current.b;
+            const target = current.kind === GOOD_FOOD_KIND || current.kind === BAD_FOOD_KIND
+                ? foodGfx
+                : board;
+
+            target.rect(x - cellSize / 2, y - cellSize / 2, cellSize, cellSize).fill(color);
         }
     };
 
@@ -308,8 +256,10 @@ export const snakeScene: SceneBuilder = (app, params) => {
         updateOverlay();
     };
 
-    draw(s.sprites ?? []);
+    interpolation.ingest((s.sprites ?? []).filter(isSnakeSpriteState));
     setGameState(s.score ?? 0, s.gameOver ?? false, started);
+    const onTicker = (_ticker: Ticker) => draw();
+    app.ticker.add(onTicker);
 
     const onKeyDown = (event: KeyboardEvent) => {
         if (event.key === ' ' || event.key === 'Enter') {
@@ -320,66 +270,40 @@ export const snakeScene: SceneBuilder = (app, params) => {
         const direction = KEY_TO_DIRECTION[event.key];
         if (!direction) return;
         event.preventDefault();
-        dbg('input direction:', direction);
         fetch('/api/snake/input', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ direction }),
-        }).catch((err) => console.error('[pixi-debug] snake input failed:', err));
+        }).catch((error: unknown) => console.error('[pixi-debug] snake input failed:', error));
     };
     window.addEventListener('keydown', onKeyDown);
 
     if (!s.streamUrl) return;
 
     const source = new EventSource(s.streamUrl);
-    source.addEventListener('snake-move', (event) => {
+    source.addEventListener('snake-move', (event: Event) => {
         try {
-            const signal = JSON.parse((event as MessageEvent).data) as SnakeRenderSignal;
-            publishCSharpStats({ seq: signal.seq, entityCount: signal.entityCount, tickMs: signal.tickMs });
-            draw(signal.sprites);
-            setGameState(signal.score, signal.gameOver, signal.started);
-            if (signal.ate) {
-                dbg('ECS event: ate food, score', signal.score);
-                playSound(EAT_SOUND_ALIAS, EAT_SOUND_URL);
-            }
-            if (signal.foodSpawned) {
-                dbg('ECS event: food spawned');
-                playSound(SPAWN_SOUND_ALIAS, SPAWN_SOUND_URL);
-            }
-            if (signal.foodFalling) {
-                // The falling food is the black one not yet settled at the bottom.
-                const blackFoods = signal.sprites.filter(
-                    (state) => isFood(state.id) && state.r === 0 && state.g === 0 && state.b === 0);
-                const food = blackFoods.find((state) => !settledFoodIds.has(state.id)) ?? blackFoods[0];
-                if (food) {
-                    fallingFoodId = food.id;
-                    void startFoodFall(
-                        Math.round(food.x / cellSize - 0.5),
-                        Math.round(food.y / cellSize - 0.5));
-                } else {
-                    dbg('ECS event: food falling, but no black food found in snapshot');
-                }
-            }
-            if (signal.gameOver) {
-                // Stop any running drop: the physics body dies with the round.
-                if (physicsWorld && foodBody) {
-                    physicsWorld.removeRigidBody(foodBody);
-                    foodBody = null;
-                }
-                foodFalling = false;
-            }
-        } catch (err) {
-            console.error('[pixi-debug] snake-move parse failed:', err);
+            const parsed: unknown = JSON.parse((event as MessageEvent<string>).data);
+            if (!isSnakeRenderSignal(parsed)) throw new Error('invalid snake render signal');
+            publishCSharpStats({ seq: parsed.seq, entityCount: parsed.entityCount, tickMs: parsed.tickMs });
+            stepMs = Math.max(1, parsed.stepMs);
+            interpolation.ingest(parsed.sprites, parsed.seq, parsed.epoch);
+            setGameState(parsed.score, parsed.gameOver, parsed.started);
+
+            if (parsed.ate) playSound(EAT_SOUND_ALIAS, EAT_SOUND_URL);
+            if (parsed.foodSpawned) playSound(SPAWN_SOUND_ALIAS, SPAWN_SOUND_URL);
+            if (parsed.foodFalling) console.debug('[pixi-debug] snake bad food started falling');
+        } catch (error: unknown) {
+            console.error('[pixi-debug] snake-move parse failed:', error);
         }
     });
+
     const cleanup = () => {
         source.close();
         window.removeEventListener('keydown', onKeyDown);
         app.ticker.remove(onTicker);
-        if (physicsWorld) physicsWorld.free();
-        physicsWorld = null;
         overlay.remove();
     };
-    source.onerror = () => cleanup();
-    window.addEventListener('beforeunload', cleanup);
+    source.onerror = () => console.warn('[pixi-debug] snake SSE interrupted; browser will retry');
+    window.addEventListener('beforeunload', cleanup, { once: true });
 };

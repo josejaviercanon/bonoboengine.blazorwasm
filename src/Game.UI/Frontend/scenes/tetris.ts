@@ -1,5 +1,6 @@
 import { Graphics, Text, TextStyle } from 'pixi.js';
 import type { SceneBuilder } from './types';
+import { SnapshotBuffer, lerp } from './interpolation';
 
 interface TetrisSpriteState {
     id: number;
@@ -14,6 +15,8 @@ interface TetrisRenderSignal {
     seq: number;
     entityCount: number;
     tickMs: number;
+    stepMs?: number;
+    epoch?: number;
     sprites: TetrisSpriteState[];
     score: number;
     rows: number;
@@ -119,6 +122,8 @@ export const tetrisScene: SceneBuilder = (app, params) => {
     let rows = t.rows ?? 0;
     let level = t.level ?? 1;
     let prevGameOver = gameOver;
+    let stepMs = 1000 / 60;
+    const interpolation = new SnapshotBuffer<TetrisSpriteState>();
 
     const logTransitions = () => {
         if (gameOver && !prevGameOver) dbg('game ended (ECS signal) - score', score);
@@ -148,10 +153,14 @@ export const tetrisScene: SceneBuilder = (app, params) => {
     };
     startButton.addEventListener('click', startGame);
 
-    const draw = (states: TetrisSpriteState[]) => {
+    const draw = () => {
+        const alpha = interpolation.alpha(stepMs);
         board.clear();
-        for (const state of states) {
-            board.rect(state.x - cellSize / 2, state.y - cellSize / 2, cellSize, cellSize)
+        for (const entry of interpolation.values()) {
+            const state = entry.current;
+            const x = lerp(entry.previous.x, state.x, alpha);
+            const y = lerp(entry.previous.y, state.y, alpha);
+            board.rect(x - cellSize / 2, y - cellSize / 2, cellSize, cellSize)
                 .fill((state.r << 16) | (state.g << 8) | state.b);
         }
     };
@@ -167,7 +176,10 @@ export const tetrisScene: SceneBuilder = (app, params) => {
         updateOverlay();
     };
 
-    draw(t.sprites ?? []);
+    interpolation.ingest(t.sprites ?? []);
+    draw();
+    const onTicker = () => draw();
+    app.ticker.add(onTicker);
     setGameState(score, rows, level, gameOver, started);
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -193,8 +205,10 @@ export const tetrisScene: SceneBuilder = (app, params) => {
     const source = new EventSource(t.streamUrl);
     source.addEventListener('tetris-move', (event) => {
         try {
-            const signal = JSON.parse((event as MessageEvent).data) as TetrisRenderSignal;
-            draw(signal.sprites);
+            const signal = JSON.parse((event as MessageEvent<string>).data) as TetrisRenderSignal;
+            stepMs = Math.max(1, signal.stepMs ?? 1000 / 60);
+            if (signal.locked) interpolation.removeWhere(id => id < 1000);
+            interpolation.ingest(signal.sprites, signal.seq, signal.epoch);
             setGameState(signal.score, signal.rows, signal.level, signal.gameOver, signal.started);
             if (signal.locked) dbg('ECS event: piece locked, cleared lines', signal.linesCleared);
         } catch (err) {
@@ -204,6 +218,7 @@ export const tetrisScene: SceneBuilder = (app, params) => {
     const cleanup = () => {
         source.close();
         window.removeEventListener('keydown', onKeyDown);
+        app.ticker.remove(onTicker);
         overlay.remove();
     };
     source.onerror = () => cleanup();

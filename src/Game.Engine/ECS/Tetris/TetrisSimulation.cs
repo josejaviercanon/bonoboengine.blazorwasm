@@ -12,7 +12,7 @@ namespace Game.Engine.ECS.Tetris;
 ///     <see cref="LinesCleared"/> are ECS-originated edge events consumed once by the
 ///     client (lock + clear sounds/feedback).
 /// </summary>
-public sealed record TetrisRenderSignal(
+public sealed partial record TetrisRenderSignal(
     long Seq,
     int EntityCount,
     double TickMs,
@@ -24,6 +24,12 @@ public sealed record TetrisRenderSignal(
     bool Started,
     bool Locked,
     int LinesCleared);
+
+public partial record TetrisRenderSignal
+{
+    public double StepMs { get; init; } = (1d / 60d) * 1000d;
+    public long Epoch { get; init; }
+}
 
 /// <summary>
 ///     Owns the tetris Arch ECS world. The sim ticks at 60 Hz; the gravity system
@@ -60,6 +66,7 @@ public sealed class TetrisSimulation : IDisposable
     // Guards the world (step mutation + snapshot reads across timer and request threads).
     private readonly object _sync = new();
     private long _seq;
+    private long _epoch;
 
     public event Action<TetrisRenderSignal>? OnRenderSignal;
 
@@ -252,6 +259,7 @@ public sealed class TetrisSimulation : IDisposable
 
     private void ResetWorld()
     {
+        _epoch++;
         var entities = new Entity[_world.Size];
         _world.GetEntities(new QueryDescription(), entities.AsSpan());
         foreach (var entity in entities)
@@ -294,7 +302,8 @@ public sealed class TetrisSimulation : IDisposable
             OnRenderSignal?.Invoke(new TetrisRenderSignal(
                 _seq, _world.Size, stopwatch.Elapsed.TotalMilliseconds,
                 BuildSnapshot(), stats.Score, stats.Rows, stats.Level, stats.GameOver, stats.Started,
-                stats.Locked, stats.LinesCleared));
+                stats.Locked, stats.LinesCleared)
+            { Epoch = _epoch });
         }
     }
 

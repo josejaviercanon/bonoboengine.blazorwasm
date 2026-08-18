@@ -29,16 +29,16 @@ PixiJS v8 Presentation Layer (WebGPU / WebGL2 pipelines)
 | Layer | Role | Status |
 | --- | --- | --- |
 | **1. C# Authoritative World** | ECS + Box2D.NET; gameplay physics, collisions, rules, deterministic tick. Sole authority. | Arch ECS implemented (`EcsSimulation` 60 Hz, `MovementSystem`/`ColorSystem`, batched `EcsRenderSignal`, SSR `Snapshot()`; games: Snake, Tetris, Breakout, Asteroids). Box2D.NET **wired** into `Game.Engine` and used by `AsteroidsSimulation` as the authoritative physics world (circle bodies, contact events, screen wrap, per-sim deterministic world `workerCount = 1`). |
-| **2. Presentation World** | Lightweight custom interpolation (default) + optional Rapier 2D (visual dynamics). Pure mirror of authoritative state. | Partially implemented: `asteroids.ts` interpolates prev/curr snapshots (ADR-003), runs a Rapier debris field (JS-side only) and particle-emitter bursts. Other scenes render raw signals. |
+| **2. Presentation World** | Lightweight custom interpolation (default) + optional Rapier 2D (visual dynamics). Pure mirror of authoritative state. | Implemented for `snake.ts` and `asteroids.ts`: both interpolate prev/curr snapshots; Asteroids also runs Rapier debris and particle-emitter bursts. Other scenes render raw signals. |
 | **3. PixiJS v8** | Sprites, containers, animation, camera, particles, GPU render. | Bootstrap implemented (`initGame`/`renderText`/`renderScene`, scenes, stats overlays). |
 
-Rule: never move simulation back-and-forth through JS interop every frame. Keep any JS physics world resident; feed it snapshots at discrete boundaries.
+Rule: never move simulation back-and-forth through JS interop every frame. Keep any JS physics world resident; feed it snapshots at discrete boundaries. Client-side interpolation and Rapier kinematic-coupling implementation guide: `docs/architecture/render-interpolation.md`.
 
 ## The WASM->JS Bridge (ADR-003)
 
 **Problem:** per-entity `IJSRuntime.InvokeVoidAsync` at 60 FPS saturates interop; simulation (60 Hz) and display (144 Hz) differ in time domain -> jitter.
 
-**Current (interim):** `GET /api/ecs/stream` SSE pushes `event: sprite-move` with batched `SpriteState[]` JSON (`Id, X, Y, R, G, B`) at a 1 s throttle. No velocity/rotation/tick.
+**Current (interim):** `GET /api/ecs/stream` SSE pushes `event: sprite-move` with batched `SpriteState[]` JSON (`Id, X, Y, R, G, B`) at a 1 s throttle. Snake uses a game-specific `SnakeSpriteState` with previous/current positions, velocity, kind, and explicit `StepMs`; its deadly-food fall remains C# authoritative.
 
 **Target:** the boundary = "the simulation produced a render snapshot", carrying kinematic data:
 
@@ -126,6 +126,7 @@ The full PixiJS v8 stack is declared in `src/Game.UI/package.json`: `pixi.js`, `
 | Games: Snake, Tetris, Breakout, Asteroids (ECS authority + POST input + HUD) | Implemented |
 | Box2D.NET authoritative physics in ECS loop (Asteroids: bodies, contact events, wrap) | Implemented (ADR-002) |
 | Asteroids presentation layer: interpolation + Rapier debris + particle-emitter + GlowFilter | Implemented (ADR-003/005) |
+| Snake presentation layer: interpolation + authoritative red-food fall + immediate replacement food | Implemented (ADR-003/006) |
 | `SpriteState` -> `TransformSnapshot` (velocity/rotation/tick) | Target |
 | Shared-memory `HEAPF32` zero-copy transfer | Target |
 | Box2D.NET for other games (Snake/Tetris/Breakout) | Target |

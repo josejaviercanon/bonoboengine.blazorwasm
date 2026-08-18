@@ -1,8 +1,16 @@
 # Active Context
 
-## Current Focus (2026-08-17)
+## Current Focus (2026-08-18)
 
-Playwright standalone-script documentation hardening. Documented the ESM (`"type": "module"`) constraint in `src/Game.Tests.UI/package.json`, process-lifecycle bugs (`{ shell: true }` orphaned .NET processes, `cwd` + `--project` path doubling), and the HTTP-readiness-polling anti-pattern. Updated `docs/testing-ui-E2E/index.md`, both `playwright-cli` skill references, `AGENTS.md`, `codebase-truth.md`, and memory bank.
+Render-interpolation documentation. Reviewed an external interpolation/Rapier-coupling
+blueprint against verified code, corrected it (wrong signal path, whole-map-copy churn,
+hardcoded tick, "SLERP", "Blazor WASM" execution domain, kinematic coupling presented as
+current), and captured the production pattern in
+`docs/architecture/render-interpolation.md` (grounded in `asteroids.ts`/`snake.ts`).
+Cross-linked from `docs/index.md`, `docs/architecture/topology.md`, ADR-003, and the
+`static-ssr-snapshot-bridge` SKILL.md.
+
+Playwright standalone-script documentation hardening (2026-08-17). Documented the ESM (`"type": "module"`) constraint in `src/Game.Tests.UI/package.json`, process-lifecycle bugs (`{ shell: true }` orphaned .NET processes, `cwd` + `--project` path doubling), and the HTTP-readiness-polling anti-pattern. Updated `docs/testing-ui-E2E/index.md`, both `playwright-cli` skill references, `AGENTS.md`, `codebase-truth.md`, and memory bank.
 
 Architecture-topology adoption + agentic-doc alignment. Past scaffold now: Arch ECS sim
 (`EcsSimulation` 60 Hz) + static-SSR SSE bridge + PixiJS bootstrap are implemented. The
@@ -32,8 +40,13 @@ presentation physics, shared-memory `HEAPF32` render bridge, glTF/skeletal pipel
 ## Next Steps
 
 1. Extend `SpriteState` → `TransformSnapshot` (velocity/rotation/tick) + add a JS
-   interpolation layer (prev/curr/α) — first render-bridge evolution task (ADR-003).
-2. Wire `src/Box2D.NET` into `Game.Engine.csproj` as authoritative ECS-loop physics (ADR-002).
+   interpolation layer (prev/curr/α) in `ecsSprites.ts` — first render-bridge evolution
+   task (ADR-003). Pattern to copy: `docs/architecture/render-interpolation.md` +
+   `asteroids.ts` `InterpState`/`ingest`/`nowAlpha`.
+2. Rapier kinematic mirroring of authoritative entities (target, ADR-005
+   `PresentationPhysicsComponent`): `KinematicPositionBased` bodies driven by
+   `setNextKinematicTranslation/Rotation` from interpolated positions — see
+   `docs/architecture/render-interpolation.md` §3.
 3. Install `@dimforge/rapier2d` only when presentation physics is actually needed; add
    `PresentationPhysicsComponent` modes (ADR-005).
 4. glTF importer + skeletal ECS components (`SkeletonComponent`, `AnimationPlayerComponent`)

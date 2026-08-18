@@ -3,6 +3,7 @@ import type { Ticker } from 'pixi.js';
 import { sound } from '@pixi/sound';
 import type { SceneBuilder } from './types';
 import { publishCSharpStats } from '../stats/overlays';
+import { SnapshotBuffer } from './interpolation';
 
 interface PacmanSpriteState {
     id: number;
@@ -26,6 +27,8 @@ interface PacmanRenderSignal {
     seq: number;
     entityCount: number;
     tickMs: number;
+    stepMs?: number;
+    epoch?: number;
     sprites: PacmanSpriteState[];
     score: number;
     lives: number;
@@ -58,10 +61,13 @@ interface PacmanSceneParams {
     };
 }
 
-interface InterpolationState {
-    previous: PacmanSpriteState;
-    current: PacmanSpriteState;
-    receivedAt: number;
+function isPacmanSpriteState(value: unknown): value is PacmanSpriteState {
+    if (!value || typeof value !== 'object') return false;
+    const state = value as Partial<PacmanSpriteState>;
+    return typeof state.id === 'number' && typeof state.x === 'number' && typeof state.y === 'number' &&
+        typeof state.previousX === 'number' && typeof state.previousY === 'number' &&
+        typeof state.rotation === 'number' && typeof state.kind === 'number' &&
+        typeof state.visible === 'boolean';
 }
 
 function isPacmanRenderSignal(value: unknown): value is PacmanRenderSignal {
@@ -71,6 +77,7 @@ function isPacmanRenderSignal(value: unknown): value is PacmanRenderSignal {
         typeof signal.entityCount === 'number' &&
         typeof signal.tickMs === 'number' &&
         Array.isArray(signal.sprites) &&
+        signal.sprites.every(isPacmanSpriteState) &&
         typeof signal.score === 'number' &&
         typeof signal.lives === 'number' &&
         typeof signal.level === 'number' &&
@@ -212,9 +219,8 @@ export const pacmanScene: SceneBuilder = (app, params) => {
     let lives = p.lives ?? 3;
     let level = p.level ?? 1;
     let previousGameOver = gameOver;
-    let lastSignalAt = performance.now();
-    const interpolation = new Map<number, InterpolationState>();
-    const fixedTickMs = 1000 / 60;
+    let stepMs = 1000 / 60;
+    const interpolation = new SnapshotBuffer<PacmanSpriteState>();
 
     const layout = () => {
         const scale = Math.min(app.screen.width / boardWidth, app.screen.height / boardHeight);
@@ -283,29 +289,8 @@ export const pacmanScene: SceneBuilder = (app, params) => {
         postDirection(direction);
     };
 
-    const ingest = (states: PacmanSpriteState[]) => {
-        const receivedAt = performance.now();
-        lastSignalAt = receivedAt;
-        const seen = new Set<number>();
-        for (const state of states) {
-            seen.add(state.id);
-            const current = interpolation.get(state.id);
-            if (current) {
-                current.previous = current.current;
-                current.current = state;
-                current.receivedAt = receivedAt;
-            } else {
-                interpolation.set(state.id, { previous: state, current: state, receivedAt });
-            }
-        }
-
-        for (const id of interpolation.keys()) {
-            if (!seen.has(id)) interpolation.delete(id);
-        }
-    };
-
     const draw = () => {
-        const alpha = Math.min(1, (performance.now() - lastSignalAt) / fixedTickMs);
+        const alpha = interpolation.alpha(stepMs);
         pelletLayer.clear();
         actorLayer.clear();
 
@@ -339,7 +324,7 @@ export const pacmanScene: SceneBuilder = (app, params) => {
 
     const onTicker = (_ticker: Ticker) => draw();
 
-    ingest(p.sprites ?? []);
+    interpolation.ingest((p.sprites ?? []).filter(isPacmanSpriteState));
     setStats(score, lives, level, gameOver, started);
     layout();
     updateOverlay();
@@ -357,7 +342,8 @@ export const pacmanScene: SceneBuilder = (app, params) => {
             if (!isPacmanRenderSignal(parsed)) throw new Error('invalid Pacman render signal');
             const signal = parsed;
             publishCSharpStats({ seq: signal.seq, entityCount: signal.entityCount, tickMs: signal.tickMs });
-            ingest(signal.sprites);
+            stepMs = Math.max(1, signal.stepMs ?? 1000 / 60);
+            interpolation.ingest(signal.sprites, signal.seq, signal.epoch);
             setStats(signal.score, signal.lives, signal.level, signal.gameOver, signal.started);
 
             if (signal.atePellet) playSound('pacman-munch', 'pacman-munch1.wav');

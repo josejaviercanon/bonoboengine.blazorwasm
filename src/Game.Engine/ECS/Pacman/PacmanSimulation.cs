@@ -24,7 +24,7 @@ public readonly record struct PacmanSpriteState(
     byte B);
 
 /// <summary>One batched Pacman snapshot. Edge flags are consumed by the client once.</summary>
-public sealed record PacmanRenderSignal(
+public sealed partial record PacmanRenderSignal(
     long Seq,
     int EntityCount,
     double TickMs,
@@ -41,6 +41,12 @@ public sealed record PacmanRenderSignal(
     bool GhostEaten,
     bool Died,
     bool LevelUp);
+
+public partial record PacmanRenderSignal
+{
+    public double StepMs { get; init; } = PacmanConfig.TickIntervalSeconds * 1000d;
+    public long Epoch { get; init; }
+}
 
 /// <summary>
 /// Owns authoritative Pacman ECS state. Timer ticks are fixed at 60 Hz; client input
@@ -65,6 +71,7 @@ public sealed class PacmanSimulation : IDisposable
     private readonly Timer? _timer;
     private readonly object _sync = new();
     private long _seq;
+    private long _epoch;
 
     public PacmanSimulation(int seed = 0, bool startTimer = true)
     {
@@ -200,7 +207,8 @@ public sealed class PacmanSimulation : IDisposable
             stats.AtePowerPellet,
             stats.GhostEaten,
             stats.Died,
-            stats.LevelUp);
+            stats.LevelUp)
+        { Epoch = _epoch };
 
         stats.AtePellet = false;
         stats.AtePowerPellet = false;
@@ -239,6 +247,7 @@ public sealed class PacmanSimulation : IDisposable
 
         _pendingInput.Clear();
         _seq = 0;
+        _epoch++;
         SeedWorld();
     }
 

@@ -4,6 +4,7 @@ using Game.Engine.ECS.Asteroids;
 using Game.Engine.ECS.Breakout;
 using Game.Engine.ECS.Pacman;
 using Game.Engine.ECS.Racer;
+using Game.Engine.ECS.Snake;
 
 namespace Game.Examples;
 
@@ -69,7 +70,7 @@ public sealed record ExamplePayload(string ExampleId, string Title, string Sourc
 
 /// <summary>Snake scene payload: initial snapshot, grid metrics and the live SSE stream URL.</summary>
 public sealed record SnakeScenePayload(
-    IReadOnlyList<SpriteState> Sprites,
+    IReadOnlyList<SnakeSpriteState> Sprites,
     int Score,
     bool GameOver,
     bool Started,
@@ -109,9 +110,6 @@ public sealed record BreakoutScenePayload(
     float CourtHeight,
     float ChunkSize,
     string StreamUrl);
-
-/// <summary>Final-position report of the Rapier food drop (cell coordinates).</summary>
-public sealed record FoodDroppedRequest(int X, int Y);
 
 /// <summary>Asteroids scene payload: initial snapshot, court metrics and the live SSE stream URL.</summary>
 public sealed record AsteroidsScenePayload(

@@ -335,7 +335,7 @@ Ported Game as expamples using Blazor Wasm ECS and Pixijs V8 render:
 
 ## Licensing
 
-* **Source Code:** Distributed under the [MIT License](./LICENSE).
-* **Media Assets (Graphics, Sound, Music):** Subject to third-party rights and provided strictly for educational and demonstration purposes. See [LICENSE-ASSETS.md](./LICENSE-ASSETS.md) for full terms before reusing any media files.
+- **Source Code:** Distributed under the [MIT License](./LICENSE).
+- **Media Assets (Graphics, Sound, Music):** Subject to third-party rights and provided strictly for educational and demonstration purposes. See [LICENSE-ASSETS.md](./LICENSE-ASSETS.md) for full terms before reusing any media files.
 
 ---

@@ -82,6 +82,20 @@ public struct GridCell
     }
 }
 
+/// <summary>Previous cell used to build temporal render snapshots.</summary>
+[Component]
+public struct PreviousGridCell
+{
+    public int X;
+    public int Y;
+
+    public PreviousGridCell(int x, int y)
+    {
+        X = x;
+        Y = y;
+    }
+}
+
 /// <summary>Direction a snake head is facing. Stored as int so the component stays blittable.</summary>
 [Component]
 public struct SnakeDirection
@@ -105,6 +119,15 @@ public enum SnakeDir
     Right
 }
 
+/// <summary>Stable render discriminator for snake sprites.</summary>
+public enum SnakeSpriteKind
+{
+    Body,
+    Head,
+    GoodFood,
+    BadFood
+}
+
 /// <summary>Marks the single snake head entity.</summary>
 [Component]
 public struct SnakeHead
@@ -123,7 +146,21 @@ public struct SnakeFood
 {
 }
 
-/// <summary>Age of the current food in seconds. Drives the 3 s fall trigger.</summary>
+/// <summary>Gameplay food type. Explicit type avoids using render color as state.</summary>
+[Component]
+public struct FoodKind
+{
+    public int Value;
+
+    public FoodKind(SnakeSpriteKind kind)
+    {
+        Value = (int)kind;
+    }
+
+    public SnakeSpriteKind Kind => (SnakeSpriteKind)Value;
+}
+
+/// <summary>Age of normal food in seconds. Drives the 3 s bad-food trigger.</summary>
 [Component]
 public struct FoodAge
 {
@@ -135,18 +172,41 @@ public struct FoodAge
     }
 }
 
-/// <summary>
-///     Marks food that has started its presentation-physics drop (black, deadly).
-///     The ECS does not simulate the fall: it only records initial/current position
-///     until the client reports the final position via <c>FoodDropped</c>.
-/// </summary>
+/// <summary>Authoritative fall state for deadly food.</summary>
 [Component]
 public struct FoodFall
 {
+    public float StartX;
+    public float StartY;
+    public float X;
+    public float Y;
+    public float PreviousX;
+    public float PreviousY;
+    public float VelocityX;
+    public float VelocityY;
+    public float ElapsedSeconds;
+    public float DurationSeconds;
+    public int LandingX;
+    public int LandingY;
+
+    public FoodFall(float x, float y, float durationSeconds, int landingX, int landingY, float cellSize)
+    {
+        StartX = x;
+        StartY = y;
+        X = x;
+        Y = y;
+        PreviousX = x;
+        PreviousY = y;
+        VelocityX = 0f;
+        VelocityY = ((landingY + 0.5f) * cellSize - y) / durationSeconds;
+        ElapsedSeconds = 0f;
+        DurationSeconds = durationSeconds;
+        LandingX = landingX;
+        LandingY = landingY;
+    }
 }
 
-/// <summary>Marks food whose final drop position was already synced from the client.
-/// One-shot: after this, no more drop sync events of this type are accepted.</summary>
+/// <summary>Marks food whose authoritative fall has settled.</summary>
 [Component]
 public struct FoodSynced
 {

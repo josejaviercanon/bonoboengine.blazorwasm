@@ -12,7 +12,7 @@ namespace Game.Engine.ECS.Breakout;
 ///     <see cref="LevelUp"/> and <see cref="LoseLife"/> are ECS-originated edge events
 ///     consumed once by the client (sound triggers).
 /// </summary>
-public sealed record BreakoutRenderSignal(
+public sealed partial record BreakoutRenderSignal(
     long Seq,
     int EntityCount,
     double TickMs,
@@ -26,6 +26,12 @@ public sealed record BreakoutRenderSignal(
     bool PaddleHit,
     bool LevelUp,
     bool LoseLife);
+
+public partial record BreakoutRenderSignal
+{
+    public double StepMs { get; init; } = (1d / 60d) * 1000d;
+    public long Epoch { get; init; }
+}
 
 /// <summary>
 ///     Owns the breakout Arch ECS world. The sim ticks at 60 Hz; the physics system
@@ -52,6 +58,7 @@ public sealed class BreakoutSimulation : IDisposable
     // Guards the world (step mutation + snapshot reads across timer and request threads).
     private readonly object _sync = new();
     private long _seq;
+    private long _epoch;
 
     public event Action<BreakoutRenderSignal>? OnRenderSignal;
 
@@ -323,6 +330,7 @@ public sealed class BreakoutSimulation : IDisposable
 
     private void ResetWorld()
     {
+        _epoch++;
         var entities = new Entity[_world.Size];
         _world.GetEntities(new QueryDescription(), entities.AsSpan());
         foreach (var entity in entities)
@@ -397,7 +405,8 @@ public sealed class BreakoutSimulation : IDisposable
             OnRenderSignal?.Invoke(new BreakoutRenderSignal(
                 _seq, _world.Size, stopwatch.Elapsed.TotalMilliseconds,
                 BuildSnapshot(), stats.Score, stats.Lives, stats.Level, stats.GameOver, stats.Started,
-                stats.BrickHit, stats.PaddleHit, stats.LevelUp, stats.LoseLife));
+                stats.BrickHit, stats.PaddleHit, stats.LevelUp, stats.LoseLife)
+            { Epoch = _epoch });
         }
     }
 

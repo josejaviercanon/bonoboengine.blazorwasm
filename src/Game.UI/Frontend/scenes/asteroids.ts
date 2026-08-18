@@ -7,6 +7,7 @@ import { sound } from '@pixi/sound';
 import RAPIER from '@dimforge/rapier2d';
 import type { SceneBuilder } from './types';
 import { publishCSharpStats } from '../stats/overlays';
+import { SnapshotBuffer, clampedDeltaSeconds, lerpAngle, lerpWrapped } from './interpolation';
 
 interface AsteroidSpriteState {
     id: number;
@@ -26,6 +27,8 @@ interface AsteroidsRenderSignal {
     seq: number;
     entityCount: number;
     tickMs: number;
+    stepMs?: number;
+    epoch?: number;
     sprites: AsteroidSpriteState[];
     score: number;
     highScore: number;
@@ -284,10 +287,22 @@ interface DebrisBody {
     born: number;
 }
 
-interface InterpState {
-    prev: AsteroidSpriteState;
-    curr: AsteroidSpriteState;
-    at: number;
+function isAsteroidSpriteState(value: unknown): value is AsteroidSpriteState {
+    if (!value || typeof value !== 'object') return false;
+    const state = value as Partial<AsteroidSpriteState>;
+    return typeof state.id === 'number' && typeof state.x === 'number' && typeof state.y === 'number' &&
+        typeof state.rotation === 'number' && typeof state.kind === 'number' && typeof state.size === 'number';
+}
+
+function isAsteroidsRenderSignal(value: unknown): value is AsteroidsRenderSignal {
+    if (!value || typeof value !== 'object') return false;
+    const signal = value as Partial<AsteroidsRenderSignal>;
+    return typeof signal.seq === 'number' && typeof signal.entityCount === 'number' &&
+        typeof signal.tickMs === 'number' && Array.isArray(signal.sprites) &&
+        signal.sprites.every(isAsteroidSpriteState) && typeof signal.score === 'number' &&
+        typeof signal.highScore === 'number' && typeof signal.lives === 'number' &&
+        typeof signal.level === 'number' && typeof signal.gameOver === 'boolean' &&
+        typeof signal.started === 'boolean' && typeof signal.thrustOn === 'boolean';
 }
 
 /**
@@ -398,31 +413,9 @@ export const asteroidsScene: SceneBuilder = (app, params) => {
     startButton.addEventListener('click', startGame);
 
     // --- Interpolation state (ADR-003): prev/curr snapshots lerped at display Hz. ---
-    const interp = new Map<number, InterpState>();
-    let lastSignalAt = performance.now();
-    const TICK_MS = 1000 / 60;
-
-    const ingest = (states: AsteroidSpriteState[]) => {
-        const now = performance.now();
-        lastSignalAt = now;
-        const seen = new Set<number>();
-        for (const state of states) {
-            seen.add(state.id);
-            const existing = interp.get(state.id);
-            if (existing) {
-                existing.prev = existing.curr;
-                existing.curr = state;
-                existing.at = now;
-            } else {
-                interp.set(state.id, { prev: state, curr: state, at: now });
-            }
-        }
-        for (const id of interp.keys()) {
-            if (!seen.has(id)) interp.delete(id);
-        }
-    };
-
-    const nowAlpha = () => Math.min(1, (performance.now() - lastSignalAt) / TICK_MS);
+    const interpolation = new SnapshotBuffer<AsteroidSpriteState>();
+    let stepMs = 1000 / 60;
+    let renderedShip: AsteroidSpriteState | null = null;
 
     // --- Presentation particles: one ParticleContainer, one texture source. ----------
     const particleContainer = new ParticleContainer({
@@ -537,18 +530,17 @@ export const asteroidsScene: SceneBuilder = (app, params) => {
     };
 
     const drawWorld = () => {
-        const alpha = nowAlpha();
+        const alpha = interpolation.alpha(stepMs);
+        renderedShip = null;
         world.clear();
-        for (const entry of interp.values()) {
-            const { prev, curr } = entry;
-            const x = prev.x + (curr.x - prev.x) * alpha;
-            const y = prev.y + (curr.y - prev.y) * alpha;
-            let rotation = curr.rotation;
-            const delta = curr.rotation - prev.rotation;
-            const wrapped = delta > Math.PI ? delta - Math.PI * 2 : delta < -Math.PI ? delta + Math.PI * 2 : delta;
-            rotation = prev.rotation + wrapped * alpha;
+        for (const entry of interpolation.values()) {
+            const { previous: prev, current: curr } = entry;
+            const x = lerpWrapped(prev.x, curr.x, alpha, courtWidth);
+            const y = lerpWrapped(prev.y, curr.y, alpha, courtHeight);
+            const rotation = lerpAngle(prev.rotation, curr.rotation, alpha);
             const color = (curr.r << 16) | (curr.g << 8) | curr.b;
             const state: AsteroidSpriteState = { ...curr, x, y, rotation };
+            if (curr.kind === KIND_SHIP) renderedShip = state;
 
             switch (curr.kind) {
                 case KIND_SHIP:
@@ -590,7 +582,7 @@ export const asteroidsScene: SceneBuilder = (app, params) => {
         updateOverlay();
     };
 
-    ingest(a.sprites ?? []);
+    interpolation.ingest((a.sprites ?? []).filter(isAsteroidSpriteState));
     setGameState(score, highScore, lives, gameOver, started);
 
     // --- Input ----------------------------------------------------------------------
@@ -657,13 +649,13 @@ export const asteroidsScene: SceneBuilder = (app, params) => {
 
     // --- Ticker: interpolation render + flame follow + particles + Rapier debris ----
     const onTicker = (ticker: Ticker) => {
-        const dt = Math.min(ticker.deltaMS / 1000, 1 / 30);
+        const dt = clampedDeltaSeconds(ticker.deltaMS);
 
         drawWorld();
 
         // Thrust flame follows the interpolated ship tail.
         if (flameEmitter) {
-            const ship = findShipInterp();
+            const ship = renderedShip;
             if (ship && thrustOn && started && !gameOver) {
                 const tailX = ship.x - Math.sin(ship.rotation) * 14;
                 const tailY = ship.y + Math.cos(ship.rotation) * 14;
@@ -700,13 +692,6 @@ export const asteroidsScene: SceneBuilder = (app, params) => {
     };
     app.ticker.add(onTicker);
 
-    const findShipInterp = (): AsteroidSpriteState | null => {
-        for (const entry of interp.values()) {
-            if (entry.curr.kind === KIND_SHIP) return entry.curr;
-        }
-        return null;
-    };
-
     dbg('scene boot: screen', app.screen.width, 'x', app.screen.height,
         'court', courtWidth, 'x', courtHeight,
         'sprites', (a.sprites ?? []).length,
@@ -719,9 +704,12 @@ export const asteroidsScene: SceneBuilder = (app, params) => {
     dbg('SSE connected:', a.streamUrl);
     source.addEventListener('asteroids-move', (event) => {
         try {
-            const signal = JSON.parse((event as MessageEvent).data) as AsteroidsRenderSignal;
+            const parsed: unknown = JSON.parse((event as MessageEvent<string>).data);
+            if (!isAsteroidsRenderSignal(parsed)) throw new Error('invalid asteroids render signal');
+            const signal = parsed;
             publishCSharpStats({ seq: signal.seq, entityCount: signal.entityCount, tickMs: signal.tickMs });
-            ingest(signal.sprites);
+            stepMs = Math.max(1, signal.stepMs ?? 1000 / 60);
+            interpolation.ingest(signal.sprites, signal.seq, signal.epoch);
             setGameState(signal.score, signal.highScore, signal.lives, signal.gameOver, signal.started);
 
             if (signal.exploded) {

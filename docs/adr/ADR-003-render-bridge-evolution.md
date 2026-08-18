@@ -38,4 +38,6 @@ The PixiJS ticker then iterates `HEAPF32` in a single O(1) interop tick, streami
 - Eliminates per-frame JSON serialization and per-entity interop; enables smooth motion at any refresh rate.
 - Requires a JS interpolation layer (prev + current state, accumulator `α`).
 - Interim (current) implementation: `GET /api/ecs/stream` SSE pushes `event: sprite-move` with batched `SpriteState[]` JSON (`Id, X, Y, R, G, B`) at a 1 s throttle; `SpriteState` has **no** velocity/rotation/tick yet — extending it toward `TransformSnapshot` is the first bridge-evolution task.
+- `SnakeSimulation` now applies this pattern with game-specific `SnakeSpriteState` snapshots (`PreviousX/Y`, velocity, kind, `StepMs`) and `snake.ts` ticker interpolation. Deadly-food movement stays in C# because it participates in authoritative collision; no client position-report endpoint is needed.
 - The shared-memory / pinned-`IntPtr` / `HEAPF32` path is target architecture, not current code.
+- Implementation guide for the client side (α math, per-entity prev/curr `InterpState` buffer, Rapier kinematic coupling, dual-physics isolation matrix): `docs/architecture/render-interpolation.md`.

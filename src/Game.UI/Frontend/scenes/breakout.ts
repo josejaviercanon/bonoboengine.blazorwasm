@@ -1,6 +1,7 @@
 import { Graphics, Text, TextStyle } from 'pixi.js';
 import { sound } from '@pixi/sound';
 import type { SceneBuilder } from './types';
+import { SnapshotBuffer, lerp } from './interpolation';
 
 interface BreakoutSpriteState {
     id: number;
@@ -17,6 +18,8 @@ interface BreakoutRenderSignal {
     seq: number;
     entityCount: number;
     tickMs: number;
+    stepMs?: number;
+    epoch?: number;
     sprites: BreakoutSpriteState[];
     score: number;
     lives: number;
@@ -132,6 +135,8 @@ export const breakoutScene: SceneBuilder = (app, params) => {
     let prevGameOver = gameOver;
     let leftDown = false;
     let rightDown = false;
+    let stepMs = 1000 / 60;
+    const interpolation = new SnapshotBuffer<BreakoutSpriteState>();
 
     const logTransitions = () => {
         if (gameOver && !prevGameOver) {
@@ -173,16 +178,20 @@ export const breakoutScene: SceneBuilder = (app, params) => {
     };
     startButton.addEventListener('click', startGame);
 
-    const draw = (states: BreakoutSpriteState[]) => {
+    const draw = () => {
+        const alpha = interpolation.alpha(stepMs);
         court.clear();
-        for (const state of states) {
+        for (const entry of interpolation.values()) {
+            const state = entry.current;
+            const x = lerp(entry.previous.x, state.x, alpha);
+            const y = lerp(entry.previous.y, state.y, alpha);
             const color = (state.r << 16) | (state.g << 8) | state.b;
             if (state.id === 2) {
                 // Ball (sim renders it with render id 2): circular.
-                court.circle(state.x, state.y, state.width / 2).fill(color);
+                court.circle(x, y, state.width / 2).fill(color);
             } else {
                 // Bricks + paddle: rectangles centered on (x, y).
-                court.rect(state.x - state.width / 2, state.y - state.height / 2, state.width, state.height).fill(color);
+                court.rect(x - state.width / 2, y - state.height / 2, state.width, state.height).fill(color);
             }
         }
     };
@@ -198,7 +207,10 @@ export const breakoutScene: SceneBuilder = (app, params) => {
         updateOverlay();
     };
 
-    draw(b.sprites ?? []);
+    interpolation.ingest(b.sprites ?? []);
+    draw();
+    const onTicker = () => draw();
+    app.ticker.add(onTicker);
     setGameState(score, lives, level, gameOver, started);
 
     dbg('scene boot: screen', app.screen.width, 'x', app.screen.height,
@@ -257,8 +269,9 @@ export const breakoutScene: SceneBuilder = (app, params) => {
     dbg('SSE connected:', b.streamUrl);
     source.addEventListener('breakout-move', (event) => {
         try {
-            const signal = JSON.parse((event as MessageEvent).data) as BreakoutRenderSignal;
-            draw(signal.sprites);
+            const signal = JSON.parse((event as MessageEvent<string>).data) as BreakoutRenderSignal;
+            stepMs = Math.max(1, signal.stepMs ?? 1000 / 60);
+            interpolation.ingest(signal.sprites, signal.seq, signal.epoch);
             setGameState(signal.score, signal.lives, signal.level, signal.gameOver, signal.started);
             if (signal.brickHit) {
                 dbg('event: brick hit - score', signal.score);
@@ -284,6 +297,7 @@ export const breakoutScene: SceneBuilder = (app, params) => {
         source.close();
         window.removeEventListener('keydown', onKeyDown);
         window.removeEventListener('keyup', onKeyUp);
+        app.ticker.remove(onTicker);
         overlay.remove();
     };
     source.onerror = () => cleanup();

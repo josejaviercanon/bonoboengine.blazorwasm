@@ -44,6 +44,7 @@ public sealed class RacerSimulation : IDisposable
     private float _lastRoadY;
     private float _trackLength;
     private long _seq;
+    private long _epoch;
     private bool _paused;
 
     public event Action<RacerRenderSignal>? OnRenderSignal;
@@ -149,6 +150,7 @@ public sealed class RacerSimulation : IDisposable
             DestroyWorld();
             _input = default;
             _seq = 0;
+            _epoch++;
             _paused = false;
             BuildWorld();
         }
@@ -216,7 +218,8 @@ public sealed class RacerSimulation : IDisposable
             BuildCarSnapshot(includeAll: false),
             _settings,
             stats.LapCompleted,
-            stats.Collided);
+            stats.Collided)
+        { Epoch = _epoch };
 
         if (statsEntity != Entity.Null)
         {

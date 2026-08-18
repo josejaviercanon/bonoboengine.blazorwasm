@@ -38,6 +38,7 @@ The boundary concept is **"the simulation produced a render snapshot"**, not "an
 - **Client → server: HTTP POST.** `POST /api/snake/{input,start,restart}` via `fetch(…, { method: 'POST' })` (`snake.ts`). The simulation validates and applies on the next tick — JS only suggests; C# is sole authority.
 - **Initial payload: server-rendered attribute.** `GameView.razor` renders the engine payload into `#pixi-viewport[data-message]`; the client `load` script reads it. No circuit, no interop for the initial frame.
 - Evolve `SpriteState` (`Id, X, Y, R, G, B`) toward `TransformSnapshot` (velocity/rotation/tick) so the client can interpolate at display Hz (ADR-003 target; not yet implemented).
+- For interpolation or presentation-physics code, follow `docs/architecture/render-interpolation.md`: per-entity in-place `InterpState {prev, curr, at}` (no whole-buffer copies per push), signal-borne `stepMs`/`tickMs` (never hardcoded 16.666), shortest-path angular LERP, `dt` clamped to 1/30, Rapier world resident with one-way kinematic→dynamic coupling only.
 
 ### Don't (forbidden on the web host)
 

@@ -356,7 +356,7 @@ public sealed record RacerScenePayload(
     RacerSettings Settings,
     string StreamUrl);
 
-public sealed record RacerRenderSignal(
+public sealed partial record RacerRenderSignal(
     long Seq,
     int EntityCount,
     double TickMs,
@@ -365,6 +365,12 @@ public sealed record RacerRenderSignal(
     RacerSettings Settings,
     bool LapCompleted,
     bool Collided);
+
+public partial record RacerRenderSignal
+{
+    public double StepMs { get; init; } = RacerConfig.TickIntervalSeconds * 1000d;
+    public long Epoch { get; init; }
+}
 
 /// <summary>Client suggestion; input system copies it into ECS state.</summary>
 public readonly record struct RacerInputRequest(bool Left, bool Right, bool Faster, bool Slower);
