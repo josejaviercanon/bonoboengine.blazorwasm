@@ -416,6 +416,7 @@ export const asteroidsScene: SceneBuilder = (app, params) => {
     const interpolation = new SnapshotBuffer<AsteroidSpriteState>();
     let stepMs = 1000 / 60;
     let renderedShip: AsteroidSpriteState | null = null;
+    let lastEpoch: number | null = null;
 
     // --- Presentation particles: one ParticleContainer, one texture source. ----------
     const particleContainer = new ParticleContainer({
@@ -529,8 +530,7 @@ export const asteroidsScene: SceneBuilder = (app, params) => {
         g.circle(state.x, state.y, radius).stroke({ width: 2, color, alpha: 1 - fraction * 0.9 });
     };
 
-    const drawWorld = () => {
-        const alpha = interpolation.alpha(stepMs);
+    const drawWorld = (alpha: number) => {
         renderedShip = null;
         world.clear();
         for (const entry of interpolation.values()) {
@@ -651,7 +651,10 @@ export const asteroidsScene: SceneBuilder = (app, params) => {
     const onTicker = (ticker: Ticker) => {
         const dt = clampedDeltaSeconds(ticker.deltaMS);
 
-        drawWorld();
+        // Redraw the world only when a fresh snapshot arrived or interpolation
+        // is still in flight; particles/debris below keep updating every frame.
+        const alpha = interpolation.advance(stepMs);
+        if (alpha !== null) drawWorld(alpha);
 
         // Thrust flame follows the interpolated ship tail.
         if (flameEmitter) {
@@ -709,6 +712,20 @@ export const asteroidsScene: SceneBuilder = (app, params) => {
             const signal = parsed;
             publishCSharpStats({ seq: signal.seq, entityCount: signal.entityCount, tickMs: signal.tickMs });
             stepMs = Math.max(1, signal.stepMs ?? 1000 / 60);
+            // New epoch = server-side reset (start/restart): drop client-side
+            // leftovers so old explosions, debris and ignition bookkeeping do
+            // not leak into the fresh run. SnapshotBuffer clears itself.
+            if (signal.epoch !== undefined && signal.epoch !== lastEpoch) {
+                if (lastEpoch !== null) {
+                    ignitedExplosions.clear();
+                    for (const emitter of oneShotEmitters.splice(0)) emitter.destroy();
+                    debrisLayer.clear();
+                    if (physicsWorld) {
+                        for (const piece of debris.splice(0)) physicsWorld.removeRigidBody(piece.body);
+                    }
+                }
+                lastEpoch = signal.epoch;
+            }
             interpolation.ingest(signal.sprites, signal.seq, signal.epoch);
             setGameState(signal.score, signal.highScore, signal.lives, signal.gameOver, signal.started);
 

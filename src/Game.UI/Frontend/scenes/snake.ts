@@ -230,8 +230,7 @@ export const snakeScene: SceneBuilder = (app, params) => {
     };
     startButton.addEventListener('click', startGame);
 
-    const draw = () => {
-        const alpha = interpolation.alpha(stepMs);
+    const draw = (alpha: number) => {
         board.clear();
         foodGfx.clear();
 
@@ -258,7 +257,13 @@ export const snakeScene: SceneBuilder = (app, params) => {
 
     interpolation.ingest((s.sprites ?? []).filter(isSnakeSpriteState));
     setGameState(s.score ?? 0, s.gameOver ?? false, started);
-    const onTicker = (_ticker: Ticker) => draw();
+    // Redraw only when a fresh snapshot arrived or interpolation is still in
+    // flight; idle frames (start overlay / game over / paused) are skipped so
+    // the scene does not rebuild identical Graphics at display Hz.
+    const onTicker = (_ticker: Ticker) => {
+        const alpha = interpolation.advance(stepMs);
+        if (alpha !== null) draw(alpha);
+    };
     app.ticker.add(onTicker);
 
     const onKeyDown = (event: KeyboardEvent) => {

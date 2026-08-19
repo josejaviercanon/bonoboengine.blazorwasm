@@ -149,3 +149,19 @@ When the SSE/JSON bridge evolves to pinned shared-memory transfer (`GCHandle.All
 4. "SLERP for rotation" corrected to shortest-path angular LERP (2D).
 5. "Execution Domain: Blazor WebAssembly (AOT)" corrected to the static-SSR server host (no Blazor WASM exists in this repo).
 6. Rapier kinematic coupling marked target work (ADR-005 `PresentationPhysicsComponent`); current Rapier usage is Dynamic debris only. API usage verified against installed typings.
+
+## 7. Post-rollout fixes (SnapshotBuffer era)
+
+Two defects found after the `SnapshotBuffer` rollout to all scenes:
+
+1. **Epoch-before-seq ordering (restart freeze).** `SnapshotBuffer.ingest` rejected `seq <= lastSeq` *before* checking the epoch. Every sim reset (`SnakeSimulation.Reset`, racer restart, etc.) bumps `_epoch` and zeroes `_seq`, so the new run's first signals (seq 1, 2, … ≤ the dead run's seq) were dropped as stale — the scene froze on the dead board until a page reload. Fix: on epoch change, clear entries and reset `lastSeq = -1` **before** the stale-seq rejection. Scenes additionally reset client-only state on epoch change (asteroids: explosion emitters, Rapier debris, ignition bookkeeping; racer: parallax offsets, `previousPosition`).
+2. **Idle full-redraw per ticker frame (FPS regression).** The rollout moved scenes from "draw once per SSE signal" to "draw every ticker frame". While a sim streams at 60 Hz that is inherent, but on start overlays, game-over screens and paused sims no signals arrive — yet every scene kept clearing and rebuilding its entire `Graphics` at display Hz on identical data. Fix: `SnapshotBuffer.advance(stepMs)` returns the render alpha, or `null` when nothing can have changed (no ingest since the last draw and α already settled at 1). Scenes early-out on `null`; presentation-only systems that genuinely need every frame (asteroids particle emitters, Rapier debris stepping) keep running unconditionally. Known trade-off: pacman's power-pellet pulse (a `performance.now()` sine drawn inside `draw`) freezes while the sim is idle.
+
+Redraw-gate pattern for every scene:
+
+```typescript
+const onTicker = () => {
+    const alpha = interpolation.advance(stepMs);
+    if (alpha !== null) draw(alpha);
+};
+```

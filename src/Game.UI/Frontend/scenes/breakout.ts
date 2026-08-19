@@ -178,8 +178,8 @@ export const breakoutScene: SceneBuilder = (app, params) => {
     };
     startButton.addEventListener('click', startGame);
 
-    const draw = () => {
-        const alpha = interpolation.alpha(stepMs);
+    const draw = (alpha: number) => {
+        // alpha is passed in from the ticker redraw gate
         court.clear();
         for (const entry of interpolation.values()) {
             const state = entry.current;
@@ -208,8 +208,13 @@ export const breakoutScene: SceneBuilder = (app, params) => {
     };
 
     interpolation.ingest(b.sprites ?? []);
-    draw();
-    const onTicker = () => draw();
+    // First draw happens on the first ticker frame (ingest marked the buffer dirty).
+    // Redraw only when a fresh snapshot arrived or interpolation is still in
+    // flight; idle frames (start overlay / game over / paused) are skipped.
+    const onTicker = () => {
+        const alpha = interpolation.advance(stepMs);
+        if (alpha !== null) draw(alpha);
+    };
     app.ticker.add(onTicker);
     setGameState(score, lives, level, gameOver, started);
 

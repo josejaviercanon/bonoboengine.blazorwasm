@@ -9,16 +9,24 @@ export class SnapshotBuffer<T extends { id: number }> {
     private lastSeq = -1;
     private epoch: number | null = null;
     private lastSignalAt = 0;
+    private dirty = false;
 
     public ingest(states: readonly T[], seq?: number, epoch?: number, now = performance.now()): boolean {
-        if (seq !== undefined && seq <= this.lastSeq) return false;
-
+        // Epoch change = server-side world reset (Restart/Start-after-game-over):
+        // the server also resets its seq counter, so the epoch check MUST run
+        // before the stale-seq rejection below. Otherwise every signal of the
+        // new run (seq 1, 2, ... <= previous-run seq) is dropped and the scene
+        // freezes on the dead board until a page reload.
         if (epoch !== undefined && this.epoch !== null && epoch !== this.epoch) {
             this.entries.clear();
+            this.lastSeq = -1;
         }
+        if (seq !== undefined && seq <= this.lastSeq) return false;
+
         if (epoch !== undefined) this.epoch = epoch;
         if (seq !== undefined) this.lastSeq = seq;
         this.lastSignalAt = now;
+        this.dirty = true;
 
         const seen = new Set<number>();
         for (const state of states) {
@@ -44,6 +52,24 @@ export class SnapshotBuffer<T extends { id: number }> {
         return Math.min(1, Math.max(0, (now - this.lastSignalAt) / duration));
     }
 
+    /**
+     * Per-frame redraw gate. Returns the alpha to render this frame, or null
+     * when the visual state cannot have changed since the last draw (no new
+     * snapshot ingested and interpolation already settled at alpha 1).
+     * Scenes call this from the Pixi ticker and skip the full redraw on null —
+     * this keeps idle scenes (start overlay, game over, paused sim) from
+     * rebuilding identical Graphics every display frame, which was the cause
+     * of the FPS collapse after the interpolation change.
+     */
+    public advance(stepMs: number, now = performance.now()): number | null {
+        const alpha = this.alpha(stepMs, now);
+        if (this.dirty) {
+            this.dirty = false;
+            return alpha;
+        }
+        return alpha < 1 ? alpha : null;
+    }
+
     public values(): IterableIterator<InterpolationEntry<T>> {
         return this.entries.values();
     }
@@ -53,6 +79,7 @@ export class SnapshotBuffer<T extends { id: number }> {
         this.lastSeq = -1;
         this.epoch = null;
         this.lastSignalAt = performance.now();
+        this.dirty = true;
     }
 
     public removeWhere(predicate: (id: number) => boolean): void {

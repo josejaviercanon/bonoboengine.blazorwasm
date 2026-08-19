@@ -289,8 +289,7 @@ export const pacmanScene: SceneBuilder = (app, params) => {
         postDirection(direction);
     };
 
-    const draw = () => {
-        const alpha = interpolation.alpha(stepMs);
+    const draw = (alpha: number) => {
         pelletLayer.clear();
         actorLayer.clear();
 
@@ -322,7 +321,14 @@ export const pacmanScene: SceneBuilder = (app, params) => {
         }
     };
 
-    const onTicker = (_ticker: Ticker) => draw();
+    // Redraw only when a fresh snapshot arrived or interpolation is still in
+    // flight; idle frames (start overlay / game over / paused) are skipped.
+    // Trade-off: the power-pellet pulse (performance.now() sine) freezes while
+    // the sim is idle — acceptable, pellets animate while the game runs.
+    const onTicker = (_ticker: Ticker) => {
+        const alpha = interpolation.advance(stepMs);
+        if (alpha !== null) draw(alpha);
+    };
 
     interpolation.ingest((p.sprites ?? []).filter(isPacmanSpriteState));
     setStats(score, lives, level, gameOver, started);

@@ -28,6 +28,13 @@
   α math, per-entity `InterpState` buffer (asteroids.ts reference), Rapier kinematic
   coupling (target), dual-physics isolation matrix, HEAPF32 future path. Cross-linked from
   docs/index.md, topology.md, ADR-003, SKILL.md.
+- ✅ Game examples UX (2026-08-18): every game scene (snake, tetris, breakout, pacman,
+  asteroids, racer) has a start overlay + play-again/restart wired to the server reset
+  endpoints; racer gained `#racer-start-overlay` + `#racer-restart-button` (sim paused at
+  boot, START/Space resumes, RESTART → `/api/racer/restart`).
+- ✅ Interpolation post-rollout fixes (2026-08-18): `SnapshotBuffer` epoch-before-seq
+  ordering (restart freeze) and `advance()` idle-redraw gate (FPS regression) — see
+  `docs/architecture/render-interpolation.md` §7. All 29 Playwright E2E green.
 - ✅ Memory bank initialized (this directory).
 - ✅ Test infrastructure (2026-08): `Game.Tests` (xUnit v3, determinism/ECS/snapshot unit tests), `Game.Tests.Aot` (TUnit, AOT/trim pattern checks), `Game.Tests.UI` (Node/TS Playwright E2E vs `Game.Web`, Chrome channel, port 5902). Root `global.json` opts into Microsoft.Testing.Platform (required for `dotnet test` on .NET 10). All green: 21 .NET tests, 5 Playwright tests. Guide: `docs/testing-ui-E2E/index.md`.
 - ✅ Playwright bootstrap-race fix: `App.razor` inline `load` script now polls up to 15 s for `window.initGame` (ES-module dynamic imports finish after `load`).

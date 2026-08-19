@@ -2,6 +2,28 @@
 
 ## Current Focus (2026-08-18)
 
+Game-examples UX + interpolation regression fix (both complete, all 29 Playwright E2E green):
+
+1. **Start/Play-Again UI on every game scene.** Snake/Tetris/Breakout/Asteroids/Pacman already had
+   overlays wired to `/api/*/start`. Added the missing one to `racer.ts`: full-screen start overlay
+   (`#racer-start-overlay`, START GAME button, also Space/Enter) — the sim is paused at boot via
+   `POST /api/racer/pause` and resumed on START; a RESTART button (`#racer-restart-button`,
+   `/api/racer/restart`) appears once running (endless game → restart is the play-again equivalent).
+   Tuning-panel cancel/apply only resume when a race is actually running.
+2. **SnapshotBuffer epoch bug (restart freeze).** `ingest` rejected `seq <= lastSeq` before the epoch
+   check; after any server reset (epoch++, seq→0) all new signals were dropped as stale → dead board
+   until reload. Fixed ordering: epoch change clears entries and resets `lastSeq` first. Scenes also
+   reset client-only state on epoch change (asteroids: emitters/debris/ignition set; racer: parallax
+   offsets + `previousPosition`).
+3. **FPS regression after the interpolation rollout.** Scenes redraw full `Graphics` every ticker
+   frame even with zero new snapshots (start overlay, game over, paused sims). Added
+   `SnapshotBuffer.advance(stepMs)` → alpha or `null` (settled + no new data); every scene gates its
+   draw on it. Asteroids particle/debris systems still tick every frame. Trade-off: pacman
+   power-pellet pulse freezes while idle (documented).
+
+Documented in `docs/architecture/render-interpolation.md` §7. Racer E2E updated/added in
+`src/Game.Tests.UI/tests/racer.spec.ts` (overlay gates input; existing tests now START first).
+
 Render-interpolation documentation. Reviewed an external interpolation/Rapier-coupling
 blueprint against verified code, corrected it (wrong signal path, whole-map-copy churn,
 hardcoded tick, "SLERP", "Blazor WASM" execution domain, kinematic coupling presented as
@@ -9,6 +31,10 @@ current), and captured the production pattern in
 `docs/architecture/render-interpolation.md` (grounded in `asteroids.ts`/`snake.ts`).
 Cross-linked from `docs/index.md`, `docs/architecture/topology.md`, ADR-003, and the
 `static-ssr-snapshot-bridge` SKILL.md.
+
+Gotcha: several `Frontend/scenes/*.ts` files have **mixed line endings** (`breakout.ts`, parts of
+`racer.ts` are CRLF) — multi-line `old_text` editor matches can silently fail there; use single-line
+anchors or a Node patch script.
 
 Playwright standalone-script documentation hardening (2026-08-17). Documented the ESM (`"type": "module"`) constraint in `src/Game.Tests.UI/package.json`, process-lifecycle bugs (`{ shell: true }` orphaned .NET processes, `cwd` + `--project` path doubling), and the HTTP-readiness-polling anti-pattern. Updated `docs/testing-ui-E2E/index.md`, both `playwright-cli` skill references, `AGENTS.md`, `codebase-truth.md`, and memory bank.
 

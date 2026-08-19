@@ -376,6 +376,7 @@ export const racerScene: SceneBuilder = async (app, params) => {
     let stepMs = 1000 / 60;
     const playerInterpolation = new SnapshotBuffer<RacerPlayerSample>();
     const carInterpolation = new SnapshotBuffer<RacerCarState>();
+    let lastEpoch: number | null = null;
 
     app.renderer.background.color = '#72d7ee';
 
@@ -426,6 +427,7 @@ export const racerScene: SceneBuilder = async (app, params) => {
 
     let tuningOpen = false;
     let tuningBusy = false;
+    let started = false;
     let settingsBeforeTuning = { ...settings };
     let panel: SettingsPanel;
     let configButton: HTMLButtonElement;
@@ -464,7 +466,7 @@ export const racerScene: SceneBuilder = async (app, params) => {
         try {
             await postConfig(next);
             settings = { ...next };
-            await postCommand('/api/racer/resume');
+            if (started) await postCommand('/api/racer/resume');
             closeTuning();
         } catch (error: unknown) {
             console.error('[pixi-debug] racer tuning apply failed:', error);
@@ -480,7 +482,9 @@ export const racerScene: SceneBuilder = async (app, params) => {
         tuningBusy = true;
         panel.setBusy(true);
         try {
-            await postCommand('/api/racer/resume');
+            // Only resume when a race is actually running; before START the sim
+            // must stay paused behind the start overlay.
+            if (started) await postCommand('/api/racer/resume');
             settings = { ...settingsBeforeTuning };
             panel.update(settings);
             closeTuning();
@@ -511,6 +515,59 @@ export const racerScene: SceneBuilder = async (app, params) => {
         void (tuningOpen ? cancelTuning() : openTuning());
     });
     document.body.appendChild(configButton);
+
+    // --- Start overlay + restart: every game scene needs an explicit start. ------
+    // The endless racer has no game-over state, so "play again" is the RESTART
+    // button shown once the race is running (server restart bumps the epoch,
+    // which resets both snapshot buffers and the parallax offsets).
+    const overlay = document.createElement('div');
+    overlay.id = 'racer-start-overlay';
+    overlay.style.cssText =
+        'position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+        'gap:1rem;background:rgba(2,6,23,.78);z-index:20;';
+    const overlayTitle = document.createElement('h2');
+    overlayTitle.textContent = 'ENDLESS RACER';
+    overlayTitle.style.cssText = 'margin:0;font-family:Arial,sans-serif;font-size:2rem;color:#fbbf24;';
+    const startButton = document.createElement('button');
+    startButton.type = 'button';
+    startButton.textContent = 'START GAME';
+    startButton.style.cssText =
+        'font-family:Arial,sans-serif;font-size:1.25rem;font-weight:bold;color:#0f172a;background:#fbbf24;' +
+        'border:none;border-radius:.5rem;padding:.75rem 2.5rem;cursor:pointer;';
+    const overlayHint = document.createElement('p');
+    overlayHint.textContent = '↑/W accelerate · ↓/S brake · ←/→ or A/D steer';
+    overlayHint.style.cssText = 'margin:0;font-family:Arial,sans-serif;color:#94a3b8;';
+    overlay.append(overlayTitle, startButton, overlayHint);
+    document.body.appendChild(overlay);
+
+    const restartButton = document.createElement('button');
+    restartButton.id = 'racer-restart-button';
+    restartButton.type = 'button';
+    restartButton.textContent = 'RESTART';
+    restartButton.title = 'Restart race';
+    restartButton.style.cssText =
+        'position:fixed;top:106px;right:12px;display:none;font-family:Arial,sans-serif;font-weight:bold;' +
+        'color:#fbbf24;background:rgba(2,6,23,.9);border:1px solid rgba(148,163,184,.45);border-radius:.45rem;' +
+        'padding:.4rem .6rem;cursor:pointer;z-index:7;';
+    document.body.appendChild(restartButton);
+
+    const startGame = (): void => {
+        if (started) return;
+        void postCommand('/api/racer/resume')
+            .then(() => {
+                started = true;
+                overlay.style.display = 'none';
+                restartButton.style.display = 'block';
+                void sound.play(SOUND_ALIAS, { loop: true, volume: 0.05 });
+            })
+            .catch((error: unknown) => console.error('[pixi-debug] racer start failed:', error));
+    };
+    const restartRun = (): void => {
+        void postCommand('/api/racer/restart')
+            .catch((error: unknown) => console.error('[pixi-debug] racer restart failed:', error));
+    };
+    startButton.addEventListener('click', startGame);
+    restartButton.addEventListener('click', restartRun);
 
     panel = makeSettingsPanel(settings, applyTuning, cancelTuning);
     panel.element.id = 'racer-tuning-panel';
@@ -639,8 +696,12 @@ export const racerScene: SceneBuilder = async (app, params) => {
 
     const render = (): void => {
         if (segments.length === 0) return;
+        // Redraw gate: skip the full road/scenery rebuild when no new snapshot
+        // arrived and interpolation has settled (e.g. paused at the overlay).
+        const playerAlpha = playerInterpolation.advance(stepMs);
+        if (playerAlpha === null) return;
         const playerEntry = playerInterpolation.values().next().value;
-        const playerAlpha = playerInterpolation.alpha(stepMs);
+        // playerAlpha comes from the redraw gate above.
         const renderedPlayer = playerEntry
             ? {
                 ...playerEntry.current,
@@ -766,6 +827,18 @@ export const racerScene: SceneBuilder = async (app, params) => {
     };
 
     const applySignal = (signal: RacerRenderSignal): void => {
+        // New epoch = server-side restart: reset client-side parallax so the
+        // wrap-around does not jump when player z snaps back to 0. The snapshot
+        // buffers clear themselves on epoch change (see interpolation.ts).
+        if (signal.epoch !== undefined && signal.epoch !== lastEpoch) {
+            if (lastEpoch !== null) {
+                skyOffset = 0;
+                hillOffset = 0;
+                treeOffset = 0;
+                previousPosition = signal.player.z;
+            }
+            lastEpoch = signal.epoch;
+        }
         stepMs = Math.max(1, signal.stepMs ?? 1000 / 60);
         player = signal.player;
         cars = signal.cars;
@@ -817,6 +890,11 @@ export const racerScene: SceneBuilder = async (app, params) => {
         }
     };
     const onKeyDown = (event: KeyboardEvent): void => {
+        if (event.key === ' ' || event.key === 'Enter') {
+            event.preventDefault();
+            startGame();
+            return;
+        }
         if (setKey(event, true)) {
             event.preventDefault();
             postInput();
@@ -846,7 +924,10 @@ export const racerScene: SceneBuilder = async (app, params) => {
     playerInterpolation.ingest([{ id: 0, ...player }]);
     carInterpolation.ingest(cars);
     sound.add(SOUND_ALIAS, SOUND_URL);
-    void sound.play(SOUND_ALIAS, { loop: true, volume: 0.05 });
+    // Hold the race behind the start overlay: pause the sim until START is
+    // pressed (or Space/Enter). Music starts on START, not at boot.
+    void postCommand('/api/racer/pause')
+        .catch((error: unknown) => console.error('[pixi-debug] racer pause failed:', error));
     app.ticker.add(render);
     render();
     dbg('scene boot:', segments.length, 'segments,', cars.length, 'cars');
@@ -859,6 +940,8 @@ export const racerScene: SceneBuilder = async (app, params) => {
         sound.stop(SOUND_ALIAS);
         panel.element.remove();
         configButton.remove();
+        overlay.remove();
+        restartButton.remove();
         clearChildren(sceneryContainer);
         clearChildren(carContainer);
         clearChildren(playerContainer);

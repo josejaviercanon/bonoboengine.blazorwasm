@@ -29,6 +29,8 @@ test.describe('Endless Race Runner (Game.Web static-SSR host)', () => {
     await expect(page.locator('#pixi-viewport')).toHaveAttribute('data-racer-bounds', /^\d+x\d+$/, {
       timeout: 20_000,
     });
+    // The start overlay covers the page until the race is started.
+    await page.getByRole('button', { name: 'START GAME' }).click();
     const configButton = page.locator('#racer-config-button');
     const panel = page.locator('#racer-tuning-panel');
     await expect(configButton).toBeVisible();
@@ -40,6 +42,34 @@ test.describe('Endless Race Runner (Game.Web static-SSR host)', () => {
     await expect(panel).toBeHidden();
   });
 
+  test('start overlay gates the race and RESTART restarts it', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('console', message => {
+      if (message.type() === 'error') errors.push(message.text());
+    });
+    page.on('pageerror', error => errors.push(String(error)));
+
+    await page.goto('/examples/games/racer');
+    await expect(page.locator('#pixi-viewport canvas').first()).toBeVisible({ timeout: 20_000 });
+
+    // Before start: overlay visible, restart hidden, sim paused.
+    const startButton = page.getByRole('button', { name: 'START GAME' });
+    const restartButton = page.locator('#racer-restart-button');
+    await expect(startButton).toBeVisible();
+    await expect(restartButton).toBeHidden();
+
+    // START dismisses the overlay, resumes the sim and reveals RESTART.
+    await startButton.click();
+    await expect(page.locator('#racer-start-overlay')).toBeHidden();
+    await expect(restartButton).toBeVisible();
+
+    // RESTART hits /api/racer/restart (epoch bump resets interpolation state).
+    await restartButton.click();
+    await page.waitForTimeout(500);
+
+    expect(errors, errors.join('\n')).toEqual([]);
+  });
+
   test('keyboard input and tweak controls produce no client errors', async ({ page }) => {
     const errors: string[] = [];
     page.on('console', message => {
@@ -49,6 +79,8 @@ test.describe('Endless Race Runner (Game.Web static-SSR host)', () => {
 
     await page.goto('/examples/games/racer');
     await expect(page.locator('#pixi-viewport canvas').first()).toBeVisible({ timeout: 20_000 });
+    // Start the race first: the start overlay blocks page input until dismissed.
+    await page.getByRole('button', { name: 'START GAME' }).click();
     await page.keyboard.down('ArrowUp');
     await page.keyboard.down('ArrowRight');
     await page.waitForTimeout(500);
