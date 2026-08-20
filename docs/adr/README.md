@@ -39,3 +39,4 @@ Architecture decisions for the Bonobo Engine are recorded here as ADRs, one file
 - **ADR-004** — [glTF Is the Asset Contract, Not the ECS Architecture](ADR-004-gltf-asset-contract.md)
 - **ADR-005** — [Presentation Physics Is Entity-Selective](ADR-005-presentation-physics-selective.md)
 - **ADR-006** — [Domain Responsibility Matrix (C# Simulation vs PixiJS Presentation)](ADR-006-domain-responsibility-matrix.md)
+- **ADR-007** — [Single-Player Co-Located Mode (Transport Seam + Conditional Compilation)](ADR-007-single-player-co-located-mode.md)

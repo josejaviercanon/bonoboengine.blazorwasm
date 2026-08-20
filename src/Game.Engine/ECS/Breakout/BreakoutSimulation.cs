@@ -60,7 +60,17 @@ public sealed class BreakoutSimulation : IDisposable
     private long _seq;
     private long _epoch;
 
-    public event Action<BreakoutRenderSignal>? OnRenderSignal;
+    private readonly IRenderTransport<BreakoutRenderSignal> _renderTransport;
+
+    /// <summary>
+    ///     Batched render signal, delivered through the <see cref="IRenderTransport{TSignal}"/> seam
+    ///     (ADR-007). Forwarding event keeps the SSE host subscription contract unchanged.
+    /// </summary>
+    public event Action<BreakoutRenderSignal>? OnRenderSignal
+    {
+        add => _renderTransport.OnSignal += value;
+        remove => _renderTransport.OnSignal -= value;
+    }
 
     public BreakoutSimulation() : this(new Random())
     {
@@ -89,8 +99,10 @@ public sealed class BreakoutSimulation : IDisposable
 
     /// <param name="random">Inject a <see cref="Random"/> for full control over paddle placement.</param>
     /// <param name="startTimer">When false the 60 Hz timer is not started (deterministic tests step manually).</param>
-    public BreakoutSimulation(Random random, bool startTimer)
+    public BreakoutSimulation(Random random, bool startTimer,
+        IRenderTransport<BreakoutRenderSignal>? renderTransport = null)
     {
+        _renderTransport = renderTransport ?? new ServerRenderTransport<BreakoutRenderSignal>();
         _random = random;
         _world = World.Create();
         _physicsSystem = new BreakoutPhysicsSystem(_world);
@@ -402,7 +414,7 @@ public sealed class BreakoutSimulation : IDisposable
                 stats.GameOver, stats.Started));
 
             _seq++;
-            OnRenderSignal?.Invoke(new BreakoutRenderSignal(
+            _renderTransport.Push(new BreakoutRenderSignal(
                 _seq, _world.Size, stopwatch.Elapsed.TotalMilliseconds,
                 BuildSnapshot(), stats.Score, stats.Lives, stats.Level, stats.GameOver, stats.Started,
                 stats.BrickHit, stats.PaddleHit, stats.LevelUp, stats.LoseLife)

@@ -35,6 +35,30 @@
 - ✅ Interpolation post-rollout fixes (2026-08-18): `SnapshotBuffer` epoch-before-seq
   ordering (restart freeze) and `advance()` idle-redraw gate (FPS regression) — see
   `docs/architecture/render-interpolation.md` §7. All 29 Playwright E2E green.
+- ✅ ADR-007 Phase 1: render transport seam (2026-08-19) — `IRenderTransport<TSignal>` +
+  `ServerRenderTransport<TSignal>` in `Game.Engine/ECS/RenderTransport.cs`; all 7 sims emit via
+  injected transport with forwarding `OnRenderSignal` events (SSE host + tests unchanged);
+  `IsMultiplayer`/`IsEcsServerSide` MSBuild switches → `SINGLE_PLAYER_LOCAL` in
+  `Game.Engine.csproj`. Zero behavior change; 83/86 tests green (3 pre-existing Asteroids/Box2D
+  failures, same on clean HEAD).
+- ✅ ADR-007 frontend flag seam (2026-08-19): Vite `define` → `__RENDER_SOURCE__` scene CONST
+  (`'sse'` default / `'local-buffer'` via `npm run build:local` = `--mode wasm`); shared
+  `connectSignalStream` in `Frontend/scenes/signalSource.ts` used by all 7 game scenes;
+  `registerLocalBufferProvider` = Phase 3 typed-array hook. Unused transport branch is
+  dead-code-eliminated from the dist bundle (verified on minified output).
+- ✅ ADR-007 Phase 3: frontend typed-array consumer (2026-08-19) —
+  `Frontend/scenes/bufferLayout.ts` float32 layout contract (6-float header +
+  scene extras + stride-packed entities); `SnapshotBuffer.ingestFromBuffer` runs
+  the same epoch/seq/extrapolation as JSON ingest; `SignalStream.addBufferListener`
+  (non-selected transport stubbed no-op → zero runtime branching); snake = reference
+  consumer (`decodeSnakeSprite` + buffer listener); `ScenePayload.bufferPtr/stride/
+  entityCount`. Verified: tsc green, live ingest-logic assertions (esbuild+node),
+  DCE re-verified both bundles, Playwright E2E 29/29 green.
+- ✅ Game.Web SSE host-crash fix (2026-08-19): all 7 stream endpoints converted from
+  sync-over-async (`WriteAsync(...).GetAwaiter().GetResult()` in `lock` from sim timer ticks)
+  to bounded `Channel<T>(2, DropOldest)` + `TryWrite` from tick + async `ReadAllAsync` loop.
+  Aborting SSE clients no longer kills the host (was the cause of E2E runs dying after ~test 9).
+  E2E 29/29 green after fix.
 - ✅ Memory bank initialized (this directory).
 - ✅ Test infrastructure (2026-08): `Game.Tests` (xUnit v3, determinism/ECS/snapshot unit tests), `Game.Tests.Aot` (TUnit, AOT/trim pattern checks), `Game.Tests.UI` (Node/TS Playwright E2E vs `Game.Web`, Chrome channel, port 5902). Root `global.json` opts into Microsoft.Testing.Platform (required for `dotnet test` on .NET 10). All green: 21 .NET tests, 5 Playwright tests. Guide: `docs/testing-ui-E2E/index.md`.
 - ✅ Playwright bootstrap-race fix: `App.razor` inline `load` script now polls up to 15 s for `window.initGame` (ES-module dynamic imports finish after `load`).

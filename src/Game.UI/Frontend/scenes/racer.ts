@@ -3,6 +3,7 @@ import { sound } from '@pixi/sound';
 import type { SceneBuilder } from './types';
 import { publishCSharpStats } from '../stats/overlays';
 import { SnapshotBuffer, lerp, lerpWrapped } from './interpolation';
+import { connectSignalStream } from './signalSource';
 
 interface RacerSettings {
     lanes: number;
@@ -909,17 +910,17 @@ export const racerScene: SceneBuilder = async (app, params) => {
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
 
-    const source = racer.streamUrl ? new EventSource(racer.streamUrl) : null;
-    source?.addEventListener('racer-move', (event: Event) => {
+    const stream = connectSignalStream(racer.streamUrl);
+    stream?.addSignalListener('racer-move', (data) => {
         try {
-            const parsed: unknown = JSON.parse((event as MessageEvent<string>).data);
+            const parsed: unknown = JSON.parse(data);
             if (!isRacerRenderSignal(parsed)) return;
             applySignal(parsed);
         } catch (error: unknown) {
             console.error('[pixi-debug] racer-move parse failed:', error);
         }
     });
-    source?.addEventListener('error', () => dbg('SSE connection error'));
+    stream?.onInterrupted(() => dbg('SSE connection error'));
 
     playerInterpolation.ingest([{ id: 0, ...player }]);
     carInterpolation.ingest(cars);
@@ -933,7 +934,7 @@ export const racerScene: SceneBuilder = async (app, params) => {
     dbg('scene boot:', segments.length, 'segments,', cars.length, 'cars');
 
     const cleanup = (): void => {
-        source?.close();
+        stream?.close();
         window.removeEventListener('keydown', onKeyDown);
         window.removeEventListener('keyup', onKeyUp);
         app.ticker.remove(render);

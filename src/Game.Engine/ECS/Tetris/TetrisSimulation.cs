@@ -68,7 +68,17 @@ public sealed class TetrisSimulation : IDisposable
     private long _seq;
     private long _epoch;
 
-    public event Action<TetrisRenderSignal>? OnRenderSignal;
+    private readonly IRenderTransport<TetrisRenderSignal> _renderTransport;
+
+    /// <summary>
+    ///     Batched render signal, delivered through the <see cref="IRenderTransport{TSignal}"/> seam
+    ///     (ADR-007). Forwarding event keeps the SSE host subscription contract unchanged.
+    /// </summary>
+    public event Action<TetrisRenderSignal>? OnRenderSignal
+    {
+        add => _renderTransport.OnSignal += value;
+        remove => _renderTransport.OnSignal -= value;
+    }
 
     public TetrisSimulation() : this(new Random())
     {
@@ -80,8 +90,9 @@ public sealed class TetrisSimulation : IDisposable
     }
 
     /// <param name="random">Inject a <see cref="Random"/> for full control over the piece bag.</param>
-    public TetrisSimulation(Random random)
+    public TetrisSimulation(Random random, IRenderTransport<TetrisRenderSignal>? renderTransport = null)
     {
+        _renderTransport = renderTransport ?? new ServerRenderTransport<TetrisRenderSignal>();
         _random = random;
         _world = World.Create();
         _gravitySystem = new TetrisGravitySystem(_world, GridWidth, GridHeight, _random, _pendingInput);
@@ -299,7 +310,7 @@ public sealed class TetrisSimulation : IDisposable
             _world.Set(statsEntity, new TetrisStats(stats.Score, stats.Rows, stats.Level, stats.GameOver, stats.Started));
 
             _seq++;
-            OnRenderSignal?.Invoke(new TetrisRenderSignal(
+            _renderTransport.Push(new TetrisRenderSignal(
                 _seq, _world.Size, stopwatch.Elapsed.TotalMilliseconds,
                 BuildSnapshot(), stats.Score, stats.Rows, stats.Level, stats.GameOver, stats.Started,
                 stats.Locked, stats.LinesCleared)

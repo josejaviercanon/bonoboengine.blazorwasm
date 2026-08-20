@@ -1,6 +1,7 @@
 import { Assets, Sprite } from 'pixi.js';
 import type { SceneBuilder } from './types';
 import { publishCSharpStats } from '../stats/overlays';
+import { connectSignalStream } from './signalSource';
 
 interface EcsSpriteState {
     id: number;
@@ -50,10 +51,11 @@ export const ecsSpritesScene: SceneBuilder = async (app, params) => {
 
     if (!p.streamUrl) return;
 
-    const source = new EventSource(p.streamUrl);
-    source.addEventListener('sprite-move', (event) => {
+    const stream = connectSignalStream(p.streamUrl);
+    if (!stream) return;
+    stream.addSignalListener('sprite-move', (data) => {
         try {
-            const signal = JSON.parse((event as MessageEvent).data) as EcsRenderSignal;
+            const signal = JSON.parse(data) as EcsRenderSignal;
             publishCSharpStats({ seq: signal.seq, entityCount: signal.entityCount, tickMs: signal.tickMs });
             for (const state of signal.sprites) {
                 const sprite = sprites.get(state.id);
@@ -65,6 +67,6 @@ export const ecsSpritesScene: SceneBuilder = async (app, params) => {
             console.error('[pixi-debug] ECS sprite-move parse failed:', err);
         }
     });
-    source.onerror = () => source.close();
-    window.addEventListener('beforeunload', () => source.close());
+    stream.onInterrupted(() => stream.close());
+    window.addEventListener('beforeunload', () => stream.close());
 };

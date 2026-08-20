@@ -10,6 +10,16 @@ interface ScenePayload {
     exampleId?: string;
     title?: string;
     sourceUrl?: string;
+    /**
+     * ADR-007 Phase 2/3: shared-memory signal buffer, set only by the
+     * co-located WASM host. `bufferPtr` is the byte offset of the pinned float[]
+     * (GCHandle) backing the Float32Array view the host registers via
+     * `registerLocalBufferProvider`; `stride`/`entityCount` are diagnostics
+     * mirrors of the per-signal header (layout contract: `scenes/bufferLayout.ts`).
+     */
+    bufferPtr?: number;
+    stride?: number;
+    entityCount?: number;
 }
 
 declare global {

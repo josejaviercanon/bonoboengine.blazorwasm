@@ -47,7 +47,17 @@ public sealed class RacerSimulation : IDisposable
     private long _epoch;
     private bool _paused;
 
-    public event Action<RacerRenderSignal>? OnRenderSignal;
+    private readonly IRenderTransport<RacerRenderSignal> _renderTransport;
+
+    /// <summary>
+    ///     Batched render signal, delivered through the <see cref="IRenderTransport{TSignal}"/> seam
+    ///     (ADR-007). Forwarding event keeps the SSE host subscription contract unchanged.
+    /// </summary>
+    public event Action<RacerRenderSignal>? OnRenderSignal
+    {
+        add => _renderTransport.OnSignal += value;
+        remove => _renderTransport.OnSignal -= value;
+    }
 
     public RacerSimulation() : this(new Random(), startTimer: true)
     {
@@ -65,8 +75,10 @@ public sealed class RacerSimulation : IDisposable
     {
     }
 
-    public RacerSimulation(Random random, bool startTimer)
+    public RacerSimulation(Random random, bool startTimer,
+        IRenderTransport<RacerRenderSignal>? renderTransport = null)
     {
+        _renderTransport = renderTransport ?? new ServerRenderTransport<RacerRenderSignal>();
         _random = random;
         _settings = RacerConfig.DefaultSettings;
         _world = World.Create();
@@ -228,7 +240,7 @@ public sealed class RacerSimulation : IDisposable
             _world.Set(statsEntity, stats);
         }
 
-        OnRenderSignal?.Invoke(signal);
+        _renderTransport.Push(signal);
     }
 
     private RacerInputRequest ReadInput()

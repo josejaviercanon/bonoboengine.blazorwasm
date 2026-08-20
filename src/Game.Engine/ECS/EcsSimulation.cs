@@ -36,13 +36,24 @@ public sealed class EcsSimulation : IDisposable
     private long _seq;
     private double _elapsedSinceSignal;
 
-    public event Action<EcsRenderSignal>? OnRenderSignal;
+    private readonly IRenderTransport<EcsRenderSignal> _renderTransport;
+
+    /// <summary>
+    ///     Batched render signal, delivered through the <see cref="IRenderTransport{TSignal}"/> seam
+    ///     (ADR-007). Forwarding event keeps the SSE host subscription contract unchanged.
+    /// </summary>
+    public event Action<EcsRenderSignal>? OnRenderSignal
+    {
+        add => _renderTransport.OnSignal += value;
+        remove => _renderTransport.OnSignal -= value;
+    }
 
     public float Width { get; } = 800;
     public float Height { get; } = 600;
 
-    public EcsSimulation()
+    public EcsSimulation(IRenderTransport<EcsRenderSignal>? renderTransport = null)
     {
+        _renderTransport = renderTransport ?? new ServerRenderTransport<EcsRenderSignal>();
         _world = World.Create();
         for (var i = 0; i < EntityCount; i++)
         {
@@ -77,7 +88,7 @@ public sealed class EcsSimulation : IDisposable
     {
         var signal = BuildSignal();
         if (signal is null) return;
-        OnRenderSignal?.Invoke(signal);
+        _renderTransport.Push(signal);
     }
 
     /// <summary>Runs one simulation step and returns a batched signal if the 1 s throttle elapsed.</summary>

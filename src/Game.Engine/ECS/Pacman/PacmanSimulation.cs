@@ -73,9 +73,11 @@ public sealed class PacmanSimulation : IDisposable
     private long _seq;
     private long _epoch;
 
-    public PacmanSimulation(int seed = 0, bool startTimer = true)
+    public PacmanSimulation(int seed = 0, bool startTimer = true,
+        IRenderTransport<PacmanRenderSignal>? renderTransport = null)
     {
         _world = World.Create();
+        _renderTransport = renderTransport ?? new ServerRenderTransport<PacmanRenderSignal>();
         _inputSystem = new PacmanInputSystem(_world, _pendingInput);
         _stepSystem = new PacmanStepSystem(_world, new Random(seed));
         _systems = new Group<float>("Pacman", _inputSystem, _stepSystem);
@@ -89,7 +91,17 @@ public sealed class PacmanSimulation : IDisposable
         }
     }
 
-    public event Action<PacmanRenderSignal>? OnRenderSignal;
+    private readonly IRenderTransport<PacmanRenderSignal> _renderTransport;
+
+    /// <summary>
+    ///     Batched render signal, delivered through the <see cref="IRenderTransport{TSignal}"/> seam
+    ///     (ADR-007). Forwarding event keeps the SSE host subscription contract unchanged.
+    /// </summary>
+    public event Action<PacmanRenderSignal>? OnRenderSignal
+    {
+        add => _renderTransport.OnSignal += value;
+        remove => _renderTransport.OnSignal -= value;
+    }
 
     public int Score => ReadStats().Score;
     public int Lives => ReadStats().Lives;
@@ -216,7 +228,7 @@ public sealed class PacmanSimulation : IDisposable
         stats.Died = false;
         stats.LevelUp = false;
         _world.Set(statsEntity, stats);
-        OnRenderSignal?.Invoke(signal);
+        _renderTransport.Push(signal);
     }
 
     private void CompleteLevel(Entity statsEntity, ref PacmanStats stats)

@@ -1,6 +1,7 @@
 import { Graphics, Text, TextStyle } from 'pixi.js';
 import type { SceneBuilder } from './types';
 import { SnapshotBuffer, lerp } from './interpolation';
+import { connectSignalStream } from './signalSource';
 
 interface TetrisSpriteState {
     id: number;
@@ -206,10 +207,11 @@ export const tetrisScene: SceneBuilder = (app, params) => {
 
     if (!t.streamUrl) return;
 
-    const source = new EventSource(t.streamUrl);
-    source.addEventListener('tetris-move', (event) => {
+    const stream = connectSignalStream(t.streamUrl);
+    if (!stream) return;
+    stream.addSignalListener('tetris-move', (data) => {
         try {
-            const signal = JSON.parse((event as MessageEvent<string>).data) as TetrisRenderSignal;
+            const signal = JSON.parse(data) as TetrisRenderSignal;
             stepMs = Math.max(1, signal.stepMs ?? 1000 / 60);
             if (signal.locked) interpolation.removeWhere(id => id < 1000);
             interpolation.ingest(signal.sprites, signal.seq, signal.epoch);
@@ -220,11 +222,11 @@ export const tetrisScene: SceneBuilder = (app, params) => {
         }
     });
     const cleanup = () => {
-        source.close();
+        stream.close();
         window.removeEventListener('keydown', onKeyDown);
         app.ticker.remove(onTicker);
         overlay.remove();
     };
-    source.onerror = () => cleanup();
+    stream.onInterrupted(() => cleanup());
     window.addEventListener('beforeunload', cleanup);
 };

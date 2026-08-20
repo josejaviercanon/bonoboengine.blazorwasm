@@ -4,6 +4,7 @@ import { sound } from '@pixi/sound';
 import type { SceneBuilder } from './types';
 import { publishCSharpStats } from '../stats/overlays';
 import { SnapshotBuffer } from './interpolation';
+import { connectSignalStream } from './signalSource';
 
 interface PacmanSpriteState {
     id: number;
@@ -341,10 +342,11 @@ export const pacmanScene: SceneBuilder = (app, params) => {
 
     if (!p.streamUrl) return;
 
-    const source = new EventSource(p.streamUrl);
-    source.addEventListener('pacman-move', (event: Event) => {
+    const stream = connectSignalStream(p.streamUrl);
+    if (!stream) return;
+    stream.addSignalListener('pacman-move', (data) => {
         try {
-            const parsed: unknown = JSON.parse((event as MessageEvent<string>).data);
+            const parsed: unknown = JSON.parse(data);
             if (!isPacmanRenderSignal(parsed)) throw new Error('invalid Pacman render signal');
             const signal = parsed;
             publishCSharpStats({ seq: signal.seq, entityCount: signal.entityCount, tickMs: signal.tickMs });
@@ -366,7 +368,7 @@ export const pacmanScene: SceneBuilder = (app, params) => {
     const cleanup = () => {
         if (cleanedUp) return;
         cleanedUp = true;
-        source.close();
+        stream.close();
         app.ticker.remove(onTicker);
         window.removeEventListener('resize', layout);
         window.removeEventListener('keydown', onKeyDown);
@@ -377,9 +379,9 @@ export const pacmanScene: SceneBuilder = (app, params) => {
         board.destroy({ children: true });
     };
 
-    source.onerror = () => {
+    stream.onInterrupted(() => {
         // EventSource reconnects automatically. Keep scene alive for transient network loss.
         console.warn('[pixi-debug] pacman SSE connection interrupted; browser will retry');
-    };
+    });
     window.addEventListener('beforeunload', cleanup, { once: true });
 };

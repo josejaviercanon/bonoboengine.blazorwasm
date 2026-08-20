@@ -127,6 +127,9 @@ The full PixiJS v8 stack is declared in `src/Game.UI/package.json`: `pixi.js`, `
 | Box2D.NET authoritative physics in ECS loop (Asteroids: bodies, contact events, wrap) | Implemented (ADR-002) |
 | Asteroids presentation layer: interpolation + Rapier debris + particle-emitter + GlowFilter | Implemented (ADR-003/005) |
 | Snake presentation layer: interpolation + authoritative red-food fall + immediate replacement food | Implemented (ADR-003/006) |
+| Render transport seam: `IRenderTransport<TSignal>` injected into all sims, `ServerRenderTransport` default, `SINGLE_PLAYER_LOCAL` build switches in `Game.Engine.csproj` | Implemented (ADR-007 Phase 1; zero behavior change, SSE path untouched) |
+| `Game.Wasm` co-located host + `DirectRenderTransport` (pinned `float[]` -> `Float32Array`) | Target (ADR-007 Phase 2) |
+| TS `SnapshotBuffer.ingestFromBuffer` (typed-array ingest, same interpolation math) | Target (ADR-007 Phase 3) |
 | `SpriteState` -> `TransformSnapshot` (velocity/rotation/tick) | Target |
 | Shared-memory `HEAPF32` zero-copy transfer | Target |
 | Box2D.NET for other games (Snake/Tetris/Breakout) | Target |

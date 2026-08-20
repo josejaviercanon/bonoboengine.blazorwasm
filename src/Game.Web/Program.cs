@@ -44,59 +44,82 @@ app.MapRazorComponents<App>()
 
 // SSE push of batched ECS render signals. The ECS simulation throttles to one
 // signal per second; each signal moves every client sprite. No SignalR involved.
-app.MapGet("/api/ecs/stream", (EcsSimulation sim, HttpResponse response, CancellationToken ct) =>
+// Signals hop a bounded channel first: the sim timer only TryWrites, so a slow or
+// vanished browser can neither block the tick loop nor throw through Push (the
+// sync-write variant crashed the host with ObjectDisposedException on disconnect).
+app.MapGet("/api/ecs/stream", async (EcsSimulation sim, HttpResponse response, CancellationToken ct) =>
 {
     response.ContentType = "text/event-stream";
 
     var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-    var writeSync = new object();
-
-    Action<EcsRenderSignal> handler = signal =>
+    var signals = Channel.CreateBounded<EcsRenderSignal>(new BoundedChannelOptions(2)
     {
-        var json = JsonSerializer.Serialize(signal, jsonOptions);
-        lock (writeSync)
-        {
-            response.WriteAsync($"event: sprite-move\ndata: {json}\n\n").GetAwaiter().GetResult();
-        }
-    };
+        FullMode = BoundedChannelFullMode.DropOldest,
+        SingleReader = true,
+        SingleWriter = false,
+    });
+
+    Action<EcsRenderSignal> handler = signal => signals.Writer.TryWrite(signal);
 
     sim.OnRenderSignal += handler;
 
-    var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-    ct.Register(() =>
+    try
+    {
+        await foreach (var signal in signals.Reader.ReadAllAsync(ct))
+        {
+            var json = JsonSerializer.Serialize(signal, jsonOptions);
+            await response.WriteAsync($"event: sprite-move\ndata: {json}\n\n", ct);
+            await response.Body.FlushAsync(ct);
+        }
+    }
+    catch (OperationCanceledException) when (ct.IsCancellationRequested)
+    {
+        // Browser disconnected; cleanup below.
+    }
+    finally
     {
         sim.OnRenderSignal -= handler;
-        completed.TrySetResult();
-    });
-    return completed.Task;
+        signals.Writer.TryComplete();
+    }
 });
 
 // SSE push of batched snake render signals, one per 8 Hz grid step.
-app.MapGet("/api/snake/stream", (SnakeSimulation sim, HttpResponse response, CancellationToken ct) =>
+// Channel-decoupled like /api/ecs/stream: the sim callback only enqueues, so a
+// disconnecting browser cannot crash the host through the tick loop.
+app.MapGet("/api/snake/stream", async (SnakeSimulation sim, HttpResponse response, CancellationToken ct) =>
 {
     response.ContentType = "text/event-stream";
 
     var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-    var writeSync = new object();
-
-    Action<SnakeRenderSignal> handler = signal =>
+    var signals = Channel.CreateBounded<SnakeRenderSignal>(new BoundedChannelOptions(2)
     {
-        var json = JsonSerializer.Serialize(signal, jsonOptions);
-        lock (writeSync)
-        {
-            response.WriteAsync($"event: snake-move\ndata: {json}\n\n").GetAwaiter().GetResult();
-        }
-    };
+        FullMode = BoundedChannelFullMode.DropOldest,
+        SingleReader = true,
+        SingleWriter = false,
+    });
+
+    Action<SnakeRenderSignal> handler = signal => signals.Writer.TryWrite(signal);
 
     sim.OnRenderSignal += handler;
 
-    var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-    ct.Register(() =>
+    try
+    {
+        await foreach (var signal in signals.Reader.ReadAllAsync(ct))
+        {
+            var json = JsonSerializer.Serialize(signal, jsonOptions);
+            await response.WriteAsync($"event: snake-move\ndata: {json}\n\n", ct);
+            await response.Body.FlushAsync(ct);
+        }
+    }
+    catch (OperationCanceledException) when (ct.IsCancellationRequested)
+    {
+        // Browser disconnected; cleanup below.
+    }
+    finally
     {
         sim.OnRenderSignal -= handler;
-        completed.TrySetResult();
-    });
-    return completed.Task;
+        signals.Writer.TryComplete();
+    }
 });
 
 // Client input channel for the snake scene. The JS layer only suggests a direction;
@@ -179,31 +202,40 @@ app.MapPost("/api/pacman/restart", (PacmanSimulation sim) =>
 });
 
 // SSE push of batched tetris render signals, one per board mutation.
-app.MapGet("/api/tetris/stream", (TetrisSimulation sim, HttpResponse response, CancellationToken ct) =>
+app.MapGet("/api/tetris/stream", async (TetrisSimulation sim, HttpResponse response, CancellationToken ct) =>
 {
     response.ContentType = "text/event-stream";
 
     var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-    var writeSync = new object();
-
-    Action<TetrisRenderSignal> handler = signal =>
+    var signals = Channel.CreateBounded<TetrisRenderSignal>(new BoundedChannelOptions(2)
     {
-        var json = JsonSerializer.Serialize(signal, jsonOptions);
-        lock (writeSync)
-        {
-            response.WriteAsync($"event: tetris-move\ndata: {json}\n\n").GetAwaiter().GetResult();
-        }
-    };
+        FullMode = BoundedChannelFullMode.DropOldest,
+        SingleReader = true,
+        SingleWriter = false,
+    });
+
+    Action<TetrisRenderSignal> handler = signal => signals.Writer.TryWrite(signal);
 
     sim.OnRenderSignal += handler;
 
-    var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-    ct.Register(() =>
+    try
+    {
+        await foreach (var signal in signals.Reader.ReadAllAsync(ct))
+        {
+            var json = JsonSerializer.Serialize(signal, jsonOptions);
+            await response.WriteAsync($"event: tetris-move\ndata: {json}\n\n", ct);
+            await response.Body.FlushAsync(ct);
+        }
+    }
+    catch (OperationCanceledException) when (ct.IsCancellationRequested)
+    {
+        // Browser disconnected; cleanup below.
+    }
+    finally
     {
         sim.OnRenderSignal -= handler;
-        completed.TrySetResult();
-    });
-    return completed.Task;
+        signals.Writer.TryComplete();
+    }
 });
 
 // Client input channel for the tetris scene. The JS layer only suggests a command;
@@ -228,31 +260,43 @@ app.MapPost("/api/tetris/restart", (TetrisSimulation sim) =>
 });
 
 // SSE push of batched breakout render signals, one per 60 Hz physics tick while running.
-app.MapGet("/api/breakout/stream", (BreakoutSimulation sim, HttpResponse response, CancellationToken ct) =>
+// Channel-decoupled like /api/ecs/stream: the sim callback only enqueues, so a
+// disconnecting browser cannot crash the host through the tick loop (proven crash:
+// ObjectDisposedException out of BreakoutSimulation.Tick killed the whole host).
+app.MapGet("/api/breakout/stream", async (BreakoutSimulation sim, HttpResponse response, CancellationToken ct) =>
 {
     response.ContentType = "text/event-stream";
 
     var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-    var writeSync = new object();
-
-    Action<BreakoutRenderSignal> handler = signal =>
+    var signals = Channel.CreateBounded<BreakoutRenderSignal>(new BoundedChannelOptions(2)
     {
-        var json = JsonSerializer.Serialize(signal, jsonOptions);
-        lock (writeSync)
-        {
-            response.WriteAsync($"event: breakout-move\ndata: {json}\n\n").GetAwaiter().GetResult();
-        }
-    };
+        FullMode = BoundedChannelFullMode.DropOldest,
+        SingleReader = true,
+        SingleWriter = false,
+    });
+
+    Action<BreakoutRenderSignal> handler = signal => signals.Writer.TryWrite(signal);
 
     sim.OnRenderSignal += handler;
 
-    var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-    ct.Register(() =>
+    try
+    {
+        await foreach (var signal in signals.Reader.ReadAllAsync(ct))
+        {
+            var json = JsonSerializer.Serialize(signal, jsonOptions);
+            await response.WriteAsync($"event: breakout-move\ndata: {json}\n\n", ct);
+            await response.Body.FlushAsync(ct);
+        }
+    }
+    catch (OperationCanceledException) when (ct.IsCancellationRequested)
+    {
+        // Browser disconnected; cleanup below.
+    }
+    finally
     {
         sim.OnRenderSignal -= handler;
-        completed.TrySetResult();
-    });
-    return completed.Task;
+        signals.Writer.TryComplete();
+    }
 });
 
 // Client input channel for the breakout scene. The JS layer only suggests the held
@@ -277,31 +321,42 @@ app.MapPost("/api/breakout/restart", (BreakoutSimulation sim) =>
 });
 
 // SSE push of batched asteroids render signals, one per 60 Hz physics tick while running.
-app.MapGet("/api/asteroids/stream", (AsteroidsSimulation sim, HttpResponse response, CancellationToken ct) =>
+// Channel-decoupled like /api/ecs/stream: the sim callback only enqueues, so a
+// disconnecting browser cannot crash the host through the tick loop.
+app.MapGet("/api/asteroids/stream", async (AsteroidsSimulation sim, HttpResponse response, CancellationToken ct) =>
 {
     response.ContentType = "text/event-stream";
 
     var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-    var writeSync = new object();
-
-    Action<AsteroidsRenderSignal> handler = signal =>
+    var signals = Channel.CreateBounded<AsteroidsRenderSignal>(new BoundedChannelOptions(2)
     {
-        var json = JsonSerializer.Serialize(signal, jsonOptions);
-        lock (writeSync)
-        {
-            response.WriteAsync($"event: asteroids-move\ndata: {json}\n\n").GetAwaiter().GetResult();
-        }
-    };
+        FullMode = BoundedChannelFullMode.DropOldest,
+        SingleReader = true,
+        SingleWriter = false,
+    });
+
+    Action<AsteroidsRenderSignal> handler = signal => signals.Writer.TryWrite(signal);
 
     sim.OnRenderSignal += handler;
 
-    var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-    ct.Register(() =>
+    try
+    {
+        await foreach (var signal in signals.Reader.ReadAllAsync(ct))
+        {
+            var json = JsonSerializer.Serialize(signal, jsonOptions);
+            await response.WriteAsync($"event: asteroids-move\ndata: {json}\n\n", ct);
+            await response.Body.FlushAsync(ct);
+        }
+    }
+    catch (OperationCanceledException) when (ct.IsCancellationRequested)
+    {
+        // Browser disconnected; cleanup below.
+    }
+    finally
     {
         sim.OnRenderSignal -= handler;
-        completed.TrySetResult();
-    });
-    return completed.Task;
+        signals.Writer.TryComplete();
+    }
 });
 
 // Client input channel for the asteroids scene. The JS layer only suggests the held
@@ -327,31 +382,42 @@ app.MapPost("/api/asteroids/restart", (AsteroidsSimulation sim) =>
 
 // SSE push of batched racer snapshots. Static track geometry travels in the SSR payload;
 // live signals carry player state and traffic within draw distance.
-app.MapGet("/api/racer/stream", (RacerSimulation sim, HttpResponse response, CancellationToken ct) =>
+// Channel-decoupled like /api/ecs/stream: the sim callback only enqueues, so a
+// disconnecting browser cannot crash the host through the tick loop.
+app.MapGet("/api/racer/stream", async (RacerSimulation sim, HttpResponse response, CancellationToken ct) =>
 {
     response.ContentType = "text/event-stream";
 
     var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-    var writeSync = new object();
-
-    Action<RacerRenderSignal> handler = signal =>
+    var signals = Channel.CreateBounded<RacerRenderSignal>(new BoundedChannelOptions(2)
     {
-        var json = JsonSerializer.Serialize(signal, jsonOptions);
-        lock (writeSync)
-        {
-            response.WriteAsync($"event: racer-move\ndata: {json}\n\n").GetAwaiter().GetResult();
-        }
-    };
+        FullMode = BoundedChannelFullMode.DropOldest,
+        SingleReader = true,
+        SingleWriter = false,
+    });
+
+    Action<RacerRenderSignal> handler = signal => signals.Writer.TryWrite(signal);
 
     sim.OnRenderSignal += handler;
 
-    var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-    ct.Register(() =>
+    try
+    {
+        await foreach (var signal in signals.Reader.ReadAllAsync(ct))
+        {
+            var json = JsonSerializer.Serialize(signal, jsonOptions);
+            await response.WriteAsync($"event: racer-move\ndata: {json}\n\n", ct);
+            await response.Body.FlushAsync(ct);
+        }
+    }
+    catch (OperationCanceledException) when (ct.IsCancellationRequested)
+    {
+        // Browser disconnected; cleanup below.
+    }
+    finally
     {
         sim.OnRenderSignal -= handler;
-        completed.TrySetResult();
-    });
-    return completed.Task;
+        signals.Writer.TryComplete();
+    }
 });
 
 // Client only suggests held input; ECS consumes it on the next fixed tick.

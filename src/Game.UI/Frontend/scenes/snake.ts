@@ -4,6 +4,8 @@ import { sound } from '@pixi/sound';
 import type { SceneBuilder } from './types';
 import { publishCSharpStats } from '../stats/overlays';
 import { SnapshotBuffer } from './interpolation';
+import { connectSignalStream } from './signalSource';
+import { BUFFER_HEADER_LENGTH, floatBool, type EntityDecoder } from './bufferLayout';
 
 interface SnakeSpriteState {
     id: number;
@@ -47,6 +49,27 @@ interface SnakeSceneParams {
         streamUrl?: string;
     };
 }
+
+// Shared-memory float32 layout (ADR-007 Phase 3) — must match the C#
+// DirectRenderTransport writer (Phase 2). See scenes/bufferLayout.ts.
+//   floats[0..5]  standard header (seq, epoch, entityCount, stride, stepMs, tickMs)
+//   floats[6..11] snake extras (score, gameOver, started, ate, foodSpawned, foodFalling)
+//   floats[12..]  entities × stride 11 (id, x, y, prevX, prevY, velX, velY, kind, r, g, b)
+const SNAKE_BUFFER_ENTITY_BASE = BUFFER_HEADER_LENGTH + 6;
+
+const decodeSnakeSprite: EntityDecoder<SnakeSpriteState> = (floats, offset) => ({
+    id: floats[offset],
+    x: floats[offset + 1],
+    y: floats[offset + 2],
+    previousX: floats[offset + 3],
+    previousY: floats[offset + 4],
+    velocityX: floats[offset + 5],
+    velocityY: floats[offset + 6],
+    kind: floats[offset + 7],
+    r: floats[offset + 8],
+    g: floats[offset + 9],
+    b: floats[offset + 10]
+});
 
 const GOOD_FOOD_KIND = 2;
 const BAD_FOOD_KIND = 3;
@@ -285,10 +308,11 @@ export const snakeScene: SceneBuilder = (app, params) => {
 
     if (!s.streamUrl) return;
 
-    const source = new EventSource(s.streamUrl);
-    source.addEventListener('snake-move', (event: Event) => {
+    const stream = connectSignalStream(s.streamUrl);
+    if (!stream) return;
+    stream.addSignalListener('snake-move', (data) => {
         try {
-            const parsed: unknown = JSON.parse((event as MessageEvent<string>).data);
+            const parsed: unknown = JSON.parse(data);
             if (!isSnakeRenderSignal(parsed)) throw new Error('invalid snake render signal');
             publishCSharpStats({ seq: parsed.seq, entityCount: parsed.entityCount, tickMs: parsed.tickMs });
             stepMs = Math.max(1, parsed.stepMs);
@@ -303,12 +327,33 @@ export const snakeScene: SceneBuilder = (app, params) => {
         }
     });
 
+    // ADR-007 Phase 3 reference consumer: identical handler semantics to the
+    // SSE path above, but decoded straight from the shared-memory float32
+    // signal — no JSON.parse, no network. Only fires in `--mode wasm` bundles
+    // (addBufferListener is a no-op stub in SSE bundles), so both listeners
+    // coexist without runtime transport branching.
+    stream.addBufferListener('snake-move', (floats) => {
+        try {
+            const header = interpolation.ingestFromBuffer(floats, decodeSnakeSprite, SNAKE_BUFFER_ENTITY_BASE);
+            if (!header) return;
+            publishCSharpStats({ seq: header.seq, entityCount: header.entityCount, tickMs: header.tickMs });
+            stepMs = Math.max(1, header.stepMs);
+            setGameState(floats[6], floatBool(floats[7]), floatBool(floats[8]));
+
+            if (floatBool(floats[9])) playSound(EAT_SOUND_ALIAS, EAT_SOUND_URL);
+            if (floatBool(floats[10])) playSound(SPAWN_SOUND_ALIAS, SPAWN_SOUND_URL);
+            if (floatBool(floats[11])) console.debug('[pixi-debug] snake bad food started falling');
+        } catch (error: unknown) {
+            console.error('[pixi-debug] snake-move buffer decode failed:', error);
+        }
+    });
+
     const cleanup = () => {
-        source.close();
+        stream.close();
         window.removeEventListener('keydown', onKeyDown);
         app.ticker.remove(onTicker);
         overlay.remove();
     };
-    source.onerror = () => console.warn('[pixi-debug] snake SSE interrupted; browser will retry');
+    stream.onInterrupted(() => console.warn('[pixi-debug] snake SSE interrupted; browser will retry'));
     window.addEventListener('beforeunload', cleanup, { once: true });
 };

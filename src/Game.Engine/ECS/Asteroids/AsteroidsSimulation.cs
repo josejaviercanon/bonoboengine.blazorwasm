@@ -58,7 +58,17 @@ public sealed class AsteroidsSimulation : IDisposable
     private long _seq;
     private long _epoch;
 
-    public event Action<AsteroidsRenderSignal>? OnRenderSignal;
+    private readonly IRenderTransport<AsteroidsRenderSignal> _renderTransport;
+
+    /// <summary>
+    ///     Batched render signal, delivered through the <see cref="IRenderTransport{TSignal}"/> seam
+    ///     (ADR-007). Forwarding event keeps the SSE host subscription contract unchanged.
+    /// </summary>
+    public event Action<AsteroidsRenderSignal>? OnRenderSignal
+    {
+        add => _renderTransport.OnSignal += value;
+        remove => _renderTransport.OnSignal -= value;
+    }
 
     public AsteroidsSimulation() : this(new Random())
     {
@@ -87,8 +97,10 @@ public sealed class AsteroidsSimulation : IDisposable
 
     /// <param name="random">Inject a <see cref="Random"/> for full control over spawns.</param>
     /// <param name="startTimer">When false the 60 Hz timer is not started (deterministic tests step manually).</param>
-    public AsteroidsSimulation(Random random, bool startTimer)
+    public AsteroidsSimulation(Random random, bool startTimer,
+        IRenderTransport<AsteroidsRenderSignal>? renderTransport = null)
     {
+        _renderTransport = renderTransport ?? new ServerRenderTransport<AsteroidsRenderSignal>();
         _world = World.Create();
         _ctx = new AsteroidsContext(random);
         _gameSystem = new AsteroidsGameSystem(_world, _ctx);
@@ -413,7 +425,7 @@ public sealed class AsteroidsSimulation : IDisposable
                 stats.NextSaucerPoints, stats.GameOver, stats.Started, stats.ThrustOn));
 
             _seq++;
-            OnRenderSignal?.Invoke(new AsteroidsRenderSignal(
+            _renderTransport.Push(new AsteroidsRenderSignal(
                 _seq, _world.Size, stopwatch.Elapsed.TotalMilliseconds,
                 BuildSnapshot(), stats.Score, stats.HighScore, stats.Lives, stats.Level, stats.GameOver, stats.Started,
                 stats.ThrustOn, stats.Exploded, stats.Fired, stats.SaucerSpawned, stats.LevelUp, stats.LifeGained)

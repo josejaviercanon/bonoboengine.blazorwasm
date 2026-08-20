@@ -4,6 +4,13 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- Co-located single-player build switches (ADR-007). Defaults keep the
+         server-authoritative host (both true). Build with
+         /p:IsMultiplayer=false /p:IsEcsServerSide=false to define
+         SINGLE_PLAYER_LOCAL for the co-located WASM host (Phase 2). -->
+    <IsMultiplayer Condition="'$(IsMultiplayer)' == ''">true</IsMultiplayer>
+    <IsEcsServerSide Condition="'$(IsEcsServerSide)' == ''">true</IsEcsServerSide>
+    <DefineConstants Condition="'$(IsMultiplayer)' != 'true' and '$(IsEcsServerSide)' != 'true'">$(DefineConstants);SINGLE_PLAYER_LOCAL</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

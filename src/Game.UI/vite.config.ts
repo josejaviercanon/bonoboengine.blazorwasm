@@ -1,7 +1,16 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
-export default defineConfig({
+// Compile-time render-source flag (ADR-007): 'sse' (default — Game.Web
+// static-SSR bridge) or 'local-buffer' (`vite build --mode local` —
+// co-located Game.Wasm host, Phase 2/3). `define` replaces the identifier
+// before bundling so the unused transport branch is tree-shaken away.
+const renderSource = (mode: string) => (mode === 'wasm' ? 'local-buffer' : 'sse');
+
+export default defineConfig(({ mode }) => ({
+    define: {
+        __RENDER_SOURCE__: JSON.stringify(renderSource(mode))
+    },
   build: {
     lib: {
       entry: resolve(__dirname, 'Frontend/game.ts'),
@@ -15,4 +24,4 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: true
   }
-});
+}));

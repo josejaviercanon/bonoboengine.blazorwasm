@@ -2,6 +2,7 @@ import { Graphics, Text, TextStyle } from 'pixi.js';
 import { sound } from '@pixi/sound';
 import type { SceneBuilder } from './types';
 import { SnapshotBuffer, lerp } from './interpolation';
+import { connectSignalStream } from './signalSource';
 
 interface BreakoutSpriteState {
     id: number;
@@ -270,11 +271,12 @@ export const breakoutScene: SceneBuilder = (app, params) => {
 
     if (!b.streamUrl) return;
 
-    const source = new EventSource(b.streamUrl);
+    const stream = connectSignalStream(b.streamUrl);
+    if (!stream) return;
     dbg('SSE connected:', b.streamUrl);
-    source.addEventListener('breakout-move', (event) => {
+    stream.addSignalListener('breakout-move', (data) => {
         try {
-            const signal = JSON.parse((event as MessageEvent<string>).data) as BreakoutRenderSignal;
+            const signal = JSON.parse(data) as BreakoutRenderSignal;
             stepMs = Math.max(1, signal.stepMs ?? 1000 / 60);
             interpolation.ingest(signal.sprites, signal.seq, signal.epoch);
             setGameState(signal.score, signal.lives, signal.level, signal.gameOver, signal.started);
@@ -299,12 +301,12 @@ export const breakoutScene: SceneBuilder = (app, params) => {
         }
     });
     const cleanup = () => {
-        source.close();
+        stream.close();
         window.removeEventListener('keydown', onKeyDown);
         window.removeEventListener('keyup', onKeyUp);
         app.ticker.remove(onTicker);
         overlay.remove();
     };
-    source.onerror = () => cleanup();
+    stream.onInterrupted(() => cleanup());
     window.addEventListener('beforeunload', cleanup);
 };

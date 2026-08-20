@@ -7,6 +7,7 @@
     "build:js": "vite build",
     "build:css": "npx @tailwindcss/cli -i ./Frontend/app.css -o ./wwwroot/dist/app.css --minify",
     "build": "npm run build:js && npm run build:css",
+    "build:local": "vite build --mode wasm && npm run build:css",
     "typecheck": "tsc -b",
     "watch:js": "vite build --watch",
     "watch:css": "npx @tailwindcss/cli -i ./Frontend/app.css -o ./wwwroot/dist/app.css --watch"

@@ -88,10 +88,22 @@ public sealed class SnakeSimulation : IDisposable
     private long _seq;
     private long _epoch;
 
-    public event Action<SnakeRenderSignal>? OnRenderSignal;
+    private readonly IRenderTransport<SnakeRenderSignal> _renderTransport;
 
-    public SnakeSimulation(int? seed = null, bool startTimer = true)
+    /// <summary>
+    ///     Batched render signal, delivered through the <see cref="IRenderTransport{TSignal}"/> seam
+    ///     (ADR-007). Forwarding event keeps the SSE host subscription contract unchanged.
+    /// </summary>
+    public event Action<SnakeRenderSignal>? OnRenderSignal
     {
+        add => _renderTransport.OnSignal += value;
+        remove => _renderTransport.OnSignal -= value;
+    }
+
+    public SnakeSimulation(int? seed = null, bool startTimer = true,
+        IRenderTransport<SnakeRenderSignal>? renderTransport = null)
+    {
+        _renderTransport = renderTransport ?? new ServerRenderTransport<SnakeRenderSignal>();
         _random = seed.HasValue ? new Random(seed.Value) : new Random();
         _world = World.Create();
         _systems = new Group<double>(
@@ -349,7 +361,7 @@ public sealed class SnakeSimulation : IDisposable
         {
             _world.Set(statsEntity, new SnakeStats(stats.Score, stats.GameOver, stats.Started));
         }
-        OnRenderSignal?.Invoke(new SnakeRenderSignal(
+        _renderTransport.Push(new SnakeRenderSignal(
             _seq, _world.Size, stopwatch.Elapsed.TotalMilliseconds, StepIntervalSeconds * 1000,
             BuildSnapshot(), stats.Score, stats.GameOver, stats.Started, ate, foodSpawned, foodFalling)
         { Epoch = _epoch });

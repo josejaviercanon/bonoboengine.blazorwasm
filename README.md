@@ -2,7 +2,7 @@
 
 .NET MAUI Blazor Hybrid monorepo: a pure C# game engine (`Game.Engine`), a shared Razor Class Library (`Game.UI`), a Blazor Web App host (`Game.Web`), a .NET MAUI Hybrid client (`Game.Maui`), and a TypeScript-driven PixiJS build managed by Vite and Tailwind CLI.
 
-Start with this project mainly because current monogame at 2026 dont have export to web option. Note that this option is not the best for real time games.
+Start with this project mainly because current monogame at 2026 dont have export to web option. Note that for real time games, authoritative ECS in server is not the best option by the http event process for each render update, so added a compilation conditional for single player games.
 
 ![Running in Google Chrome](docs/images-screenshoots/Chrome_PixiJS_Blazor_Wasm_Integration.jpg)
 

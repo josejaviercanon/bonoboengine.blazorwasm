@@ -8,6 +8,7 @@ import RAPIER from '@dimforge/rapier2d';
 import type { SceneBuilder } from './types';
 import { publishCSharpStats } from '../stats/overlays';
 import { SnapshotBuffer, clampedDeltaSeconds, lerpAngle, lerpWrapped } from './interpolation';
+import { connectSignalStream } from './signalSource';
 
 interface AsteroidSpriteState {
     id: number;
@@ -703,11 +704,12 @@ export const asteroidsScene: SceneBuilder = (app, params) => {
 
     if (!a.streamUrl) return;
 
-    const source = new EventSource(a.streamUrl);
+    const stream = connectSignalStream(a.streamUrl);
+    if (!stream) return;
     dbg('SSE connected:', a.streamUrl);
-    source.addEventListener('asteroids-move', (event) => {
+    stream.addSignalListener('asteroids-move', (data) => {
         try {
-            const parsed: unknown = JSON.parse((event as MessageEvent<string>).data);
+            const parsed: unknown = JSON.parse(data);
             if (!isAsteroidsRenderSignal(parsed)) throw new Error('invalid asteroids render signal');
             const signal = parsed;
             publishCSharpStats({ seq: signal.seq, entityCount: signal.entityCount, tickMs: signal.tickMs });
@@ -764,7 +766,7 @@ export const asteroidsScene: SceneBuilder = (app, params) => {
     });
 
     const cleanup = () => {
-        source.close();
+        stream.close();
         window.removeEventListener('keydown', onKeyDown);
         window.removeEventListener('keyup', onKeyUp);
         app.ticker.remove(onTicker);
@@ -784,6 +786,6 @@ export const asteroidsScene: SceneBuilder = (app, params) => {
         sound.stop('asteroids-thrust');
         overlay.remove();
     };
-    source.onerror = () => cleanup();
+    stream.onInterrupted(() => cleanup());
     window.addEventListener('beforeunload', cleanup);
 };
